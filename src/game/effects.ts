@@ -3,7 +3,7 @@ import { changeResource, setVoltageValue } from './resources.ts';
 import { evaluateCondition } from './conditions/evaluate.ts';
 import { conditionContext } from './conditions/gameContext.ts';
 import { addModeReaction, changeMode } from './effects/modeChange.ts';
-import { applyAdditionalBuff } from './effects/additionalBuff.ts';
+import { applyResourceEffect } from './effects/resourceEffect.ts';
 import { applyScoreBoost } from './effects/scoreBoost.ts';
 import { moodValue, sectionAt } from './projection.ts';
 import { voltageLevel } from './live/voltageLevel.ts';
@@ -288,24 +288,15 @@ function applyEffectInternal(
         applyEffect,
       );
     case 'stamina':
-    case 'excitement': {
-      const base = Math.fround(Math.trunc(value(effect.amount)) * effectPower);
-      const boosted = applyAdditionalBuff(state, effect.kind, base, card);
-      const action52 = applyAction52SkillBoostForCard(
-        boosted.state,
-        card,
-        Math.trunc(boosted.value),
-      );
-      return changeResource(
-        action52.state,
+    case 'excitement':
+      return applyResourceEffect(
+        state,
         effect.kind,
-        BigInt(Math.trunc(action52.value)),
-        'skill',
         card,
+        value(effect.amount),
+        effectPower,
         applyEffect,
-        effect.kind === 'excitement',
       );
-    }
     case 'collect':
       return collectHearts(state);
     case 'boost':
