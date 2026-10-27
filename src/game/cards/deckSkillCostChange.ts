@@ -1,0 +1,66 @@
+import { applyAction52SkillBoost } from '../effects/action52SkillBoost.ts';
+import type { Card, GameState } from '../model.ts';
+import type { DeckSkillCostChangeEffect } from '../skillCostChangeTypes.ts';
+
+export function applyDeckSkillCostChange(
+  state: GameState,
+  effect: DeckSkillCostChangeEffect,
+  source: Card | undefined,
+  multiplier: number,
+  addValue: number,
+): GameState {
+  const candidates =
+    effect.targetRange === 2
+      ? state.hand.flatMap((id) => state.deck.filter((card) => card.id === id))
+      : effect.targetRange === 3
+        ? state.deck.filter((card) => state.drawPile.includes(card.id))
+        : [
+            ...state.deck,
+            ...state.proxyCards.flatMap((id) => state.cardPool.filter((card) => card.id === id)),
+          ];
+  const uniqueCandidates = [...new Map(candidates.map((card) => [card.id, card])).values()];
+  const targets = uniqueCandidates.filter((card) => {
+    switch (effect.target) {
+      case 'all':
+        return true;
+      case 'member':
+        return card.member === effect.targetId;
+      case 'main-effect':
+        return card.mainEffect === effect.targetId;
+      case 'unit':
+        return card.unit === effect.targetId;
+      case 'token-series':
+        return card.tokenSeriesIds?.includes(effect.targetId) === true;
+    }
+  });
+  if (targets.length === 0) return state;
+  const rawNum = Number(BigInt.asIntN(32, BigInt(Math.trunc(effect.num))));
+  let next = state;
+  let amount: number;
+  if (rawNum < 0) {
+    if (!source) throw new Error('デッキカードのスキルコスト変更元がありません。');
+    const base = Math.fround(Math.abs(Math.fround(rawNum - addValue)) * Math.fround(multiplier));
+    const boosted = applyAction52SkillBoost(next, source, base);
+    next = boosted.state;
+    const buffValue = toInt32(boosted.value);
+    amount = -toInt32(Math.fround(buffValue / 10_000));
+  } else {
+    amount = toInt32(Math.fround(rawNum / 10_000));
+  }
+  return {
+    ...next,
+    onceSkillCostChanges: targets.reduce(
+      (changes, card) => ({
+        ...changes,
+        [card.id]: (changes[card.id] ?? 0) + amount,
+      }),
+      next.onceSkillCostChanges,
+    ),
+  };
+}
+
+function toInt32(value: number): number {
+  if (!Number.isFinite(value) || value < -2_147_483_648 || value > 2_147_483_647)
+    return -2_147_483_648;
+  return Math.trunc(value);
+}

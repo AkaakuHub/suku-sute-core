@@ -1,0 +1,31 @@
+{
+  "name": "@akaakuhub/suku-sute-core",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./game/*": "./src/game/*.ts",
+    "./master/*.json": "./src/master/*.json",
+    "./master/*": "./src/master/*.ts",
+    "./runtime/*": "./src/runtime/*.ts"
+  },
+  "scripts": {
+    "check": "vp check",
+    "test": "vp test run"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite-plus": "^1.4.0"
+  },
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "packageManager": "pnpm@10.28.2"
+}
