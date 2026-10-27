@@ -38,9 +38,15 @@ export function createHeartsFromEffect(
   const base = Math.ceil((amount * percent * beats) / 100);
   const additional = applyAdditionalBuff(state, 'attract', base, card);
   const action52 = applyAction52SkillBoostForCard(additional.state, card, additional.value);
-  const heartBase = Math.trunc(action52.value);
-  const count = Math.max(1, Math.trunc(Math.fround(heartBase * effectPower)));
+  const scaled = Math.ceil(action52.value) * Math.fround(effectPower);
+  const count = Math.max(1, ceilHeartCount(scaled));
   return lifetimeSeconds === undefined
     ? addHearts(action52.state, count)
     : addHeartsWithLifeTime(action52.state, count, lifetimeSeconds);
+}
+
+export function ceilHeartCount(value: number): number {
+  if (value === Number.POSITIVE_INFINITY) return -2_147_483_648;
+  if (Number.isNaN(value)) return 0;
+  return Math.min(2_147_483_647, Math.max(-2_147_483_648, Math.ceil(value)));
 }
