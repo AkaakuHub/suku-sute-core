@@ -1,5 +1,5 @@
 import type { Effect, ParameterDetailValue } from '../modelTypes.ts';
-import { isInt64 } from '../../runtime/numeric.ts';
+import { int64ToInt32, isInt64 } from '../../runtime/numeric.ts';
 
 type ActionType20Detail = Readonly<{
   id: bigint;
@@ -45,10 +45,10 @@ export function createHandCardCountEffect(input: ActionType20Input): Effect {
   const amountDetail = findDetail(input.details, detailTypes.amount);
   const displayTimeTypeDetail = findDetail(input.details, detailTypes.displayTimeType);
   const displayTimeDetail = findDetail(input.details, detailTypes.displayTime);
-  const calculationType = int32(calculationTypeDetail?.value ?? 1n);
+  const calculationType = int64ToInt32(calculationTypeDetail?.value ?? 1n);
 
   const amountValue = amountDetail?.value ?? 0n;
-  const displayTimeType = int32(displayTimeTypeDetail?.value ?? 3n);
+  const displayTimeType = int64ToInt32(displayTimeTypeDetail?.value ?? 3n);
   const displayTime = displayTimeDetail?.value ?? 0n;
   if (!isInt64(amountValue) || !isInt64(displayTime))
     throw new Error('手札枚数変更の詳細値が正しくありません。');
@@ -66,7 +66,7 @@ export function createHandCardCountEffect(input: ActionType20Input): Effect {
   return {
     kind: 'hand-limit',
     calculationType,
-    amount: int32(amountValue),
+    amount: int64ToInt32(amountValue),
     displayTimeType,
     displayTime,
     ...(invocationType !== undefined ? { invocationType } : {}),
@@ -83,10 +83,6 @@ function findDetail(
   const detail = details.find((item) => item.detailType === detailType);
   if (detail && !isInt64(detail.value)) throw new Error('詳細値が正しくありません。');
   return detail;
-}
-
-function int32(value: bigint): number {
-  return Number(BigInt.asIntN(32, value));
 }
 
 function addParameterDetail(

@@ -13,6 +13,10 @@ export function isInt64(value: bigint): boolean {
   return value >= -(1n << 63n) && value <= (1n << 63n) - 1n;
 }
 
+export function int64ToInt32(value: bigint): number {
+  return Number(BigInt.asIntN(32, value));
+}
+
 export function int64ToFloat32(value: bigint): number {
   const magnitude = value < 0n ? -value : value;
   if (magnitude === 0n) return 0;

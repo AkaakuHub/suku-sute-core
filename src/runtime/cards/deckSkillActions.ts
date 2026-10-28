@@ -1,3 +1,4 @@
+import { int64ToInt32 } from '../numeric.ts';
 import type { LiveDeckBoardState } from './deckBoardState.ts';
 import { liveBoardState, setLiveCardSkillUseAtBoardState } from './deckBoardState.ts';
 import type { LiveSkillEffect } from '../skills/skillTypes.ts';
@@ -131,16 +132,16 @@ export function createLiveHandCardCountEffect(effect: LiveSkillEffect): LiveHand
   );
   return {
     effectId: effect.id,
-    calculationType: requireSafeInteger(
+    calculationType: requireInt32(
       details.get('CHANGE_HAND_CARD_COUNT_CALC_TYPE')?.effectValue,
       'HandCardCount calculation type',
     ),
-    amount: requireSafeInteger(
+    amount: requireInt32(
       details.get('CHANGE_HAND_CARD_COUNT_NUM')?.effectValue,
       'HandCardCount amount',
     ),
     duration: createLiveSkillEffectDuration(
-      requireSafeInteger(
+      requireInt32(
         details.get('CHANGE_HAND_CARD_COUNT_DISPLAY_TIME_TYPE')?.effectValue,
         'HandCardCount display time type',
       ),
@@ -176,4 +177,8 @@ export function applyLiveCardMoveEffect(
     cardInstanceId,
     effect.destination === 'deck' ? liveBoardState.deck : liveBoardState.exclusion,
   );
+}
+
+function requireInt32(value: number | undefined, label: string): number {
+  return int64ToInt32(BigInt(requireSafeInteger(value, label)));
 }
