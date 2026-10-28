@@ -111,7 +111,6 @@ export function activateLiveRegenGaugeEffect(
         duration: createLiveSkillEffectDuration(
           requireDetailValue(details, contract.displayTimeType, contract.label),
           requireDetailValue(details, contract.displayTime, contract.label),
-          input.currentTimeSeconds,
           contract.label,
         ),
       },

@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from '../skills/skillEffectDuration.ts';
 import type { LiveSkillEffect } from '../skills/skillTypes.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -86,7 +87,6 @@ export function activateLiveMoodValueBuff(
         'CHANGE_MOOD_VALUE_DISPLAY_TIME',
         'Change Mood Value',
       ),
-      input.currentTimeSeconds,
       'Change Mood Value',
     ),
   } satisfies LiveMoodValueBuff;
@@ -95,11 +95,7 @@ export function activateLiveMoodValueBuff(
 
 export function advanceLiveMoodValueBuffs(
   buffs: readonly LiveMoodValueBuff[],
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): readonly LiveMoodValueBuff[] {
   return buffs.flatMap((buff) => {
     const duration = advanceLiveSkillEffectDuration(buff.duration, input);

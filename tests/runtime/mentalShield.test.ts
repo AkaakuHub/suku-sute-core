@@ -47,7 +47,7 @@ test('無限Shieldは適用回数を消費せず、duration終了時に取り除
   expect(applied.state).toEqual(activated.state);
   expect(
     advanceLiveMentalShieldState(applied.state, {
-      currentTimeSeconds: 1,
+      deltaTimeSeconds: 1,
       sectionChangeCount: 0,
       musicEnded: false,
     }),

@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -90,7 +91,6 @@ export function activateLiveInduceSkillEffect(
       duration: createLiveSkillEffectDuration(
         details.displayTimeType,
         details.displayTime,
-        input.currentTimeSeconds,
         'Induce Skill Effect',
       ),
       parentControlsLifetime: input.parentControlsLifetime,
@@ -143,11 +143,7 @@ export function notifyLiveInduceSkillEffect(
 
 export function advanceLiveInduceSkillEffectState(
   state: LiveInduceSkillEffectState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveInduceSkillEffectState {
   return state.flatMap((effect) => {
     if (effect.parentControlsLifetime) return [effect];

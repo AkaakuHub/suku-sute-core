@@ -48,8 +48,8 @@ test('同じLOVE UP skillを再発動して発動ごとの効果時間を保持�
 
   expect(second.state.effects).toHaveLength(2);
   expect(second.state.effects.map(({ duration }) => duration)).toEqual([
-    { kind: 'sections', remainingChanges: 2 },
-    { kind: 'sections', remainingChanges: 2 },
+    { kind: 'sections', remainingChanges: 2n },
+    { kind: 'sections', remainingChanges: 2n },
   ]);
   expect(liveLoveUpBonusScoreValue(second.state)).toBe(first.effectAmount + second.effectAmount);
 });

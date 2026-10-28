@@ -49,7 +49,7 @@ test('skill token series不一致のbuffを保持し、曲終了で解除する'
   expect(applied).toEqual({ state, cardCount: 1 });
   expect(
     advanceLiveTokenCardBoostState(state, {
-      currentTimeSeconds: 10,
+      deltaTimeSeconds: 10,
       sectionChangeCount: 0,
       musicEnded: true,
     }),

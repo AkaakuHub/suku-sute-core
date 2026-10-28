@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import {
   type LiveAdditionalBuffCard,
   resolveLiveAdditionalBuffTarget,
@@ -95,7 +96,6 @@ export function activateLiveHeartUpBuff(
         duration: createLiveSkillEffectDuration(
           requireValue(details, 'HEART_UP_DISPLAY_TIME_TYPE'),
           requireValue(details, 'HEART_UP_DISPLAY_TIME'),
-          input.currentTimeSeconds,
           'Heart Up',
         ),
       },
@@ -105,11 +105,7 @@ export function activateLiveHeartUpBuff(
 
 export function advanceLiveHeartUpBuffState(
   state: LiveHeartUpBuffState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveHeartUpBuffState {
   return {
     effects: advanceLiveAdditionalSkillBuffs(state.effects, input),

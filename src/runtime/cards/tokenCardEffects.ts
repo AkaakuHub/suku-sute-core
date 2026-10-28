@@ -65,10 +65,7 @@ export function createLiveTokenCardEffect(effect: LiveSkillEffect): LiveTokenCar
   };
 }
 
-export function createLiveBoostTokenCardEffect(
-  effect: LiveSkillEffect,
-  currentTimeSeconds: number,
-): LiveBoostTokenCardEffect {
+export function createLiveBoostTokenCardEffect(effect: LiveSkillEffect): LiveBoostTokenCardEffect {
   const details = requireDetails(
     effect,
     38,
@@ -129,7 +126,6 @@ export function createLiveBoostTokenCardEffect(
         details.get('BOOST_TOKEN_CARD_DISPLAY_TIME')?.effectValue,
         'BoostTokenCard display time',
       ),
-      currentTimeSeconds,
       'BoostTokenCard',
     ),
     disabled,
@@ -154,7 +150,6 @@ export function createLiveBoostTokenCardEffect(
 
 export function createLiveSwitchTokenCardDeckEffect(
   effect: LiveSkillEffect,
-  currentTimeSeconds: number,
 ): LiveSwitchTokenCardDeckEffect {
   const details = requireDetails(
     effect,
@@ -184,7 +179,6 @@ export function createLiveSwitchTokenCardDeckEffect(
         details.get('SWITCH_TOKEN_CARD_DECK_DISPLAY_TIME')?.effectValue,
         'SwitchTokenCardDeck display time',
       ),
-      currentTimeSeconds,
       'SwitchTokenCardDeck',
     ),
   };

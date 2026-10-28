@@ -58,14 +58,14 @@ test('固定型以外だけSkillBoostを適用して期間終了と個別解除�
   expect(boosted).toEqual([5]);
   expect(state.map(({ value }) => value)).toEqual([8, 8]);
   state = advanceLiveFixedParameterExtendState(state, {
-    currentTimeSeconds: 3,
+    deltaTimeSeconds: 3,
     sectionChangeCount: 1,
     musicEnded: false,
   });
   expect(state.map(({ effectId }) => effectId)).toEqual(['20']);
   expect(
     advanceLiveFixedParameterExtendState(state, {
-      currentTimeSeconds: 3,
+      deltaTimeSeconds: 3,
       sectionChangeCount: 0,
       musicEnded: false,
     }),

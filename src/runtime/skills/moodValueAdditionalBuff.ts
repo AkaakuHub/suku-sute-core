@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveAdditionalBuffCard } from './additionalBuffTarget.ts';
 import { resolveLiveAdditionalBuffTarget } from './additionalBuffTarget.ts';
 import {
@@ -72,7 +73,6 @@ export function activateLiveMoodValueAdditionalBuff(
     duration: createLiveSkillEffectDuration(
       requireValue(details, 'CHANGE_MOOD_VALUE_BOOST_DISPLAY_TIME_TYPE'),
       requireValue(details, 'CHANGE_MOOD_VALUE_BOOST_DISPLAY_TIME_PARAM'),
-      input.currentTimeSeconds,
       'Change Mood Value Boost',
     ),
   };
@@ -81,11 +81,7 @@ export function activateLiveMoodValueAdditionalBuff(
 
 export function advanceLiveMoodValueAdditionalBuffState(
   state: LiveMoodValueAdditionalBuffState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveMoodValueAdditionalBuffState {
   return {
     effects: advanceLiveAdditionalSkillBuffs(state.effects, input),

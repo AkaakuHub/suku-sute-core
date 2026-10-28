@@ -1,6 +1,7 @@
 import type { LiveSkillEffect } from './skillTypes.ts';
 import { ceilToInt32, floatToInt32, isInt64 } from '../numeric.ts';
 import {
+  type LiveSkillEffectClock,
   advanceLiveSkillEffectDuration,
   createLiveSkillEffectDuration,
   type LiveSkillEffectDuration,
@@ -62,16 +63,12 @@ export function activateLiveGenesisEffect(
 
 export function advanceLiveGenesisState(
   state: LiveGenesisState,
-  input: {
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  },
+  input: LiveSkillEffectClock,
 ): LiveGenesisAdvanceResult {
   validateGenesisState(state);
   if (
-    !Number.isFinite(input.currentTimeSeconds) ||
-    input.currentTimeSeconds < 0 ||
+    !Number.isFinite(input.deltaTimeSeconds) ||
+    input.deltaTimeSeconds < 0 ||
     !Number.isSafeInteger(input.sectionChangeCount) ||
     input.sectionChangeCount < 0
   ) {
@@ -178,7 +175,6 @@ export function createLiveGenesisEffectFromParameters(
     duration: createLiveSkillEffectDuration(
       displayTimeType === 1 || displayTimeType === 2 ? displayTimeType : 3,
       displayTimeType === 3 ? 0 : displayTime,
-      input.currentTimeSeconds,
       'Genesis',
     ),
   };

@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveCardIdentity } from '../cards/cardIdentity.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
@@ -86,7 +87,6 @@ export function activateLiveAdditionalHeartInduce(
       duration: createLiveSkillEffectDuration(
         values.displayTimeType,
         values.displayTime,
-        input.currentTimeSeconds,
         'Additional Heart',
       ),
       parentControlsLifetime: input.parentControlsLifetime,
@@ -129,11 +129,7 @@ export function notifyLiveAdditionalHeartSkillActivation(
 
 export function advanceLiveAdditionalHeartInduceState(
   state: LiveAdditionalHeartInduceState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveAdditionalHeartInduceState {
   return state.flatMap((effect) => {
     if (effect.parentControlsLifetime) return [effect];

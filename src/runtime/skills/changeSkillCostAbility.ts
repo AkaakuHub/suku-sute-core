@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import {
   liveChangeSkillCostConditionValue,
   type LiveChangeSkillCostContext,
@@ -42,11 +43,7 @@ export function activateLiveChangeSkillCostAbility(
 
 export function advanceLiveChangeSkillCostAbilityState(
   state: LiveChangeSkillCostAbilityState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveChangeSkillCostAbilityState {
   validateState(state);
   return {

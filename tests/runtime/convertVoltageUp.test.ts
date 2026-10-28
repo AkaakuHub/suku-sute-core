@@ -20,7 +20,7 @@ describe('Live Convert Voltage Up', () => {
       effectId: '22001',
       destination: 'heart',
       amount: 20,
-      resultDuration: { kind: 'sections', remainingChanges: 1 },
+      resultDuration: { kind: 'sections', remainingChanges: 1n },
       resultDisabledType: 0,
       card: input.card,
     });
@@ -51,7 +51,7 @@ describe('Live Convert Voltage Up', () => {
     );
     expect(
       advanceLiveConvertVoltageUpState(milliseconds, {
-        currentTimeSeconds: 1,
+        deltaTimeSeconds: 1,
         sectionChangeCount: 0,
         musicEnded: false,
       }),
@@ -60,7 +60,7 @@ describe('Live Convert Voltage Up', () => {
     const section = activateLiveConvertVoltageUp([], effect('22002', 1, 10_000, 0, 0, 2, 1), input);
     expect(
       advanceLiveConvertVoltageUpState(section, {
-        currentTimeSeconds: 0,
+        deltaTimeSeconds: 0,
         sectionChangeCount: 1,
         musicEnded: false,
       }),
@@ -69,7 +69,7 @@ describe('Live Convert Voltage Up', () => {
     const fullEnd = activateLiveConvertVoltageUp([], effect('22003', 1, 10_000, 0, 0, 3, 0), input);
     expect(
       advanceLiveConvertVoltageUpState(fullEnd, {
-        currentTimeSeconds: 0,
+        deltaTimeSeconds: 0,
         sectionChangeCount: 0,
         musicEnded: true,
       }),

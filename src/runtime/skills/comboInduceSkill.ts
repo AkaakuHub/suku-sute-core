@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type {
   LiveComboInduceMemberState,
   LiveComboInduceUiTimedEvent,
@@ -86,7 +87,6 @@ export function activateLiveComboInduce(
   const duration = createLiveSkillEffectDuration(
     requireIntegerValue(details, 'COMBO_INDUCE_DISPLAY_TIME_TYPE'),
     requireIntegerValue(details, 'COMBO_INDUCE_DISPLAY_TIME'),
-    input.currentTimeSeconds,
     'Combo Induce',
   );
   if (state.active !== null) return state;
@@ -158,11 +158,7 @@ export function notifyLiveComboInduceSkillActivation(
 
 export function advanceLiveComboInduceState(
   state: LiveComboInduceState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock & Readonly<{ currentTimeSeconds: number }>,
 ): LiveComboInduceTransition {
   let active = state.active;
   if (active === null) return { state, applications: [] };

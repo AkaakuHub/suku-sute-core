@@ -32,7 +32,7 @@ test('Mental Barrierの割合耐久値は最大Mentalから算出し、超過dam
   expect(second.remainingDamage).toBe(2);
   expect(
     advanceLiveMentalBarrierState(second.state, {
-      currentTimeSeconds: 1,
+      deltaTimeSeconds: 1,
       sectionChangeCount: 0,
       musicEnded: false,
     }).effects,

@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from '../skills/skillEffectDuration.ts';
 import {
   type LiveAdditionalBuffCard,
   resolveLiveAdditionalBuffTarget,
@@ -143,7 +144,6 @@ export function activateLiveHeartLimitAdditionalBuff(
         'CHANGE_HEART_LIMIT_BOOST_DISPLAY_TIME_PARAM',
         'Heart Limit additional buff',
       ),
-      input.currentTimeSeconds,
       'Heart Limit additional buff',
     ),
   };
@@ -218,7 +218,6 @@ export function activateLiveHeartLimit(
     duration: createLiveSkillEffectDuration(
       requireValue(details, 'CHANGE_HEART_LIMIT_DISPLAY_TIME_TYPE', 'Heart Limit'),
       requireValue(details, 'CHANGE_HEART_LIMIT_DISPLAY_TIME', 'Heart Limit'),
-      input.currentTimeSeconds,
       'Heart Limit',
     ),
   };
@@ -237,11 +236,7 @@ export function activateLiveHeartLimit(
 
 export function advanceLiveHeartLimitState(
   state: LiveHeartLimitState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveHeartLimitState {
   return {
     effects: state.effects.flatMap((effect) => {

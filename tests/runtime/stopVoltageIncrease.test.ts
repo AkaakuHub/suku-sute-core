@@ -9,20 +9,19 @@ test('StopVoltageIncreaseは再発動ごとの停止要求を保持して個別�
   const first = activateLiveStopVoltageIncrease(
     createLiveStopVoltageIncreaseState(),
     effect('26001', 1, 1_000),
-    0,
   );
-  const repeated = activateLiveStopVoltageIncrease(first, effect('26002', 2, 2), 0);
+  const repeated = activateLiveStopVoltageIncrease(first, effect('26002', 2, 2));
 
   expect(repeated).toHaveLength(2);
   const oneExpired = advanceLiveStopVoltageIncreaseState(repeated, {
-    currentTimeSeconds: 1,
+    deltaTimeSeconds: 1,
     sectionChangeCount: 1,
     musicEnded: false,
   });
   expect(oneExpired).toEqual([
     {
       effectId: '26002',
-      duration: { kind: 'sections', remainingChanges: 1 },
+      duration: { kind: 'sections', remainingChanges: 1n },
     },
   ]);
 });

@@ -61,7 +61,7 @@ test('ChangeMoodValueBoostはsection期限で共通additional buffから除去�
 
   expect(
     advanceLiveMoodValueAdditionalBuffState(state, {
-      currentTimeSeconds: 1,
+      deltaTimeSeconds: 1,
       sectionChangeCount: 2,
       musicEnded: false,
     }).effects,

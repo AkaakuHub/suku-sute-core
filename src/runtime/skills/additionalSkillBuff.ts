@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import {
   type LiveAdditionalBuffCard,
   type LiveAdditionalBuffTarget,
@@ -117,7 +118,6 @@ export function createLiveAdditionalSkillBuff(
     duration: createLiveSkillEffectDuration(
       requireValue(details, contract.displayTimeType, contract.label),
       requireValue(details, contract.displayTime, contract.label),
-      input.currentTimeSeconds,
       contract.label,
     ),
   };
@@ -125,11 +125,7 @@ export function createLiveAdditionalSkillBuff(
 
 export function advanceLiveAdditionalSkillBuffs(
   buffs: readonly LiveAdditionalSkillBuff[],
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): readonly LiveAdditionalSkillBuff[] {
   return buffs.flatMap((buff) => {
     const duration = advanceLiveSkillEffectDuration(buff.duration, input);

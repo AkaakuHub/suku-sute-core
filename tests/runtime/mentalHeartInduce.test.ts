@@ -55,7 +55,7 @@ test('親が寿命を管理する効果だけはclockで解除せず、明示解
 
   expect(
     advanceLiveMentalHeartInduceState(parentControlled, {
-      currentTimeSeconds: 3,
+      deltaTimeSeconds: 3,
       sectionChangeCount: 0,
       musicEnded: false,
     }),
@@ -67,7 +67,7 @@ test('親が寿命を管理する効果だけはclockで解除せず、明示解
         parentControlsLifetime: false,
       })),
       {
-        currentTimeSeconds: 3,
+        deltaTimeSeconds: 3,
         sectionChangeCount: 0,
         musicEnded: false,
       },

@@ -41,7 +41,7 @@ test.each([20_000, 4_294_987_296])(
     ).toEqual({
       effectId: '51000000001',
       effectValue: 3,
-      duration: { kind: 'sections', remainingChanges: 3 },
+      duration: { kind: 'sections', remainingChanges: 3n },
     });
   },
 );
@@ -151,14 +151,14 @@ test('最大効果を適用し曲末で開始前gaugeを返す', () => {
     }).currentGauge,
   ).toBe(86);
   const firstSection = advanceLiveGenesisState(active, {
-    currentTimeSeconds: 1,
+    deltaTimeSeconds: 1,
     sectionChangeCount: 1,
     musicEnded: false,
   });
   expect(firstSection.state.effects.map(({ effectId }) => effectId)).toEqual(['2', '1']);
   expect(firstSection.finishedRollback).toBeNull();
   const secondSection = advanceLiveGenesisState(firstSection.state, {
-    currentTimeSeconds: 2,
+    deltaTimeSeconds: 2,
     sectionChangeCount: 1,
     musicEnded: true,
   });
@@ -181,7 +181,7 @@ test('同じGenesis effectの再発動を独立した効果として曲末まで
   const repeated = activateLiveGenesisEffect(first, genesisEffect('same-effect', 2), rollback);
 
   const advanced = advanceLiveGenesisState(repeated, {
-    currentTimeSeconds: 1,
+    deltaTimeSeconds: 1,
     sectionChangeCount: 1,
     musicEnded: false,
   });
@@ -241,8 +241,8 @@ function detail(id: string, detailType: string, effectValue: number) {
 }
 
 test.each([
-  { kind: 'milliseconds', expiresAtSeconds: 1 },
-  { kind: 'sections', remainingChanges: 1 },
+  { kind: 'milliseconds', remainingSeconds: 1 },
+  { kind: 'sections', remainingChanges: 1n },
 ] as const)('期限付きGenesis%sはAPKの開始条件に従って発動しない', (duration) => {
   const state = createLiveGenesisState();
   expect(

@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveAddHeartOption } from './addHeartSkill.ts';
 import type { LiveAdditionalBuffCard } from './additionalBuffTarget.ts';
 import { liveCeilAtFirstDecimalPlace } from '../live/gaugeTiming.ts';
@@ -93,7 +94,6 @@ export function activateLiveMentalHeartInduce(
       duration: createLiveSkillEffectDuration(
         requireValue(details, 'MENTAL_HEART_INDUCE_DISPLAY_TIME_TYPE'),
         requireValue(details, 'MENTAL_HEART_INDUCE_DISPLAY_TIME'),
-        input.currentTimeSeconds,
         'Mental Heart Induce',
       ),
       remainingInductions: disabledType === 1 ? disabledCount : null,
@@ -146,11 +146,7 @@ export function induceLiveMentalRecoveryHearts(
 
 export function advanceLiveMentalHeartInduceState(
   state: LiveMentalHeartInduceState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveMentalHeartInduceState {
   return state.flatMap((effect) => {
     if (effect.parentControlsLifetime) return [effect];

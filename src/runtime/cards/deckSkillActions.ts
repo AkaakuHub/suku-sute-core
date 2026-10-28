@@ -62,10 +62,7 @@ export function createLiveCardSearchEffect(effect: LiveSkillEffect): LiveCardSea
   };
 }
 
-export function createLiveChangeApEffect(
-  effect: LiveSkillEffect,
-  currentTimeSeconds: number,
-): LiveChangeApEffect {
+export function createLiveChangeApEffect(effect: LiveSkillEffect): LiveChangeApEffect {
   const details = requireDetails(
     effect,
     17,
@@ -105,7 +102,6 @@ export function createLiveChangeApEffect(
         details.get('CHANGE_AP_DISPLAY_TIME')?.effectValue,
         'ChangeAP display time',
       ),
-      currentTimeSeconds,
       'ChangeAP',
     ),
   };
@@ -121,10 +117,7 @@ export function createLiveCardMoveEffect(effect: LiveSkillEffect): LiveCardMoveE
   };
 }
 
-export function createLiveHandCardCountEffect(
-  effect: LiveSkillEffect,
-  currentTimeSeconds: number,
-): LiveHandCardCountEffect {
+export function createLiveHandCardCountEffect(effect: LiveSkillEffect): LiveHandCardCountEffect {
   const details = requireDetails(
     effect,
     20,
@@ -154,7 +147,6 @@ export function createLiveHandCardCountEffect(
         details.get('CHANGE_HAND_CARD_COUNT_DISPLAY_TIME')?.effectValue,
         'HandCardCount display time',
       ),
-      currentTimeSeconds,
       'HandCardCount',
     ),
   };

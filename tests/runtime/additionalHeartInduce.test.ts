@@ -57,7 +57,7 @@ test('MSEC寿命を経過するとSkill発動通知から除外する', () => {
   );
   expect(
     advanceLiveAdditionalHeartInduceState(state, {
-      currentTimeSeconds: 3,
+      deltaTimeSeconds: 3,
       sectionChangeCount: 0,
       musicEnded: false,
     }),

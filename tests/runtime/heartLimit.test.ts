@@ -62,7 +62,7 @@ test('Heart上限効果を時間満了時に破棄して基礎値へ戻す', () 
   expect(liveHeartLimitValue(activated.state)).toBe(110);
 
   const expired = advanceLiveHeartLimitState(activated.state, {
-    currentTimeSeconds: 2,
+    deltaTimeSeconds: 2,
     sectionChangeCount: 0,
     musicEnded: false,
   });

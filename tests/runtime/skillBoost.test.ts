@@ -73,17 +73,17 @@ test('Multiply2合計を-100で下限固定しsection期限を進める', () => 
     ).value,
   ).toBe(0);
   const firstSection = advanceLiveSkillBoostState(active, {
-    currentTimeSeconds: 1,
+    deltaTimeSeconds: 1,
     sectionChangeCount: 1,
     musicEnded: false,
   });
   expect(firstSection.effects[0]?.duration).toEqual({
     kind: 'sections',
-    remainingChanges: 1,
+    remainingChanges: 1n,
   });
   expect(
     advanceLiveSkillBoostState(firstSection, {
-      currentTimeSeconds: 2,
+      deltaTimeSeconds: 2,
       sectionChangeCount: 1,
       musicEnded: false,
     }),

@@ -26,7 +26,7 @@ test('Heart Upはruntime順で補正してAdd Heartの共通additional buffへ�
       target: { kind: 'all' },
       skillTokenCardSeriesIds: [],
       remainingUses: 2,
-      duration: { kind: 'milliseconds', expiresAtSeconds: 12.5 },
+      duration: { kind: 'milliseconds', remainingSeconds: 2.5 },
     },
   ]);
 

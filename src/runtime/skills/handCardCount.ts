@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveHandCardCountEffect } from '../cards/deckActionTypes.ts';
 import type { LiveCardIdentifier } from '../cards/deckBoardState.ts';
 import type { LiveTokenCardDeckState } from '../cards/tokenCardDeck.ts';
@@ -89,11 +90,7 @@ export function activateLiveHandCardMaxEffect<Id extends LiveCardIdentifier>(
 export function advanceLiveHandCardCountState<Id extends LiveCardIdentifier>(
   state: LiveHandCardCountState<Id>,
   tokenCardDeck: LiveTokenCardDeckState<Id>,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): HandCountTransition<Id> {
   const removed: HandCountEffect<Id>[] = [];
   const effects = state.effects.flatMap((effect) => {

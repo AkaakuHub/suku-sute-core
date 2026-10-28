@@ -29,6 +29,7 @@ test('全員のAPが揃った1秒後に合計AP倍率で内包効果を発動し
   });
   const activated = advanceLiveComboInduceState(state, {
     currentTimeSeconds: 13,
+    deltaTimeSeconds: 1,
     sectionChangeCount: 0,
     musicEnded: false,
   });
@@ -44,6 +45,7 @@ test('全員のAPが揃った1秒後に合計AP倍率で内包効果を発動し
   ]);
   const reset = advanceLiveComboInduceState(activated.state, {
     currentTimeSeconds: 14,
+    deltaTimeSeconds: 1,
     sectionChangeCount: 0,
     musicEnded: false,
   });
@@ -104,6 +106,7 @@ test('再生中のAP通知を予約し、2秒後にeffect表示なしで順に�
   }
   const advanced = advanceLiveComboInduceState(state, {
     currentTimeSeconds: 2,
+    deltaTimeSeconds: 2,
     sectionChangeCount: 0,
     musicEnded: false,
   });

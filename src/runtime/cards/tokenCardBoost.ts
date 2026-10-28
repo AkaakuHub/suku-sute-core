@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from '../skills/skillEffectDuration.ts';
 import {
   type LiveAdditionalBuffCard,
   liveAdditionalBuffTargetMatches,
@@ -26,11 +27,7 @@ export function activateLiveTokenCardBoost(
 
 export function advanceLiveTokenCardBoostState(
   state: LiveTokenCardBoostState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveTokenCardBoostState {
   validateState(state);
   return {

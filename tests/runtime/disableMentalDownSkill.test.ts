@@ -31,19 +31,19 @@ const effect = {
 test('DisableMentalDownをmillisecond期限で開始して終了する', () => {
   const active = activateLiveDisableMentalDownEffect(
     createLiveDisableMentalDownState(),
-    createLiveDisableMentalDownEffect(effect, 2),
+    createLiveDisableMentalDownEffect(effect),
   );
 
   expect(
     advanceLiveDisableMentalDownState(active, {
-      currentTimeSeconds: 6.999,
+      deltaTimeSeconds: 4.999,
       sectionChangeCount: 0,
       musicEnded: false,
     }).effects,
   ).toHaveLength(1);
   expect(
     advanceLiveDisableMentalDownState(active, {
-      currentTimeSeconds: 7,
+      deltaTimeSeconds: 5,
       sectionChangeCount: 0,
       musicEnded: false,
     }).effects,
@@ -52,26 +52,30 @@ test('DisableMentalDownをmillisecond期限で開始して終了する', () => {
 
 test('DisableMentalDownのdetail構成をexactly onceで要求する', () => {
   expect(() =>
-    createLiveDisableMentalDownEffect(
-      { ...effect, details: [effect.details[0], effect.details[0]] },
-      0,
-    ),
+    createLiveDisableMentalDownEffect({
+      ...effect,
+      details: [effect.details[0], effect.details[0]],
+    }),
   ).toThrow('Live DisableMentalDown skill effect details differ');
 });
 
 test('同じDisableMentalDownの再発動を独立した期限として保持する', () => {
   const first = activateLiveDisableMentalDownEffect(
     createLiveDisableMentalDownState(),
-    createLiveDisableMentalDownEffect(effect, 0),
+    createLiveDisableMentalDownEffect(effect),
   );
   const repeated = activateLiveDisableMentalDownEffect(
-    first,
-    createLiveDisableMentalDownEffect(effect, 2),
+    advanceLiveDisableMentalDownState(first, {
+      deltaTimeSeconds: 2,
+      sectionChangeCount: 0,
+      musicEnded: false,
+    }),
+    createLiveDisableMentalDownEffect(effect),
   );
 
   expect(
     advanceLiveDisableMentalDownState(repeated, {
-      currentTimeSeconds: 5,
+      deltaTimeSeconds: 3,
       sectionChangeCount: 0,
       musicEnded: false,
     }).effects,

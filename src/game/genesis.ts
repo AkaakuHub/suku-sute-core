@@ -1,5 +1,4 @@
 import type { GameState } from './model.ts';
-import { rules } from './rules.ts';
 import { voltageLevel, voltageThreshold } from './live/voltageLevel.ts';
 import { induceMentalHearts } from './effects/mentalHeartInduce.ts';
 import {
@@ -42,7 +41,7 @@ export function changeGenesisMental(state: GameState, amount: bigint): GameState
 
 export function finishGenesis(state: GameState): GameState {
   const frame = advanceLiveGenesisState(state.genesis, {
-    currentTimeSeconds: state.tick / rules.ticksPerSecond,
+    deltaTimeSeconds: 0,
     sectionChangeCount: 0,
     musicEnded: true,
   });

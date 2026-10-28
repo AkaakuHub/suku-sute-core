@@ -70,7 +70,7 @@ describe('InduceSkillEffect', () => {
     ).toEqual([]);
     expect(
       advanceLiveInduceSkillEffectState(state, {
-        currentTimeSeconds: 0,
+        deltaTimeSeconds: 0,
         sectionChangeCount: 1,
         musicEnded: false,
       }),

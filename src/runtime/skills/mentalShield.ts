@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -92,7 +93,6 @@ export function activateLiveMentalShield(
         duration: createLiveSkillEffectDuration(
           requireValue(details, 'MENTAL_SHIELD_DISPLAY_TIME_TYPE'),
           requireValue(details, 'MENTAL_SHIELD_DISPLAY_TIME'),
-          input.currentTimeSeconds,
           'Mental Shield',
         ),
       },
@@ -102,11 +102,7 @@ export function activateLiveMentalShield(
 
 export function advanceLiveMentalShieldState(
   state: LiveMentalShieldState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveMentalShieldState {
   return state.flatMap((shield) => {
     const duration = advanceLiveSkillEffectDuration(shield.duration, input);

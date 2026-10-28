@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -23,7 +24,6 @@ export function createLiveStopVoltageIncreaseState(): LiveStopVoltageIncreaseSta
 export function activateLiveStopVoltageIncrease(
   state: LiveStopVoltageIncreaseState,
   effect: LiveSkillEffect,
-  currentTimeSeconds: number,
 ): LiveStopVoltageIncreaseState {
   if (effect.actionType !== 26) {
     throw new Error('Live Stop Voltage Increase action type differs');
@@ -48,7 +48,6 @@ export function activateLiveStopVoltageIncrease(
           'STOP_VOLTAGE_INCREASE_DISPLAY_TIME',
           'Stop Voltage Increase',
         ),
-        currentTimeSeconds,
         'Stop Voltage Increase',
       ),
     },
@@ -57,11 +56,7 @@ export function activateLiveStopVoltageIncrease(
 
 export function advanceLiveStopVoltageIncreaseState(
   state: LiveStopVoltageIncreaseState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveStopVoltageIncreaseState {
   return state.flatMap((effect) => {
     const duration = advanceLiveSkillEffectDuration(effect.duration, input);

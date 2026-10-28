@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveAdditionalBuffCard } from './additionalBuffTarget.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
@@ -107,12 +108,11 @@ export function activateLiveConvertVoltageUp(
       effectId: effect.id,
       destination,
       unitValue,
-      ...resolveResultDisplay(details, input.currentTimeSeconds),
+      ...resolveResultDisplay(details),
       resultDisabledType,
       duration: createLiveSkillEffectDuration(
         requireValue(details, 'CONVERT_VOLTAGE_UP_DISPLAY_TIME_TYPE'),
         requireValue(details, 'CONVERT_VOLTAGE_UP_DISPLAY_TIME'),
-        input.currentTimeSeconds,
         'Convert Voltage Up',
       ),
       remainingConversions: disabledType === 1 ? disabledCount : null,
@@ -153,7 +153,6 @@ export function convertLiveVoltageUp(
       resultDuration: createLiveSkillEffectDuration(
         selected.resultDisplayTimeType,
         selected.resultDisplayTime,
-        currentTimeSeconds,
         'Convert Voltage Up result',
       ),
       resultDisabledType: selected.resultDisabledType,
@@ -164,11 +163,7 @@ export function convertLiveVoltageUp(
 
 export function advanceLiveConvertVoltageUpState(
   state: LiveConvertVoltageUpState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveConvertVoltageUpState {
   return state.flatMap((effect) => {
     if (effect.parentControlsLifetime) return [effect];
@@ -201,19 +196,13 @@ function resolveDestination(value: number): LiveConvertVoltageDestination {
 
 function resolveResultDisplay(
   details: ReadonlyMap<string, LiveSkillEffect['details'][number]>,
-  currentTimeSeconds: number,
 ): Readonly<{
   resultDisplayTimeType: 1 | 2 | 3;
   resultDisplayTime: number;
 }> {
   const displayTimeType = requireValue(details, 'CONVERT_VOLTAGE_UP_CONVERT_DISPLAY_TIME_TYPE');
   const displayTime = requireValue(details, 'CONVERT_VOLTAGE_UP_CONVERT_DISPLAY_TIME');
-  createLiveSkillEffectDuration(
-    displayTimeType,
-    displayTime,
-    currentTimeSeconds,
-    'Convert Voltage Up result',
-  );
+  createLiveSkillEffectDuration(displayTimeType, displayTime, 'Convert Voltage Up result');
   if (displayTimeType !== 1 && displayTimeType !== 2 && displayTimeType !== 3) {
     throw new Error('Live Convert Voltage Up result display type differs');
   }

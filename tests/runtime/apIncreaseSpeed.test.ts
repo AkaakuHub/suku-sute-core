@@ -60,7 +60,7 @@ test('加算型はruntimeどおりSkillBoostを消費するが登録値には適
   expect(resolveLiveApIncreaseIntervalSeconds(1, activated.state)).toBeCloseTo(0.64);
   expect(
     advanceLiveApIncreaseSpeedState(activated.state, {
-      currentTimeSeconds: 1,
+      deltaTimeSeconds: 1,
       sectionChangeCount: 0,
       musicEnded: false,
     }),

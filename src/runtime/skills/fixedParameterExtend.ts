@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -82,7 +83,6 @@ export function activateLiveFixedParameterExtend(
           'FIXED_PARAM_DURATION_VALUE',
           'FixedParameterExtend',
         ),
-        input.currentTimeSeconds,
         'FixedParameterExtend',
       ),
     },
@@ -91,11 +91,7 @@ export function activateLiveFixedParameterExtend(
 
 export function advanceLiveFixedParameterExtendState(
   state: LiveFixedParameterExtendState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveFixedParameterExtendState {
   validateState(state);
   return state.flatMap((effect) => {

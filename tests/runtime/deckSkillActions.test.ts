@@ -62,7 +62,6 @@ test('ActionType17/20は保存detailの加算条件と表示期間を保持す�
       detail('CHANGE_AP_DISPLAY_TIME_TYPE', 3),
       detail('CHANGE_AP_DISPLAY_TIME', 0),
     ]),
-    0,
   );
   expect(changeAp).toMatchObject({
     amount: -1,
@@ -82,7 +81,6 @@ test('ActionType17/20は保存detailの加算条件と表示期間を保持す�
         detail('CHANGE_AP_DISPLAY_TIME_TYPE', 3),
         detail('CHANGE_AP_DISPLAY_TIME', 0),
       ]),
-      0,
     ),
   ).toThrow('Live ChangeAP amount has unsupported precision');
   const handCount = createLiveHandCardCountEffect(
@@ -92,7 +90,6 @@ test('ActionType17/20は保存detailの加算条件と表示期間を保持す�
       detail('CHANGE_HAND_CARD_COUNT_DISPLAY_TIME_TYPE', 3),
       detail('CHANGE_HAND_CARD_COUNT_DISPLAY_TIME', 0),
     ]),
-    0,
   );
   expect(resolveLiveHandCardCountActivation(5, handCount)).toEqual({
     targetHandCount: 4,
@@ -176,7 +173,6 @@ test('ActionType38/42/43は保存masterのtarget・paramを失わず変換する
         '2',
       ),
     ]),
-    0,
   );
   expect(boost).toMatchObject({
     calculation: 'add',
@@ -200,7 +196,6 @@ test('ActionType38/42/43は保存masterのtarget・paramを失わず変換する
         detail('SWITCH_TOKEN_CARD_DECK_DISPLAY_TIME_TYPE', 3),
         detail('SWITCH_TOKEN_CARD_DECK_DISPLAY_TIME', 0),
       ]),
-      0,
     ),
   ).toMatchObject({ tokenCardSeriesId: 2, duration: { kind: 'full-end' } });
 });

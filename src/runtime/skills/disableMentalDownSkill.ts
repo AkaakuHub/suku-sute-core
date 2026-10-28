@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -24,7 +25,6 @@ export function createLiveDisableMentalDownState(): LiveDisableMentalDownState {
 
 export function createLiveDisableMentalDownEffect(
   effect: LiveSkillEffect,
-  currentTimeSeconds: number,
 ): LiveDisableMentalDownEffect {
   if (effect.actionType !== 34) {
     throw new Error('Live DisableMentalDown action type differs');
@@ -47,7 +47,6 @@ export function createLiveDisableMentalDownEffect(
         'DISABLE_MENTAL_DOWN_DISPLAY_TIME',
         'DisableMentalDown',
       ),
-      currentTimeSeconds,
       'DisableMentalDown',
     ),
   };
@@ -62,11 +61,7 @@ export function activateLiveDisableMentalDownEffect(
 
 export function advanceLiveDisableMentalDownState(
   state: LiveDisableMentalDownState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveDisableMentalDownState {
   return {
     effects: state.effects.flatMap((effect) => {

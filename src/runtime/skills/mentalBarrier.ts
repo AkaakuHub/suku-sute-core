@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveAdditionalBuffCard } from './additionalBuffTarget.ts';
 import {
   advanceLiveAdditionalSkillBuffs,
@@ -187,7 +188,6 @@ export function activateLiveMentalBarrier(
     duration: createLiveSkillEffectDuration(
       requireValue(details, 'MENTAL_BARRIER_DISPLAY_TIME_TYPE'),
       requireValue(details, 'MENTAL_BARRIER_DISPLAY_TIME'),
-      input.currentTimeSeconds,
       'Mental Barrier',
     ),
   };
@@ -202,11 +202,7 @@ export function activateLiveMentalBarrier(
 
 export function advanceLiveMentalBarrierState(
   state: LiveMentalBarrierState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveMentalBarrierState {
   return {
     effects: state.effects.flatMap((effect) => {

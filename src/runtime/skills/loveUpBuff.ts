@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveAdditionalBuffCard } from './additionalBuffTarget.ts';
 import {
   advanceLiveAdditionalSkillBuffs,
@@ -175,7 +176,6 @@ export function activateLiveLoveUpBuff(
     duration: createLiveSkillEffectDuration(
       requireValue(details, 'LOVE_DISPLAY_TIME_TYPE', 'LOVE UP'),
       requireValue(details, 'LOVE_DISPLAY_TIME', 'LOVE UP'),
-      input.currentTimeSeconds,
       'LOVE UP',
     ),
   };
@@ -190,11 +190,7 @@ export function activateLiveLoveUpBuff(
 
 export function advanceLiveLoveUpBuffState(
   state: LiveLoveUpBuffState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveLoveUpBuffState {
   return {
     effects: state.effects.flatMap((effect) => {

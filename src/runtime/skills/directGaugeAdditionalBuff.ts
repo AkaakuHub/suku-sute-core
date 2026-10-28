@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import type { LiveAdditionalBuffCard } from './additionalBuffTarget.ts';
 import {
   advanceLiveAdditionalSkillBuffs,
@@ -36,11 +37,7 @@ export function activateLiveDirectGaugeAdditionalBuff(
 
 export function advanceLiveDirectGaugeAdditionalBuffState(
   state: LiveDirectGaugeAdditionalBuffState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveDirectGaugeAdditionalBuffState {
   return {
     mental: advanceLiveAdditionalSkillBuffs(state.mental, input),

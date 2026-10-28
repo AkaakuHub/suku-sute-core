@@ -78,16 +78,16 @@ test('期間終了時に対象効果だけを除いて手札枚数を復元す�
     createLiveHandCardCountState(),
     createLiveTokenCardDeckState(5),
     1,
-    effect('timed', { kind: 'milliseconds', expiresAtSeconds: 2 }),
+    effect('timed', { kind: 'milliseconds', remainingSeconds: 2 }),
     2,
   );
   const active = advanceLiveHandCardCountState(state.state, state.tokenCardDeck, {
-    currentTimeSeconds: 1,
+    deltaTimeSeconds: 1,
     sectionChangeCount: 0,
     musicEnded: false,
   });
   const ended = advanceLiveHandCardCountState(active.state, active.tokenCardDeck, {
-    currentTimeSeconds: 2,
+    deltaTimeSeconds: 1,
     sectionChangeCount: 0,
     musicEnded: false,
   });
@@ -111,12 +111,12 @@ test('変更量0の加算効果は期限解除の通知を登録しない', () =
     initial,
     createLiveTokenCardDeckState(5),
     1,
-    effect('zero', { kind: 'milliseconds', expiresAtSeconds: 2 }),
+    effect('zero', { kind: 'milliseconds', remainingSeconds: 2 }),
     0,
   );
   expect(active.state).toBe(initial);
   const expired = advanceLiveHandCardCountState(active.state, active.tokenCardDeck, {
-    currentTimeSeconds: 2,
+    deltaTimeSeconds: 2,
     sectionChangeCount: 0,
     musicEnded: false,
   });

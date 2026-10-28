@@ -1,3 +1,4 @@
+import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import { roundLiveGaugeIntervalSeconds } from '../live/gaugeTiming.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
@@ -102,7 +103,6 @@ export function activateLiveApIncreaseSpeed(
         duration: createLiveSkillEffectDuration(
           requireValue(details, 'CHANGE_AP_INCREASE_SPEED_DISPLAY_TIME_TYPE'),
           requireValue(details, 'CHANGE_AP_INCREASE_SPEED_DISPLAY_TIME'),
-          input.currentTimeSeconds,
           'AP increase speed',
         ),
       },
@@ -112,11 +112,7 @@ export function activateLiveApIncreaseSpeed(
 
 export function advanceLiveApIncreaseSpeedState(
   state: LiveApIncreaseSpeedState,
-  input: Readonly<{
-    currentTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
+  input: LiveSkillEffectClock,
 ): LiveApIncreaseSpeedState {
   return state.flatMap((effect) => {
     const duration = advanceLiveSkillEffectDuration(effect.duration, input);
