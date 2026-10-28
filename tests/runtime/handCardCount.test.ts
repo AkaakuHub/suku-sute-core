@@ -1,9 +1,7 @@
 import { createLiveDeckBoardState } from '../../src/runtime/cards/deckBoardState.ts';
 import { createLiveDeckActionQueueState } from '../../src/runtime/cards/deckActionQueue.ts';
-import {
-  notifyLiveHandCardCountReset,
-  flushLiveHandCardCountActions,
-} from '../../src/runtime/cards/handCardCountReset.ts';
+import { flushLiveDeckActions } from '../../src/runtime/cards/deckActionQueue.ts';
+import { notifyLiveHandCardCountReset } from '../../src/runtime/cards/handCardCountReset.ts';
 import type { LiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
 import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
 import { expect, test } from 'vite-plus/test';
@@ -186,5 +184,5 @@ function completeReset(
     (state, amount) => notifyLiveHandCardCountReset(state, amount),
     initial,
   );
-  return flushLiveHandCardCountActions(queued, (state) => state).tokenCardDeck;
+  return flushLiveDeckActions(queued, (state) => state).tokenCardDeck;
 }

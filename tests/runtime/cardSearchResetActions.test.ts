@@ -11,7 +11,8 @@ import {
   enqueueLiveCardSearchReset,
 } from '../../src/runtime/cards/deckActionQueue.ts';
 import { registerLiveCardSearchParam } from '../../src/runtime/cards/cardSearchState.ts';
-import { flushLiveHandCardCountActions } from '../../src/runtime/cards/handCardCountReset.ts';
+import { flushLiveDeckActions } from '../../src/runtime/cards/deckActionQueue.ts';
+
 import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
 
 function setup() {
@@ -46,15 +47,15 @@ test('全手札の補充中は検索を保持し、7→8→5の順で終了後�
     enqueueLiveAllHandDraw(started, { cardInstanceId: 1, charactersId: 1031, unitIds: [] }),
   );
   expect(queued.deckActions.queue.map((action) => action.type)).toEqual([7, 8, 5]);
-  const ready = flushLiveHandCardCountActions(queued, unexpectedReset);
+  const ready = flushLiveDeckActions(queued, unexpectedReset);
   expect(ready.deckBoard).toBe(started.deckBoard);
   const drawn = executeLiveAllHandDraw(ready, (state) => {
     expect(state.deckBoard).toBe(started.deckBoard);
     expect(state.tokenCardDeck.isAllHandSkill).toBe(true);
-    expect(flushLiveHandCardCountActions(state, unexpectedReset)).toBe(state);
+    expect(flushLiveDeckActions(state, unexpectedReset)).toBe(state);
     return state;
   });
-  const completed = flushLiveHandCardCountActions(drawn, unexpectedReset);
+  const completed = flushLiveDeckActions(drawn, unexpectedReset);
   expectSearchesCleared(completed);
   expect(completed.tokenCardDeck.isAllHandSkill).toBe(false);
   expect(completed.drawContext).toBe('skill');
@@ -91,8 +92,8 @@ test('切替中は検索resetも待機し、切替終了後に処理する', () 
     ...state,
     tokenCardDeck: { ...state.tokenCardDeck, isSwitchDeck: true },
   });
-  expect(flushLiveHandCardCountActions(queued, unexpectedReset)).toBe(queued);
-  const result = flushLiveHandCardCountActions(
+  expect(flushLiveDeckActions(queued, unexpectedReset)).toBe(queued);
+  const result = flushLiveDeckActions(
     { ...queued, tokenCardDeck: { ...queued.tokenCardDeck, isSwitchDeck: false } },
     unexpectedReset,
   );

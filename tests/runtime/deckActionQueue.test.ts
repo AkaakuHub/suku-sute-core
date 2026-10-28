@@ -9,7 +9,7 @@ import {
 function setup(count: number) {
   return {
     deckBoard: { ...createLiveDeckBoardState([1001], []), deckOutCount: count },
-    deckActions: { ...createLiveDeckActionQueueState(), searches: ['retained'] },
+    deckActions: createLiveDeckActionQueueState(),
     notifications: 0,
     tokenCardDeck: createLiveTokenCardDeckState(5),
   };
@@ -28,7 +28,7 @@ test('蓄積した再読み込み回数だけ通知した後にカウンター�
   expect(seen).toEqual([3, 3, 3]);
   expect(result.notifications).toBe(3);
   expect(result.deckBoard.deckOutCount).toBe(0);
-  expect(result.deckActions).toEqual({ queue: [], currentAction: null, searches: ['retained'] });
+  expect(result.deckActions).toEqual({ queue: [], currentAction: null });
 });
 
 test('通知中に追加された再読み込みも同じ確認で通知する', () => {

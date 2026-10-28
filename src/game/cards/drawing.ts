@@ -1,7 +1,5 @@
-import {
-  flushLiveHandCardCountActions,
-  liveResetHandCardCount,
-} from '../../runtime/cards/handCardCountReset.ts';
+import { flushLiveDeckActions } from '../../runtime/cards/deckActionQueue.ts';
+import { liveResetHandCardCount } from '../../runtime/cards/handCardCountReset.ts';
 import { selectLiveDeckDrawCandidate } from '../../runtime/cards/cardDraw.ts';
 import { prepareLiveDeckDraw } from '../../runtime/cards/deckDraw.ts';
 import {
@@ -43,7 +41,7 @@ export function fillHandToCount(state: GameState, count: number): GameState {
 }
 
 export function flushHandCardCountActions(state: GameState): GameState {
-  return flushLiveHandCardCountActions(state, resetHandCardCount);
+  return flushLiveDeckActions(state, resetHandCardCount);
 }
 
 export function resetHandCardCount(state: GameState, adjustment: number): GameState {

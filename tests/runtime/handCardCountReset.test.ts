@@ -5,9 +5,9 @@ import {
   checkLiveDeckOut,
 } from '../../src/runtime/cards/deckActionQueue.ts';
 import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
+import { flushLiveDeckActions } from '../../src/runtime/cards/deckActionQueue.ts';
 import {
   notifyLiveHandCardCountReset,
-  flushLiveHandCardCountActions,
   resetLivePendingHandCardCount,
   liveResetHandCardCount,
 } from '../../src/runtime/cards/handCardCountReset.ts';
@@ -39,7 +39,7 @@ test('通常の解除通知はaction1を登録し、処理するまでraw目標�
   expect(pending.tokenCardDeck.handTargetCounts.current).toBe(4);
   expect(pending.tokenCardDeck.resetCount).toBe(0);
   expect(pending.deckActions.queue).toEqual([{ type: 1, param1: 1 }]);
-  const completed = flushLiveHandCardCountActions(pending, resetHand);
+  const completed = flushLiveDeckActions(pending, resetHand);
   expect(completed.tokenCardDeck.handTargetCounts.current).toBe(5);
   expect(completed.tokenCardDeck.resetCount).toBe(0);
   expect(completed.requestedHandCount).toBe(4);
@@ -52,7 +52,7 @@ test('切替中は直接待機量を蓄積し、切替内の明示的resetでだ
   const pending = notifyLiveHandCardCountReset(switching, 2);
   expect(pending.deckActions.queue).toEqual([]);
   expect(pending.tokenCardDeck.resetCount).toBe(2);
-  expect(flushLiveHandCardCountActions(pending, resetHand)).toBe(pending);
+  expect(flushLiveDeckActions(pending, resetHand)).toBe(pending);
   const reset = resetLivePendingHandCardCount(pending, resetHand);
   expect(reset.tokenCardDeck.isSwitchDeck).toBe(true);
   expect(reset.tokenCardDeck.resetCount).toBe(0);
@@ -61,14 +61,14 @@ test('切替中は直接待機量を蓄積し、切替内の明示的resetでだ
 
 test('相殺した解除通知はraw目標も抽選条件も変更しない', () => {
   const pending = notifyLiveHandCardCountReset(notifyLiveHandCardCountReset(setup(), 2), -2);
-  const result = flushLiveHandCardCountActions(pending, resetHand);
+  const result = flushLiveDeckActions(pending, resetHand);
   expect(result.events).toEqual([]);
   expect(result.tokenCardDeck.handTargetCounts.current).toBe(4);
 });
 
 test('CheckResetCountは全手札スキル中なら目標だけを変えて抽選条件と保存目標を変えない', () => {
   const initial = setup(6);
-  const result = flushLiveHandCardCountActions(
+  const result = flushLiveDeckActions(
     {
       ...initial,
       tokenCardDeck: {
@@ -94,9 +94,9 @@ test('全手札スキル終了後に最低枚数の不足分を差し引いて�
     { ...initial, tokenCardDeck: { ...initial.tokenCardDeck, isAllHandSkill: true } },
     2,
   );
-  const held = flushLiveHandCardCountActions(pending, resetHand);
+  const held = flushLiveDeckActions(pending, resetHand);
   expect(held.tokenCardDeck.handTargetCounts.current).toBe(2);
-  const result = flushLiveHandCardCountActions(
+  const result = flushLiveDeckActions(
     { ...held, deckActions: { ...held.deckActions, queue: [{ type: 8 as const }] } },
     resetHand,
   );
@@ -144,7 +144,7 @@ test('再読み込み通知で切替が始まっても後続の解除通知を�
 
 test('補充の途中で切替が始まった場合は残りの解除通知を待機させる', () => {
   const initial = setup();
-  const result = flushLiveHandCardCountActions(
+  const result = flushLiveDeckActions(
     {
       ...initial,
       tokenCardDeck: { ...initial.tokenCardDeck, resetCount: 1 },

@@ -179,15 +179,7 @@ export type GameState = Readonly<{
   moodValueAdditionalBuffs: readonly MoodValueAdditionalBuff[];
   nextMoodValueAdditionalBuffId: number;
   drawContext: 'initial' | 'skill' | 'shuffle' | 'idle' | 'sub-deck-start';
-  deckActions: Readonly<
-    LiveDeckActionQueueState & {
-      shuffles: readonly Readonly<{
-        sourceId: string | null;
-        options: HandShuffle;
-        skipSourceRefill: boolean;
-      }>[];
-    }
-  >;
+  deckActions: LiveDeckActionQueueState;
   usedCard: LiveCardIdentity | null;
   lastUsedSkillIcon: number | null;
   cardUseCounts: Readonly<Record<string, number>>;

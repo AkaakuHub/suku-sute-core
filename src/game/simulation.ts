@@ -107,7 +107,7 @@ export function createGame(
     moodValueAdditionalBuffs: [],
     nextMoodValueAdditionalBuffId: 1,
     drawContext: 'initial',
-    deckActions: { ...createLiveDeckActionQueueState(), shuffles: [] },
+    deckActions: createLiveDeckActionQueueState(),
     usedCard: null,
     lastUsedSkillIcon: null,
     cardUseCounts: {},

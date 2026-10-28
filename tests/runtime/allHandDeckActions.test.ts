@@ -8,10 +8,8 @@ import {
 import { createLiveDeckActionQueueState } from '../../src/runtime/cards/deckActionQueue.ts';
 import { createLiveDeckBoardState } from '../../src/runtime/cards/deckBoardState.ts';
 import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
-import {
-  notifyLiveHandCardCountReset,
-  flushLiveHandCardCountActions,
-} from '../../src/runtime/cards/handCardCountReset.ts';
+import { flushLiveDeckActions } from '../../src/runtime/cards/deckActionQueue.ts';
+import { notifyLiveHandCardCountReset } from '../../src/runtime/cards/handCardCountReset.ts';
 
 const source = { cardInstanceId: 1, charactersId: 1001, unitIds: [101] };
 
@@ -39,14 +37,14 @@ test('補充actionは実際の使用元カードを保持し、終了actionよ�
     expect(state.tokenCardDeck.isAllHandSkill).toBe(true);
     const pending = notifyLiveHandCardCountReset(state, -1);
     expect(
-      flushLiveHandCardCountActions(pending, () => {
+      flushLiveDeckActions(pending, () => {
         throw new Error('補充中に解除を処理しました');
       }),
     ).toBe(pending);
     return { ...pending, events: ['draw'] };
   });
   expect(drawn.tokenCardDeck.isAllHandSkill).toBe(true);
-  const completed = flushLiveHandCardCountActions(drawn, (state) => ({
+  const completed = flushLiveDeckActions(drawn, (state) => ({
     ...state,
     events: [...state.events, 'reset'],
   }));
@@ -58,7 +56,7 @@ test('補充actionは実際の使用元カードを保持し、終了actionよ�
 test('補充前に蓄積した解除待機量は補充後の終了までraw目標へ反映しない', () => {
   const notified = notifyLiveHandCardCountReset(beginLiveAllHandSkill(setup()), 1);
   const queued = enqueueLiveAllHandDraw(notified, source);
-  const ready = flushLiveHandCardCountActions(queued, () => {
+  const ready = flushLiveDeckActions(queued, () => {
     throw new Error('補充前に解除を処理しました');
   });
   expect(ready.tokenCardDeck.resetCount).toBe(1);
@@ -67,7 +65,7 @@ test('補充前に蓄積した解除待機量は補充後の終了までraw目�
     expect(state.tokenCardDeck.handTargetCounts.current).toBe(5);
     return state;
   });
-  const completed = flushLiveHandCardCountActions(drawn, (state) => state);
+  const completed = flushLiveDeckActions(drawn, (state) => state);
   expect(completed.tokenCardDeck.handTargetCounts.current).toBe(6);
   expect(completed.tokenCardDeck.resetCount).toBe(0);
 });

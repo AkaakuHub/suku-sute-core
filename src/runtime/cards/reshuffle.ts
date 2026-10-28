@@ -8,7 +8,7 @@ import {
 } from './deckBoardState.ts';
 
 export type LiveReshuffleDeckAction<Id extends LiveCardIdentifier | null = number> = Readonly<{
-  effect: LiveReshuffleEffect;
+  effect: Pick<LiveReshuffleEffect, 'recoveryType' | 'stashType'>;
   cardInstanceId: Id;
   skillMainEffect: number | null;
 }>;
