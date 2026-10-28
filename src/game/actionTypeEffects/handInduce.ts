@@ -30,7 +30,7 @@ function triggerFor(type: number, value: number): HandUseTrigger {
     case 1:
       return { kind: 'member', member: BigInt(value) };
     case 2:
-      return { kind: 'skill-icon', icon: BigInt(value) };
+      return { kind: 'skill-main-effect', mainEffect: BigInt(value) };
     case 3:
       return { kind: 'voltage-increase' };
     case 4:

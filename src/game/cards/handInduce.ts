@@ -15,8 +15,8 @@ export function notifyHandSkillUse(state: GameState, used: Card, apply: EffectAp
     switch (trigger.kind) {
       case 'member':
         return int32(trigger.member) === used.member;
-      case 'skill-icon':
-        return int32(trigger.icon) === used.skillIcon;
+      case 'skill-main-effect':
+        return int32(trigger.mainEffect) === used.mainEffect;
       case 'unit':
         return used.unit !== null && int32(trigger.unit) === used.unit;
       case 'heart-quantity-count':
