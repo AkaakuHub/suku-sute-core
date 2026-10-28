@@ -29,7 +29,7 @@ export function applyDeckSkillCostChange(
       case 'unit':
         return card.unitIds.includes(effect.targetId);
       case 'token-series':
-        return card.tokenSeriesIds?.includes(effect.targetId) === true;
+        return card.tokenCardSeriesIds.includes(effect.targetId);
     }
   });
   if (targets.length === 0) return state;

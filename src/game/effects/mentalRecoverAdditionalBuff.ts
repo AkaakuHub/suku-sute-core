@@ -112,7 +112,7 @@ function matches(target: MentalRecoverAdditionalBuffTarget, card: Card): boolean
     case 'unit':
       return card.unitIds.includes(target.unit);
     case 'token-series':
-      return card.tokenSeriesIds?.includes(target.seriesId) === true;
+      return card.tokenCardSeriesIds.includes(target.seriesId);
   }
 }
 

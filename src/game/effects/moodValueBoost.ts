@@ -156,7 +156,7 @@ function matchesTarget(
     case 'unit':
       return card?.unitIds.includes(target.unit) === true;
     case 'card-series':
-      return card?.tokenSeriesIds?.includes(target.seriesId) ?? false;
+      return card?.tokenCardSeriesIds.includes(target.seriesId) ?? false;
   }
 }
 

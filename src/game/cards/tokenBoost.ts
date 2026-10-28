@@ -10,7 +10,7 @@ function matches(boost: TokenBoost, source: Card | undefined, request: TokenRequ
         ? source.charactersId === target.member
         : target.kind === 'unit'
           ? source.unitIds.includes(target.unit)
-          : source.tokenSeriesIds?.includes(target.seriesId) === true));
+          : source.tokenCardSeriesIds.includes(target.seriesId)));
   return (
     targetMatches &&
     (boost.seriesIds === undefined ||

@@ -24,7 +24,8 @@ export function conditionContext(state: GameState): LiveConditionContext {
     graveyardCount: liveDeckBoardCardInstanceIds(state.deckBoard, liveBoardState.graveyard).length,
     exclusionCount: state.cardPool.length - state.deck.length,
     tokenCardSeriesCount: (seriesIds) =>
-      state.deck.filter((card) => seriesIds.some((id) => card.tokenSeriesIds?.includes(id))).length,
+      state.deck.filter((card) => seriesIds.some((id) => card.tokenCardSeriesIds.includes(id)))
+        .length,
     memberFanLevelTotal: (characterIds) =>
       characterIds.reduce((total, id) => total + (state.supportLevels[id] ?? 0), 0),
     beatHeartValue: beatHeartCount(state),

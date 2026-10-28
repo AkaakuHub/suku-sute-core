@@ -1,3 +1,4 @@
+import type { LiveTokenCardDeckIdentity } from '../../runtime/cards/tokenCardDeck.ts';
 import type { LiveDeckBoardCard } from '../../runtime/cards/deckBoardState.ts';
 import type { LiveCardSkillLevel } from '../../runtime/skills/skillTypes.ts';
 import type { LiveSkillCardIdentity } from '../../runtime/cards/cardIdentity.ts';
@@ -248,7 +249,6 @@ export type Card = Readonly<{
     on: ModeAbilityVariant;
   }>;
   handPermanentEffects?: readonly Effect[];
-  tokenSeriesIds?: readonly number[];
   effects: readonly Effect[];
   actionEffects?: readonly (
     | ActionType1Record
@@ -362,4 +362,5 @@ export type Card = Readonly<{
 }> &
   LiveSkillCardIdentity &
   Pick<LiveCardSkillLevel, 'consumeAp'> &
-  Pick<LiveDeckBoardCard<string>, 'cardInstanceId' | 'cardDatasId'>;
+  Pick<LiveDeckBoardCard<string>, 'cardDatasId'> &
+  LiveTokenCardDeckIdentity<string>;

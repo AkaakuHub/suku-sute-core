@@ -13,7 +13,7 @@ function matches(card: Card, target: SearchTarget): boolean {
     case 'unit':
       return card.unitIds.includes(target.unit);
     case 'token-series':
-      return card.tokenSeriesIds?.includes(target.seriesId) ?? false;
+      return card.tokenCardSeriesIds.includes(target.seriesId);
     case 'token':
       return card.token === target.token;
   }

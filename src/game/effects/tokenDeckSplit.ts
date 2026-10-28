@@ -17,7 +17,7 @@ function zones(state: GameState): TokenDeckHand {
 }
 
 function isSeriesCard(card: Card, seriesIds: readonly number[] | null): boolean {
-  return seriesIds !== null && (card.tokenSeriesIds ?? []).some((id) => seriesIds.includes(id));
+  return seriesIds !== null && card.tokenCardSeriesIds.some((id) => seriesIds.includes(id));
 }
 
 function withZones(state: GameState, value: TokenDeckHand): GameState {

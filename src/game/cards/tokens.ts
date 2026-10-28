@@ -131,7 +131,7 @@ function addTokenCards(
   const splitMatches = (card: (typeof generated)[number]) =>
     split?.seriesIds !== null &&
     split?.seriesIds !== undefined &&
-    (card.tokenSeriesIds ?? []).some((id) => split.seriesIds?.includes(id));
+    card.tokenCardSeriesIds.some((id) => split.seriesIds?.includes(id));
   const tokenDeckSplit = split
     ? {
         ...split,
@@ -191,7 +191,7 @@ function createActionTokenCard(
     appeal: { smile: 0, pure: 0, cool: 0 },
     beatPoint: 0,
     tokenCardAbilitySeriesId: ability === null ? null : BigInt(effect.ability?.seriesId ?? 0),
-    ...(seriesIds === undefined ? {} : { tokenSeriesIds: seriesIds.map(int32) }),
+    tokenCardSeriesIds: seriesIds?.map(int32) ?? [],
     effects: skill.effects,
     ...(skill.special === null ? {} : { special: skill.special }),
     ...(ability === null

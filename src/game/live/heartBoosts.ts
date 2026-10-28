@@ -64,7 +64,7 @@ export function consumeHeartBoosts(
     if (!card) return false;
     if (boost.target.kind === 'member') return card.charactersId === boost.target.member;
     if (boost.target.kind === 'unit') return card.unitIds.includes(boost.target.unit);
-    return card.tokenSeriesIds?.includes(boost.target.seriesId) ?? false;
+    return card.tokenCardSeriesIds.includes(boost.target.seriesId);
   });
   const matchingSet = new Set(matching);
   return {
