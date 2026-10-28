@@ -8,6 +8,7 @@ import {
   type LiveBoardState,
   type LiveDeckBoardState,
   liveBoardState,
+  createLiveDeckBoardCard,
   setLiveCardBoardState,
 } from '../../runtime/cards/deckBoardState.ts';
 import type { Card, GameState } from '../model.ts';
@@ -17,12 +18,13 @@ export function createCardDeckBoard(
   hand: readonly string[],
 ): LiveDeckBoardState<string> {
   return {
-    cards: cards.map((card) => ({
-      cardInstanceId: card.cardInstanceId,
-      cardDatasId: card.cardDatasId,
-      boardState: hand.includes(card.cardInstanceId) ? liveBoardState.hand : liveBoardState.deck,
-      skillUseAtBoardState: liveBoardState.graveyard,
-    })),
+    cards: cards.map((card) =>
+      createLiveDeckBoardCard(
+        card.cardInstanceId,
+        card.cardDatasId,
+        hand.includes(card.cardInstanceId) ? liveBoardState.hand : liveBoardState.deck,
+      ),
+    ),
     nextCardInstanceId: 1,
     deckOutCount: 0,
     ...createLiveCardSearchState<string>(),

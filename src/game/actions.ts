@@ -2,6 +2,7 @@ import { liveCurrentHandCardInstanceIds, liveHandCardButtonId } from '../runtime
 import { beginLiveAllHandSkill } from '../runtime/cards/allHandDeckActions.ts';
 import { moveCardsToBoard } from './cards/deckBoard.ts';
 import { liveBoardState } from '../runtime/cards/deckBoardState.ts';
+import { clearLiveCardSkillActivatedFlags } from '../runtime/cards/cardSkillActivatedFlags.ts';
 import {
   canActivateLiveSkillEffect,
   createLiveSkillEffectActivationState,
@@ -161,13 +162,12 @@ function useCard(state: GameState, index: number): GameState {
   const paid = spendAp(state, cardCost(state, source));
   const activated = {
     ...paid,
+    deckBoard: clearLiveCardSkillActivatedFlags(paid.deckBoard, source.cardInstanceId),
     activation: {
       sourceId: source.cardInstanceId,
       handCardButtonId: liveHandCardButtonId(state, source.cardInstanceId),
       usedCards: [],
       hasUseAllHandSkill: source.effects.some((effect) => effect.kind === 'use-hand'),
-      skipSourceRefill: false,
-      handCountChanges: {},
       pendingHandStatsDeactivationKeys: [],
     },
   };

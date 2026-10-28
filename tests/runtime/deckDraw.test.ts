@@ -2,6 +2,7 @@ import { createLiveCardSearchState } from '../../src/runtime/cards/cardSearchSta
 import { expect, test } from 'vite-plus/test';
 import {
   createLiveDeckBoardState,
+  createLiveDeckBoardCard,
   liveBoardState,
   moveLiveHandCardToGraveyard,
 } from '../../src/runtime/cards/deckBoardState.ts';
@@ -35,14 +36,7 @@ test('対象外の山札と墓地を再読み込み判定に混ぜない', () =>
 
 test('文字列IDでも全確率0の再読み込みとint32カウンターを使う', () => {
   const board = {
-    cards: [
-      {
-        cardInstanceId: 'a',
-        cardDatasId: 'a',
-        boardState: liveBoardState.deck,
-        skillUseAtBoardState: liveBoardState.graveyard,
-      },
-    ],
+    cards: [createLiveDeckBoardCard('a', 'a', liveBoardState.deck)],
     nextCardInstanceId: 1,
     deckOutCount: 2_147_483_647,
     ...createLiveCardSearchState(),

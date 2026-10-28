@@ -9,6 +9,7 @@ import { describe, expect, test } from 'vite-plus/test';
 import {
   addLiveDeckBoardCard,
   createLiveDeckBoardState,
+  createLiveDeckBoardCard,
   moveLiveDeckCardToHand,
   moveLiveHandCardsToBoardState,
   moveLiveHandCardToExtra,
@@ -32,7 +33,7 @@ describe('Live deck board state', () => {
   test('skill使用cardをExtra経由でProxyへ移し、終了時にGraveyardへ移す', () => {
     const initial = createLiveDeckBoardState([1001, 1002], [1001]);
     const extra = moveLiveHandCardToExtra(initial, 1001);
-    expect(extra.cards).toEqual([
+    expect(extra.cards).toMatchObject([
       {
         cardInstanceId: 1001,
         cardDatasId: 1001,
@@ -50,14 +51,14 @@ describe('Live deck board state', () => {
       setLiveCardSkillUseAtBoardState(extra, 1001, liveBoardState.proxy),
       1001,
     );
-    expect(proxy.cards[0]).toEqual({
+    expect(proxy.cards[0]).toMatchObject({
       cardInstanceId: 1001,
       cardDatasId: 1001,
       boardState: liveBoardState.proxy,
       skillUseAtBoardState: liveBoardState.graveyard,
     });
     const graveyard = updateLiveCardSkillUseAtBoardState(proxy, 1001);
-    expect(graveyard.cards[0]).toEqual({
+    expect(graveyard.cards[0]).toMatchObject({
       cardInstanceId: 1001,
       cardDatasId: 1001,
       boardState: liveBoardState.graveyard,
@@ -106,18 +107,20 @@ describe('Live deck board state', () => {
     const drawn = moveLiveDeckCardToHand(second.state, first.cardInstanceId);
 
     expect(first.cardInstanceId).not.toBe(second.cardInstanceId);
-    expect(drawn.cards).toContainEqual({
+    expect(drawn.cards.find((card) => card.cardInstanceId === first.cardInstanceId)).toMatchObject({
       cardInstanceId: first.cardInstanceId,
       cardDatasId: 2001,
       boardState: liveBoardState.hand,
       skillUseAtBoardState: liveBoardState.graveyard,
     });
-    expect(drawn.cards).toContainEqual({
-      cardInstanceId: second.cardInstanceId,
-      cardDatasId: 2001,
-      boardState: liveBoardState.deck,
-      skillUseAtBoardState: liveBoardState.graveyard,
-    });
+    expect(drawn.cards.find((card) => card.cardInstanceId === second.cardInstanceId)).toMatchObject(
+      {
+        cardInstanceId: second.cardInstanceId,
+        cardDatasId: 2001,
+        boardState: liveBoardState.deck,
+        skillUseAtBoardState: liveBoardState.graveyard,
+      },
+    );
   });
 
   test('rejects a transition from a different official board state', () => {
@@ -191,9 +194,7 @@ test('文字列IDの盤面も使用中からProxyへの移動と保存先リセ�
   const state: import('../../src/runtime/cards/deckBoardState.ts').LiveDeckBoardState<string> = {
     cards: [
       {
-        cardInstanceId: 'source',
-        cardDatasId: 'blueprint',
-        boardState: 5,
+        ...createLiveDeckBoardCard('source', 'blueprint', 5),
         skillUseAtBoardState: 7,
       },
     ],
@@ -202,7 +203,7 @@ test('文字列IDの盤面も使用中からProxyへの移動と保存先リセ�
     ...createLiveCardSearchState<string>(),
   };
   const updated = updateLiveCardSkillUseAtBoardState(state, 'source');
-  expect(updated.cards).toEqual([
+  expect(updated.cards).toMatchObject([
     { cardInstanceId: 'source', cardDatasId: 'blueprint', boardState: 7, skillUseAtBoardState: 3 },
   ]);
 });

@@ -107,7 +107,7 @@ test('ActionType19は使用後の行き先だけを保存して現在の盤面�
     101,
     createLiveCardMoveEffect(effect(19, [detail('CARD_MOVE_TYPE', 2)])),
   );
-  expect(moved.cards).toContainEqual({
+  expect(moved.cards.find((card) => card.cardInstanceId === 101)).toMatchObject({
     cardInstanceId: 101,
     cardDatasId: 101,
     boardState: liveBoardState.extra,

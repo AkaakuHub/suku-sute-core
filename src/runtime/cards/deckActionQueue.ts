@@ -3,6 +3,7 @@ import { resetLiveCardSearchParams } from './cardSearchState.ts';
 import type { LiveCardIdentity } from './cardIdentity.ts';
 import type { LiveCardIdentifier, LiveDeckBoardState } from './deckBoardState.ts';
 import type { LiveTokenCardDeckState } from './tokenCardDeck.ts';
+import { markLiveCardReshuffleActivated } from './cardSkillActivatedFlags.ts';
 import {
   resetLivePendingHandCardCount,
   type LiveHandCardCountResetHandler,
@@ -52,10 +53,17 @@ export type LiveDeckActionHandlers<State> = Readonly<{
 }>;
 
 export function enqueueLiveReshuffle<
-  State extends Readonly<{ deckActions: LiveDeckActionQueueState }>,
+  State extends Readonly<{
+    deckActions: LiveDeckActionQueueState;
+    deckBoard: LiveDeckBoardState<LiveCardIdentifier>;
+  }>,
 >(state: State, action: LiveReshuffleDeckAction<LiveCardIdentifier | null>): State {
   return {
     ...state,
+    deckBoard:
+      action.cardInstanceId === null
+        ? state.deckBoard
+        : markLiveCardReshuffleActivated(state.deckBoard, action.cardInstanceId),
     deckActions: {
       ...state.deckActions,
       queue: [...state.deckActions.queue, { type: 3, ...action }],

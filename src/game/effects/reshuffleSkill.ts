@@ -14,6 +14,5 @@ export function activateReshuffleSkill(
       destination: effect.stashType === 1n ? 'draw' : 'discard',
     },
     card?.cardInstanceId ?? null,
-    true,
   );
 }

@@ -1,4 +1,5 @@
 import { addLiveTokenCardDeckCard } from '../../runtime/cards/tokenCardDeck.ts';
+import { createLiveDeckBoardCard, liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import { type Card, type GameState, type TokenId, rules } from '../model.ts';
 import type { TokenRequest, TokenTemplateReference } from '../tokenRequestTypes.ts';
 import { boostTokenRequests } from './tokenBoost.ts';
@@ -141,12 +142,9 @@ function addTokenCards(
         ...state.deckBoard,
         cards: [
           ...state.deckBoard.cards,
-          ...generated.map((card) => ({
-            cardInstanceId: card.cardInstanceId,
-            cardDatasId: card.cardDatasId,
-            boardState: 1 as const,
-            skillUseAtBoardState: 3 as const,
-          })),
+          ...generated.map((card) =>
+            createLiveDeckBoardCard(card.cardInstanceId, card.cardDatasId, liveBoardState.deck),
+          ),
         ],
         nextCardInstanceId: state.deckBoard.nextCardInstanceId + generated.length,
       },

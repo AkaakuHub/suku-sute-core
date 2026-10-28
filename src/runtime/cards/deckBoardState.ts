@@ -1,4 +1,8 @@
 import { createLiveCardSearchState, type LiveCardSearchState } from './cardSearchState.ts';
+import {
+  createLiveCardSkillActivatedFlags,
+  type LiveCardSkillActivatedFlags,
+} from './cardSkillActivatedFlags.ts';
 export const liveBoardState = {
   deck: 1,
   hand: 2,
@@ -18,12 +22,27 @@ export type LiveSkillUseAtBoardState = Readonly<{
 export type LiveCardIdentifier = number | string;
 
 export type LiveDeckBoardCard<Id extends LiveCardIdentifier = number> = Readonly<
-  LiveSkillUseAtBoardState & {
-    cardInstanceId: Id;
-    cardDatasId: Id;
-    boardState: LiveBoardState;
-  }
+  LiveSkillUseAtBoardState &
+    LiveCardSkillActivatedFlags & {
+      cardInstanceId: Id;
+      cardDatasId: Id;
+      boardState: LiveBoardState;
+    }
 >;
+
+export function createLiveDeckBoardCard<Id extends LiveCardIdentifier>(
+  cardInstanceId: Id,
+  cardDatasId: Id,
+  boardState: LiveBoardState,
+): LiveDeckBoardCard<Id> {
+  return {
+    cardInstanceId,
+    cardDatasId,
+    boardState,
+    skillUseAtBoardState: liveBoardState.graveyard,
+    ...createLiveCardSkillActivatedFlags(),
+  };
+}
 
 export type LiveDeckBoardState<Id extends LiveCardIdentifier = number> = Readonly<
   LiveCardSearchState<Id> & {
@@ -43,12 +62,13 @@ export function createLiveDeckBoardState(
   const nextCardInstanceId = Math.max(...deckCardDatasIds) + 1;
   validateCardInstanceId(nextCardInstanceId);
   return {
-    cards: deckCardDatasIds.map((cardDatasId) => ({
-      cardInstanceId: cardDatasId,
-      cardDatasId,
-      boardState: hand.has(cardDatasId) ? liveBoardState.hand : liveBoardState.deck,
-      skillUseAtBoardState: liveBoardState.graveyard,
-    })),
+    cards: deckCardDatasIds.map((cardDatasId) =>
+      createLiveDeckBoardCard(
+        cardDatasId,
+        cardDatasId,
+        hand.has(cardDatasId) ? liveBoardState.hand : liveBoardState.deck,
+      ),
+    ),
     nextCardInstanceId,
     deckOutCount: 0,
     ...createLiveCardSearchState(),
@@ -70,12 +90,7 @@ export function addLiveDeckBoardCard(
       ...state,
       cards: [
         ...state.cards,
-        {
-          cardInstanceId,
-          cardDatasId,
-          boardState: liveBoardState.deck,
-          skillUseAtBoardState: liveBoardState.graveyard,
-        },
+        createLiveDeckBoardCard(cardInstanceId, cardDatasId, liveBoardState.deck),
       ],
       nextCardInstanceId: cardInstanceId + 1,
     },

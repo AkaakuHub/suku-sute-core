@@ -198,8 +198,6 @@ export type GameState = Readonly<{
     handCardButtonId: number;
     usedCards: readonly string[];
     hasUseAllHandSkill: boolean;
-    skipSourceRefill?: boolean;
-    handCountChanges: Readonly<Record<string, number>>;
     pendingHandStatsDeactivationKeys?: readonly string[];
   }> | null;
   randomSeed: number;

@@ -6,6 +6,7 @@ import { isProxyTargetReached } from './proxySkill.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { ceilToInt32, int64ToFloat32 } from '../../runtime/numeric.ts';
 import { calculateLiveHandCardCountAmount } from '../../runtime/skills/handCardCount.ts';
+import { markLiveCardHandCountActivated } from '../../runtime/cards/cardSkillActivatedFlags.ts';
 
 type HandLimitEffect = Extract<Effect, { kind: 'hand-limit' }>;
 
@@ -31,9 +32,8 @@ export function applyHandLimit(
   const absorption =
     effect.calculationType === 1 && amount >= 0 ? absorbHandLimit(currentState, amount) : null;
   const appliedAmount = effect.calculationType !== 1 || absorption?.absorbed ? 0 : amount;
-  const activation = currentState.activation;
   const handLimitEffects =
-    amount === 0
+    effect.calculationType === 1 && appliedAmount === 0
       ? currentState.handLimitEffects
       : [
           ...currentState.handLimitEffects,
@@ -58,17 +58,9 @@ export function applyHandLimit(
         ? currentState.tokenCardDeck
         : addLiveHandCardTargetCount(currentState.tokenCardDeck, appliedAmount),
     handLimitEffects,
-    ...(activation && card && appliedAmount !== 0
-      ? {
-          activation: {
-            ...activation,
-            handCountChanges: {
-              ...activation.handCountChanges,
-              [card.cardInstanceId]: appliedAmount,
-            },
-          },
-        }
-      : {}),
+    deckBoard: card
+      ? markLiveCardHandCountActivated(currentState.deckBoard, card.cardInstanceId, appliedAmount)
+      : currentState.deckBoard,
     ...(absorption ? { proxyAbsorptions: absorption.absorptions } : {}),
   };
 }

@@ -74,7 +74,7 @@ test('ActionType42は発動元を除く現在の手札を順番どおりExtra2�
   );
 
   expect(cardInstanceIds).toEqual([1001, 1003]);
-  expect(deckBoard.cards).toEqual([
+  expect(deckBoard.cards).toMatchObject([
     {
       cardInstanceId: 1001,
       cardDatasId: 1001,

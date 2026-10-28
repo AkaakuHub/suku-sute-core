@@ -67,6 +67,24 @@ function effect(
   return { effectId, amount: 0, duration };
 }
 
+test('変更量0の加算効果は期限解除の通知を登録しない', () => {
+  const initial = createLiveHandCardCountState();
+  const active = activateLiveHandCardCountEffect(
+    initial,
+    createLiveTokenCardDeckState(5),
+    1,
+    effect('zero', { kind: 'milliseconds', expiresAtSeconds: 2 }),
+    0,
+  );
+  expect(active.state).toBe(initial);
+  const expired = advanceLiveHandCardCountState(active.state, active.tokenCardDeck, {
+    currentTimeSeconds: 2,
+    sectionChangeCount: 0,
+    musicEnded: false,
+  });
+  expect(expired.resetNotifications).toEqual([]);
+});
+
 test('初期枚数から再計算せず、現在の目標へ効果を加える', () => {
   const deck = {
     ...createLiveTokenCardDeckState(5),

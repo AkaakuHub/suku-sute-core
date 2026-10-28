@@ -1,4 +1,8 @@
 import { completeLiveHandCardDraw } from '../../runtime/cards/liveHand.ts';
+import {
+  liveCardSkillActivatedFlags,
+  liveCardSkipsHandCardDraw,
+} from '../../runtime/cards/cardSkillActivatedFlags.ts';
 import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import { setLiveCurrentHandCards } from '../../runtime/cards/liveHand.ts';
 import {
@@ -35,10 +39,7 @@ export function finishCardActivation(state: GameState): GameState {
   if (!source) throw new Error('使用したカードがありません。');
   if (activation.hasUseAllHandSkill) return finishAllHandActivation(state, source);
   let next = completeUsedCards(state, source.cardInstanceId);
-  const hasReshuffle = next.deckActions.queue.some(
-    (action) => action.type === 3 && action.cardInstanceId === source.cardInstanceId,
-  );
-  const handCountChange = activation.handCountChanges[source.cardInstanceId] ?? 0;
+  const flags = liveCardSkillActivatedFlags(next.deckBoard, source.cardInstanceId);
   const handReady: GameState = {
     ...next,
 
@@ -48,29 +49,24 @@ export function finishCardActivation(state: GameState): GameState {
       usedSkill: null,
     },
   };
-  const skipSourceRefill = (next.activation?.skipSourceRefill ?? false) || hasReshuffle;
-  if (skipSourceRefill) {
+  if (liveCardSkipsHandCardDraw(handReady, source.cardInstanceId)) {
     next = completeLiveHandCardDraw(handReady, activation.handCardButtonId, null, (current, id) =>
       removeHandCardEffects(current, [id]),
     );
-  } else if (handCountChange < 0) {
-    const target = Math.min(
-      handCapacity(handReady),
-      liveCurrentDeckCardCount(handReady.tokenCardDeck, handReady.deckBoard),
-    );
-    const removedCount = Math.max(0, liveCurrentHandCardInstanceIds(handReady).length - target);
-    next = {
-      ...removeRandomHandCards(
-        completeLiveHandCardDraw(handReady, activation.handCardButtonId, null, (current, id) =>
-          removeHandCardEffects(current, [id]),
-        ),
-        removedCount,
-      ),
-    };
-  } else if (handCapacity(handReady) < liveCurrentHandCardInstanceIds(handReady).length + 1) {
-    next = completeLiveHandCardDraw(handReady, activation.handCardButtonId, null, (current, id) =>
-      removeHandCardEffects(current, [id]),
-    );
+    if (
+      !flags.skillReshuffleActivated &&
+      flags.skillChangeHandCardCountActivated &&
+      !flags.skillChangeHandCardCountIsPositive
+    ) {
+      const target = Math.min(
+        handCapacity(handReady),
+        liveCurrentDeckCardCount(handReady.tokenCardDeck, handReady.deckBoard),
+      );
+      next = removeRandomHandCards(
+        next,
+        Math.max(0, liveCurrentHandCardInstanceIds(next).length - target),
+      );
+    }
   } else {
     next = completeLiveHandCardDraw(
       handReady,

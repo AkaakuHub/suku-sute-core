@@ -46,7 +46,6 @@ export function enqueueHandShuffle(
   state: GameState,
   options: HandShuffle,
   sourceId: string | null,
-  skipSourceRefill = false,
 ): GameState {
   const source =
     sourceId === null ? null : state.cardPool.find((card) => card.cardInstanceId === sourceId);
@@ -54,30 +53,14 @@ export function enqueueHandShuffle(
   const skillType = state.currentSkillType;
   if (skillType !== null && skillType !== 1 && skillType !== 2 && skillType !== 3)
     throw new Error('使用中のスキル種別が正しくありません。');
-  const activation = state.activation;
-  return enqueueLiveReshuffle(
-    {
-      ...state,
-      ...(activation
-        ? {
-            activation: {
-              ...activation,
-              skipSourceRefill: activation.skipSourceRefill || skipSourceRefill,
-            },
-          }
-        : {}),
+  return enqueueLiveReshuffle(state, {
+    cardInstanceId: sourceId,
+    usedSkill:
+      source && skillType !== null ? { skillType, skillMainEffect: source.skillMainEffect } : null,
+    countDeckOut: true,
+    effect: {
+      recoveryType: options.recoverDiscard ? 'recovery' : 'no-recovery',
+      stashType: options.destination === 'draw' ? 'deck' : 'graveyard',
     },
-    {
-      cardInstanceId: sourceId,
-      usedSkill:
-        source && skillType !== null
-          ? { skillType, skillMainEffect: source.skillMainEffect }
-          : null,
-      countDeckOut: true,
-      effect: {
-        recoveryType: options.recoverDiscard ? 'recovery' : 'no-recovery',
-        stashType: options.destination === 'draw' ? 'deck' : 'graveyard',
-      },
-    },
-  );
+  });
 }

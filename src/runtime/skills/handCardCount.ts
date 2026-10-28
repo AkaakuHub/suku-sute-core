@@ -62,7 +62,10 @@ export function activateLiveHandCardCountEffect<Id extends LiveCardIdentifier>(
   amount: number,
 ): HandCountTransition<Id> {
   return {
-    state: { effects: [...state.effects, { ...effect, cardInstanceId, kind: 'count', amount }] },
+    state:
+      amount === 0
+        ? state
+        : { effects: [...state.effects, { ...effect, cardInstanceId, kind: 'count', amount }] },
     tokenCardDeck: addLiveHandCardTargetCount(tokenCardDeck, amount),
     resetNotifications: [],
   };
