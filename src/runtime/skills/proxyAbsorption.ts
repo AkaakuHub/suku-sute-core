@@ -21,10 +21,11 @@ export function createLiveProxyAbsorbInfo<Id extends LiveCardIdentifier>(
   absorbLimit: bigint,
   targets: readonly Readonly<{ actionType: bigint; targetAmount: bigint }>[],
 ): LiveProxyAbsorbInfo<Id> {
+  const limitType = int64ToInt32(absorbLimit);
   return {
     cardInstanceId,
-    hasAbsorbLimit: (absorbLimit & 1n) === 1n,
-    isAbsoluteAdd: (absorbLimit & 2n) === 2n,
+    hasAbsorbLimit: limitType === 1 || limitType === 3,
+    isAbsoluteAdd: limitType === 3 || limitType === 4,
     isAbsorbEnd: false,
     effects: targets.map((target) => ({
       actionType: int64ToInt32(target.actionType),

@@ -55,7 +55,7 @@ test('Action20の負数は吸収せず、累計はint64で折り返す', () => {
 });
 
 test('Moodの絶対加算はint64をFloat32へ変換してから絶対値を取る', () => {
-  const states = [createLiveProxyAbsorbInfo(1, 2n, [{ actionType: 48n, targetAmount: 1n }])];
+  const states = [createLiveProxyAbsorbInfo(1, 4n, [{ actionType: 48n, targetAmount: 1n }])];
   expect(
     absorbLiveProxySkillEffect(states, 48, -16_777_217n).states[0]?.effects[0]?.totalAmount,
   ).toBe(16_777_216n);
@@ -71,13 +71,26 @@ test('Moodの負の目標は相対加算の場合だけ下方向で比較する'
   expect(liveProxyTargetReached(effect, true)).toBe(true);
 });
 
-test('吸収フラグをビットで読み、対象種別と目標はint32で保持する', () => {
+test('吸収種別と対象種別・目標をint32で読む', () => {
   const state = createLiveProxyAbsorbInfo('source', 4n, [
     { actionType: 4_294_967_316n, targetAmount: 4_294_967_295n },
   ]);
   expect(state.hasAbsorbLimit).toBe(false);
-  expect(state.isAbsoluteAdd).toBe(false);
+  expect(state.isAbsoluteAdd).toBe(true);
   expect(state.effects).toEqual([{ actionType: 20, targetAmount: -1n, totalAmount: 0n }]);
+});
+
+test.each([
+  { type: 1n, limited: true, absolute: false },
+  { type: 2n, limited: false, absolute: false },
+  { type: 3n, limited: true, absolute: true },
+  { type: 4n, limited: false, absolute: true },
+  { type: 5n, limited: false, absolute: false },
+  { type: 4_294_967_299n, limited: true, absolute: true },
+])('吸収種別$typeをAPKの比較式で判定する', ({ type, limited, absolute }) => {
+  const state = createLiveProxyAbsorbInfo(1, type, []);
+  expect(state.hasAbsorbLimit).toBe(limited);
+  expect(state.isAbsoluteAdd).toBe(absolute);
 });
 
 test('誘発倍率は0の項を掛け、空の吸収対象だけは初期倍率1を保つ', () => {
