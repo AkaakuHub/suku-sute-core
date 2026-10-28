@@ -57,7 +57,7 @@ export function changeResource(
   }
   if (
     state.gaugeInfinities.some((infinity) => infinity.gauge === resource && !infinity.suspended) &&
-    !(resource === 'mental' && (state.mentalDown || amount < 0n))
+    !(resource === 'mental' && (state.mental.mentalDown || amount < 0n))
   ) {
     if (!applyEffect || amount < 0n) return notifySkillEffectAmount(state, Number(voltageInput));
     if (resource === 'mental' && source === 'skill')
@@ -94,7 +94,7 @@ export function changeResource(
       state.gaugeInfinities.some(
         (infinity) => infinity.gauge === 'mental' && !infinity.suspended,
       ) &&
-      !state.mentalDown
+      !state.mental.mentalDown
     )
       return state.genesis.effects.length > 0
         ? changeGenesisResource(state, 'mental', amount)
@@ -132,13 +132,23 @@ export function changeResource(
       : resource === 'voltage'
         ? voltageThreshold(state.maximumVoltageLevel)
         : state.maximumMental;
-  const property = resourceProperties[resource];
-  const nextValue = Math.max(0, Math.min(maximum, state[property] + Number(amount)));
-  let next: GameState = { ...state, [property]: nextValue };
+  const currentValue =
+    resource === 'mental'
+      ? state.mental.currentMental
+      : resource === 'ap'
+        ? state.currentAp
+        : state.currentVoltage;
+  const nextValue = Math.max(0, Math.min(maximum, currentValue + Number(amount)));
+  let next: GameState =
+    resource === 'mental'
+      ? { ...state, mental: { ...state.mental, currentMental: nextValue } }
+      : resource === 'ap'
+        ? { ...state, currentAp: nextValue }
+        : { ...state, currentVoltage: nextValue };
   if (resource === 'voltage') next = notifyVoltageBaseLevelChange(state, next, applyEffect);
   if (resource === 'voltage' && state.currentVoltage > 0 && nextValue === 0)
     next = registerVoltageZeroMission(next);
-  if (resource === 'mental' && nextValue !== state.currentMental)
+  if (resource === 'mental' && nextValue !== state.mental.currentMental)
     next = induceMentalHearts(next, Math.trunc(nextValue));
   if (!applyEffect) return notifySkillEffectAmount(next, Number(voltageInput));
   if (resource === 'mental' && source === 'skill' && amount >= 0n)
@@ -210,12 +220,6 @@ export function decreaseMentalNaturally(state: GameState): GameState {
   return changeResource(state, 'mental', -1n, 'natural');
 }
 
-const resourceProperties = {
-  ap: 'currentAp',
-  mental: 'currentMental',
-  voltage: 'currentVoltage',
-} as const;
-
 export function spendAp(state: GameState, amount: number): GameState {
   return changeResource(
     state.currentAp >= state.maxAp ? { ...state, apTimerSeconds: 0 } : state,
@@ -260,9 +264,12 @@ export function expireGaugeInfinities(
     if (gauge === 'mental') {
       next =
         next.genesis.effects.length > 0
-          ? { ...next, mentalTimerSeconds: 0 }
+          ? { ...next, mental: { ...next.mental, timerSeconds: 0 } }
           : induceMentalHearts(
-              { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
+              {
+                ...next,
+                mental: { ...next.mental, currentMental: next.maximumMental, timerSeconds: 0 },
+              },
               next.maximumMental,
             );
     }
@@ -294,9 +301,12 @@ export function deactivateGaugeInfinities(
     if (gauge === 'mental') {
       next =
         next.genesis.effects.length > 0
-          ? { ...next, mentalTimerSeconds: 0 }
+          ? { ...next, mental: { ...next.mental, timerSeconds: 0 } }
           : induceMentalHearts(
-              { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
+              {
+                ...next,
+                mental: { ...next.mental, currentMental: next.maximumMental, timerSeconds: 0 },
+              },
               next.maximumMental,
             );
     }

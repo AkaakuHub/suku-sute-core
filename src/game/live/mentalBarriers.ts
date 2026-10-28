@@ -45,9 +45,10 @@ export function addMentalBarrier(
   return previousInterval > 0 && nextInterval > 0
     ? {
         ...next,
-        mentalTimerSeconds: Math.fround(
-          (nextInterval / previousInterval) * next.mentalTimerSeconds,
-        ),
+        mental: {
+          ...next.mental,
+          timerSeconds: Math.fround((nextInterval / previousInterval) * next.mental.timerSeconds),
+        },
       }
     : next;
 }
@@ -170,9 +171,10 @@ export function deactivateMentalBarriers(state: GameState, deactivationKey: stri
   return previousInterval > 0 && nextInterval > 0
     ? {
         ...next,
-        mentalTimerSeconds: Math.fround(
-          (nextInterval / previousInterval) * next.mentalTimerSeconds,
-        ),
+        mental: {
+          ...next.mental,
+          timerSeconds: Math.fround((nextInterval / previousInterval) * next.mental.timerSeconds),
+        },
       }
     : next;
 }

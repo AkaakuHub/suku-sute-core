@@ -92,7 +92,7 @@ export function collectHearts(state: GameState): GameState {
       if (
         triggered.genesis.effects.length > 0 ||
         (voltageLevel(triggered.currentVoltage, triggered.maximumVoltageLevel) >= 950 &&
-          Math.trunc(triggered.currentMental) === 0)
+          Math.trunc(triggered.mental.currentMental) === 0)
       ) {
         triggered = applyEffect(
           triggered,

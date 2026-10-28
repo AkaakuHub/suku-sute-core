@@ -137,7 +137,7 @@ function applyEffectInternal(
           : effect.condition === 'mellow100'
             ? moodValue(state) <= -100
             : effect.condition === 'mental0'
-              ? state.genesis.effects.length > 0 || Math.trunc(state.currentMental) === 0
+              ? state.genesis.effects.length > 0 || Math.trunc(state.mental.currentMental) === 0
               : effect.condition === 'deck80'
                 ? state.deck.length >= 80
                 : effect.condition === 'first-section'
@@ -238,8 +238,8 @@ function applyEffectInternal(
       return activateMentalShield(state, effect, card, multiplier, addValue, effectPower);
     case 'protect-mental':
       return effect.duration === 'section'
-        ? { ...state, sectionMentalProtected: true, mentalDown: false }
-        : { ...state, mentalProtected: true, mentalDown: false };
+        ? { ...state, sectionMentalProtected: true, mental: { ...state.mental, mentalDown: false } }
+        : { ...state, mentalProtected: true, mental: { ...state.mental, mentalDown: false } };
     case 'beat-count': {
       const boosted = applyAction52SkillBoostForCard(state, card, value(effect.amount));
       return {
@@ -320,7 +320,7 @@ function applyEffectInternal(
       const eligible =
         effect.condition === 'always' ||
         (effect.condition === 'mental100'
-          ? state.currentMental >= state.maximumMental
+          ? state.mental.currentMental >= state.maximumMental
           : voltageLevel(state.currentVoltage, state.maximumVoltageLevel) >= 20);
       return eligible
         ? {

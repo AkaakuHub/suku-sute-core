@@ -24,7 +24,7 @@ export function advanceAutomaticGauges(
     },
     {
       deltaTimeSeconds: dt,
-      mentalDown: state.mentalDown,
+      mentalDown: state.mental.mentalDown,
       increaseIntervalSeconds: apIncreaseIntervalSeconds(state),
     },
   ).state;
@@ -57,11 +57,7 @@ export function advanceAutomaticGauges(
   }
   const recovery = calculateLiveMentalDownRecovery(next.maximumMental, durationSeconds(next));
   const mental = advanceLiveMentalGauge(
-    {
-      currentMental: next.currentMental,
-      timerSeconds: next.mentalTimerSeconds,
-      mentalDown: next.mentalDown,
-    },
+    next.mental,
     {
       deltaTimeSeconds: dt,
       decreaseIntervalSeconds: mentalDecreaseInterval(next, stage.mentalDecreaseIntervalSeconds),
@@ -79,21 +75,27 @@ export function advanceAutomaticGauges(
     {
       setMental: (requestedMental) => {
         const currentMental = Math.min(next.maximumMental, Math.max(0, requestedMental));
-        if (currentMental !== next.currentMental)
-          next = induceMentalHearts({ ...next, currentMental }, Math.trunc(currentMental));
+        if (currentMental !== next.mental.currentMental)
+          next = induceMentalHearts(
+            { ...next, mental: { ...next.mental, currentMental } },
+            Math.trunc(currentMental),
+          );
         return currentMental;
       },
       subMentalOne: (currentMental) => {
-        next = decreaseMentalNaturally({ ...next, currentMental });
-        return next.currentMental;
+        next = decreaseMentalNaturally({
+          ...next,
+          mental: { ...next.mental, currentMental },
+        });
+        return next.mental.currentMental;
       },
     },
   );
   const result: GameState = {
     ...next,
-    currentMental: mental.state.currentMental,
-    mentalTimerSeconds: mental.state.timerSeconds,
-    mentalDown: mental.state.mentalDown,
+    mental: mental.state,
   };
-  return !state.mentalDown && result.mentalDown ? registerMentalDownMission(result) : result;
+  return !state.mental.mentalDown && result.mental.mentalDown
+    ? registerMentalDownMission(result)
+    : result;
 }

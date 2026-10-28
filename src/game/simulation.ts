@@ -137,7 +137,6 @@ export function createGame(
     nextSkillAdditionalBuffId: 1,
     temporaryScoreBoosts: [],
     apTimerSeconds: 0,
-    mentalTimerSeconds: 0,
     voltageTimerSeconds: 0,
     voltageStops: [],
     nextVoltageStopId: 1,
@@ -148,8 +147,6 @@ export function createGame(
     costReductions: {},
     onceSkillCostChanges: {},
     storyAmplification: 0,
-    currentMental: 100,
-    mentalDown: false,
     mentalProtected: false,
     disableMentalDownEffects: [],
     nextDisableMentalDownId: 1,
@@ -211,6 +208,7 @@ export function createGame(
       bestCollection: 0,
       bestCombo: 0,
     },
+    mental: { timerSeconds: 0, currentMental: 100, mentalDown: false },
   };
   return fillHand(initializeHandCardStats(initializeParameterValueFactors(initial), [lead.id]));
 }
@@ -303,7 +301,7 @@ function advanceTick(state: GameState): GameState {
   const previousBeat = Math.floor((state.tick * state.track.bpm) / (60 * rules.ticksPerSecond));
   const beat = Math.floor((tick * state.track.bpm) / (60 * rules.ticksPerSecond));
   if (beat !== previousBeat && beat % 2 === 0) {
-    if (!next.mentalDown) next = addHearts(next, beatHeartCount(next));
+    if (!next.mental.mentalDown) next = addHearts(next, beatHeartCount(next));
     next = expireGaugeRegenerations(next, 'heart-event');
   }
   if (sectionAt(next) !== sectionAt(state)) next = advanceSectionChange(next, applyEffect);

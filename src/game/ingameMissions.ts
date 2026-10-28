@@ -83,7 +83,7 @@ export function missionActionEffect(
             ? (state.boosts.at(-1)?.percent ?? 0)
             : 0
         : actionType === 5
-          ? Math.max(0, state.currentMental - before.currentMental)
+          ? Math.max(0, state.mental.currentMental - before.mental.currentMental)
           : actionType === 10
             ? Math.max(0, state.currentVoltage - before.currentVoltage)
             : actionType === 14

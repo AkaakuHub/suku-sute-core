@@ -20,6 +20,7 @@ import type { ModeState } from './live/modes.ts';
 import type { MoodKey } from './live/moodTimeline.ts';
 import type { Effect } from './modelTypes.ts';
 import type { GameCondition } from './conditions/model.ts';
+import type { LiveMentalGaugeState } from '../runtime/live/mentalGauge.ts';
 import type { Card } from './cards/cardTypes.ts';
 export type { Action } from './actionTypes.ts';
 export type { Card } from './cards/cardTypes.ts';
@@ -234,7 +235,6 @@ export type GameState = Readonly<{
   nextAdditionalHeartInducerId: number;
   comboInducer: ComboInducer | null;
   apTimerSeconds: number;
-  mentalTimerSeconds: number;
   voltageTimerSeconds: number;
   voltageStops: readonly Readonly<{
     id: number;
@@ -264,8 +264,7 @@ export type GameState = Readonly<{
   costReductions: Readonly<Record<string, number>>;
   onceSkillCostChanges: Readonly<Record<string, number>>;
   storyAmplification: number;
-  currentMental: number;
-  mentalDown: boolean;
+  mental: LiveMentalGaugeState;
   mentalProtected: boolean;
   disableMentalDownEffects: readonly DisableMentalDown[];
   nextDisableMentalDownId: number;

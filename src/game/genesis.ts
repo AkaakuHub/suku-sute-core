@@ -24,7 +24,7 @@ export function applyGenesisEffect(state: GameState, effect: LiveGenesisEffect):
     ...state,
     genesis: activateLiveGenesisEffect(state.genesis, effect, {
       currentAp: Math.floor(state.currentAp),
-      currentMental: Math.floor(state.currentMental),
+      currentMental: Math.floor(state.mental.currentMental),
       currentVoltage: BigInt(state.currentVoltage),
       currentVoltageLevel: voltageLevel(state.currentVoltage, state.maximumVoltageLevel),
     }),
@@ -64,22 +64,25 @@ export function finishGenesis(state: GameState): GameState {
   let next: GameState = {
     ...state,
     currentAp: rollback.currentAp,
-    currentMental: rollback.currentMental,
     currentVoltage: Number(rollback.currentVoltage),
     gaugeInfinities: state.gaugeInfinities.map((infinity) => ({ ...infinity, suspended: false })),
     genesis: frame.state,
+    mental: { ...state.mental, currentMental: rollback.currentMental },
   };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'ap'))
     next = { ...next, currentAp: next.maxAp };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'voltage'))
     next = { ...next, currentVoltage: voltageThreshold(next.maximumVoltageLevel) };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'mental')) {
-    next = { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 };
+    next = {
+      ...next,
+      mental: { ...next.mental, currentMental: next.maximumMental, timerSeconds: 0 },
+    };
     next = induceMentalHearts(next, next.maximumMental);
   } else if (next.disableMentalDownEffects.length > 0) {
     next = induceMentalHearts(next, 0);
-  } else if (!next.mentalDown || next.currentMental > 0) {
-    next = induceMentalHearts(next, Math.trunc(next.currentMental));
+  } else if (!next.mental.mentalDown || next.mental.currentMental > 0) {
+    next = induceMentalHearts(next, Math.trunc(next.mental.currentMental));
   }
   return next;
 }
