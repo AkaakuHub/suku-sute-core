@@ -41,7 +41,7 @@ export function activateInfinityGauge(
     };
   }
   if (!firstActivation) return next;
-  if (effect.gauge === 'ap') return { ...next, currentAp: next.maxAp };
+  if (effect.gauge === 'ap') return { ...next, ap: { ...next.ap, currentAp: next.ap.maxAp } };
   if (effect.gauge === 'mental' && !state.mental.mentalDown)
     return induceMentalHearts(
       { ...next, mental: { ...next.mental, currentMental: next.maximumMental, timerSeconds: 0 } },

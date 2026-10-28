@@ -87,7 +87,7 @@ export function missionActionEffect(
           : actionType === 10
             ? Math.max(0, state.currentVoltage - before.currentVoltage)
             : actionType === 14
-              ? Math.max(0, state.currentAp - before.currentAp)
+              ? Math.max(0, state.ap.currentAp - before.ap.currentAp)
               : actionType === 13 || actionType === 34
                 ? 1
                 : actionType === 28

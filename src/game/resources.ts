@@ -1,3 +1,4 @@
+import { setLiveApGaugeValue } from '../runtime/live/apGaugeChange.ts';
 import type { GameState } from './model.ts';
 import { voltageLevel, voltageThreshold } from './live/voltageLevel.ts';
 import { changeGenesisGauge, changeGenesisResource } from './genesis.ts';
@@ -29,6 +30,12 @@ export function changeResource(
     const absorption = absorbSkillEffect(state, 14, BigInt.asIntN(32, amount));
     if (absorption.absorbed) return absorption.state;
   }
+  if (resource === 'ap')
+    return setLiveApGaugeValue(
+      state,
+      BigInt(state.ap.currentAp) + amount,
+      state.gaugeInfinities.some((infinity) => infinity.gauge === 'ap' && !infinity.suspended),
+    );
   if (resource === 'mental' && amount >= 0n && source === 'skill') {
     const absorption = absorbSkillEffect(state, 5, BigInt.asUintN(32, amount));
     if (absorption.absorbed) return absorption.state;
@@ -127,24 +134,13 @@ export function changeResource(
     return notifySkillEffectAmount(withMissionEvent, Number(voltageInput));
   }
   const maximum =
-    resource === 'ap'
-      ? state.maxAp
-      : resource === 'voltage'
-        ? voltageThreshold(state.maximumVoltageLevel)
-        : state.maximumMental;
-  const currentValue =
-    resource === 'mental'
-      ? state.mental.currentMental
-      : resource === 'ap'
-        ? state.currentAp
-        : state.currentVoltage;
+    resource === 'voltage' ? voltageThreshold(state.maximumVoltageLevel) : state.maximumMental;
+  const currentValue = resource === 'mental' ? state.mental.currentMental : state.currentVoltage;
   const nextValue = Math.max(0, Math.min(maximum, currentValue + Number(amount)));
   let next: GameState =
     resource === 'mental'
       ? { ...state, mental: { ...state.mental, currentMental: nextValue } }
-      : resource === 'ap'
-        ? { ...state, currentAp: nextValue }
-        : { ...state, currentVoltage: nextValue };
+      : { ...state, currentVoltage: nextValue };
   if (resource === 'voltage') next = notifyVoltageBaseLevelChange(state, next, applyEffect);
   if (resource === 'voltage' && state.currentVoltage > 0 && nextValue === 0)
     next = registerVoltageZeroMission(next);
@@ -222,7 +218,9 @@ export function decreaseMentalNaturally(state: GameState): GameState {
 
 export function spendAp(state: GameState, amount: number): GameState {
   return changeResource(
-    state.currentAp >= state.maxAp ? { ...state, apTimerSeconds: 0 } : state,
+    state.ap.currentAp >= state.ap.maxAp
+      ? { ...state, ap: { ...state.ap, timerSeconds: 0 } }
+      : state,
     'ap',
     -BigInt(amount),
   );

@@ -1,6 +1,11 @@
 import { expect, test } from 'vite-plus/test';
 import { advanceLiveApGauge } from '../../src/runtime/live/apGauge.ts';
 
+const ports = {
+  setAp: (value: number) => value,
+  addAp: (current: number, amount: 1) => Math.min(current + amount, 5),
+};
+
 test('Live APはmax未満かつMental Downでないframeだけ厳密なinterval超過分を加算する', () => {
   const equalInterval = advanceLiveApGauge(
     { currentAp: 2, maxAp: 5, timerSeconds: 0 },
@@ -9,17 +14,22 @@ test('Live APはmax未満かつMental Downでないframeだけ厳密なinterval�
       mentalDown: false,
       increaseIntervalSeconds: 1,
     },
+    ports,
   );
   expect(equalInterval).toEqual({
     state: { currentAp: 2, maxAp: 5, timerSeconds: 1 },
     gaugeDisplayValue: 2,
   });
 
-  const multipleIntervals = advanceLiveApGauge(equalInterval.state, {
-    deltaTimeSeconds: 2.5,
-    mentalDown: false,
-    increaseIntervalSeconds: 1,
-  });
+  const multipleIntervals = advanceLiveApGauge(
+    equalInterval.state,
+    {
+      deltaTimeSeconds: 2.5,
+      mentalDown: false,
+      increaseIntervalSeconds: 1,
+    },
+    ports,
+  );
   expect(multipleIntervals).toEqual({
     state: { currentAp: 5, maxAp: 5, timerSeconds: 0.5 },
     gaugeDisplayValue: 5,
@@ -32,6 +42,7 @@ test('Live APはmax未満かつMental Downでないframeだけ厳密なinterval�
       mentalDown: true,
       increaseIntervalSeconds: 1,
     },
+    ports,
   );
   expect(mentalDown).toEqual({
     state: { currentAp: 2, maxAp: 5, timerSeconds: 0.25 },
@@ -48,6 +59,7 @@ test('Live APはintervalが0以下ならmaxへ設定する', () => {
         mentalDown: false,
         increaseIntervalSeconds: 0,
       },
+      ports,
     ),
   ).toEqual({
     state: { currentAp: 4, maxAp: 4, timerSeconds: 0.75 },
@@ -59,12 +71,12 @@ test('APはFloat32の間隔の直前・一致では増えず、直後だけ増�
   const state = { currentAp: 2, maxAp: 5, timerSeconds: 0 };
   const input = { mentalDown: false, increaseIntervalSeconds: 1 };
   for (const deltaTimeSeconds of [0.9999995, 1]) {
-    const frame = advanceLiveApGauge(state, { ...input, deltaTimeSeconds });
+    const frame = advanceLiveApGauge(state, { ...input, deltaTimeSeconds }, ports);
     expect(frame.state.currentAp).toBe(2);
     expect(frame.state.timerSeconds).toBe(Math.fround(deltaTimeSeconds));
   }
   const deltaTimeSeconds = 1 + 2 ** -23;
-  const frame = advanceLiveApGauge(state, { ...input, deltaTimeSeconds });
+  const frame = advanceLiveApGauge(state, { ...input, deltaTimeSeconds }, ports);
   expect(frame.state.currentAp).toBe(3);
   expect(frame.state.timerSeconds).toBe(2 ** -23);
 });

@@ -21,6 +21,7 @@ import type { MoodKey } from './live/moodTimeline.ts';
 import type { Effect } from './modelTypes.ts';
 import type { GameCondition } from './conditions/model.ts';
 import type { LiveMentalGaugeState } from '../runtime/live/mentalGauge.ts';
+import type { LiveApGaugeState } from '../runtime/live/apGauge.ts';
 import type { Card } from './cards/cardTypes.ts';
 export type { Action } from './actionTypes.ts';
 export type { Card } from './cards/cardTypes.ts';
@@ -214,8 +215,7 @@ export type GameState = Readonly<{
     pendingHandStatsDeactivationKeys?: readonly string[];
   }> | null;
   randomSeed: number;
-  currentAp: number;
-  maxAp: number;
+  ap: LiveApGaugeState;
   fixedParameterBase: Readonly<{ ap: number; voltage: number; mental: number }>;
   maximumMental: number;
   fixedParameterExtends: readonly FixedParameterExtend[];
@@ -234,7 +234,6 @@ export type GameState = Readonly<{
   additionalHeartInducers: readonly AdditionalHeartInducer[];
   nextAdditionalHeartInducerId: number;
   comboInducer: ComboInducer | null;
-  apTimerSeconds: number;
   voltageTimerSeconds: number;
   voltageStops: readonly Readonly<{
     id: number;

@@ -58,6 +58,8 @@ test('保存ActionType39のAP Infinityは無期限状態をruntimeへ適用しAP
     2,
     input,
     {
+      setAp: (value) => value,
+      addAp: (value, amount) => value + amount,
       genesisSkillActive: false,
       stopVoltageIncreaseRequestCount: 0,
       disableMentalDown: false,

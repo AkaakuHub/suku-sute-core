@@ -1,3 +1,4 @@
+import { setLiveApGaugeValue } from '../runtime/live/apGaugeChange.ts';
 import { calculateLiveMentalDownRecovery } from '../runtime/live/gaugeTiming.ts';
 import type { GameState } from './model.ts';
 import { advanceLiveMentalGauge } from '../runtime/live/mentalGauge.ts';
@@ -16,22 +17,37 @@ export function advanceAutomaticGauges(
   applyEffect?: EffectApplier,
 ): GameState {
   const stage = state.track.stage;
+  let next = state;
   const ap = advanceLiveApGauge(
-    {
-      currentAp: Math.floor(state.currentAp),
-      maxAp: state.maxAp,
-      timerSeconds: state.apTimerSeconds,
-    },
+    state.ap,
     {
       deltaTimeSeconds: dt,
       mentalDown: state.mental.mentalDown,
       increaseIntervalSeconds: apIncreaseIntervalSeconds(state),
     },
+    {
+      setAp: (requestedAp) => {
+        next = setLiveApGaugeValue(
+          next,
+          BigInt(requestedAp),
+          next.gaugeInfinities.some((infinity) => infinity.gauge === 'ap' && !infinity.suspended),
+        );
+        return next.ap.currentAp;
+      },
+      addAp: (currentAp, amount) => {
+        next = changeResource(
+          { ...next, ap: { ...next.ap, currentAp } },
+          'ap',
+          BigInt(amount),
+          'natural',
+        );
+        return next.ap.currentAp;
+      },
+    },
   ).state;
-  let next = changeResource(state, 'ap', BigInt(ap.currentAp - Math.floor(state.currentAp)));
   next = {
     ...next,
-    apTimerSeconds: ap.timerSeconds,
+    ap,
     voltageTimerSeconds:
       state.voltageStops.length > 0
         ? state.voltageTimerSeconds

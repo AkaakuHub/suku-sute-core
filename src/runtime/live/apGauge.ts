@@ -9,6 +9,11 @@ export type LiveApGaugeFrame = Readonly<{
   gaugeDisplayValue: number | null;
 }>;
 
+export type LiveApGaugePorts = Readonly<{
+  setAp: (requestedAp: number) => number;
+  addAp: (currentAp: number, amount: 1) => number;
+}>;
+
 export function advanceLiveApGauge(
   state: LiveApGaugeState,
   input: Readonly<{
@@ -16,6 +21,7 @@ export function advanceLiveApGauge(
     mentalDown: boolean;
     increaseIntervalSeconds: number;
   }>,
+  ports: LiveApGaugePorts,
 ): LiveApGaugeFrame {
   validateState(state);
   validateFiniteNonNegative(input.deltaTimeSeconds, 'delta time');
@@ -32,51 +38,16 @@ export function advanceLiveApGauge(
   );
   const increaseIntervalSeconds = Math.fround(input.increaseIntervalSeconds);
   if (increaseIntervalSeconds <= 0) {
-    currentAp = state.maxAp;
+    currentAp = ports.setAp(state.maxAp);
   } else {
     while (increaseIntervalSeconds < timerSeconds) {
       timerSeconds = Math.fround(timerSeconds - increaseIntervalSeconds);
-      currentAp = Math.min(currentAp + 1, state.maxAp);
+      currentAp = ports.addAp(currentAp, 1);
     }
   }
 
   const nextState = { currentAp, maxAp: state.maxAp, timerSeconds };
   return { state: nextState, gaugeDisplayValue: currentAp };
-}
-
-export function applyLiveRecoverApSkillEffect(
-  state: LiveApGaugeState,
-  effect: Readonly<{
-    id: string;
-    actionType: number;
-    details: readonly LiveSkillEffectDetail[];
-  }>,
-  currentMoodValue: number,
-): LiveApGaugeState {
-  validateState(state);
-  if (!/^[1-9]\d*$/.test(effect.id) || effect.actionType !== 14) {
-    throw new Error('Live AP recovery skill effect contract differs');
-  }
-  const details = requireLiveSkillEffectDetails(
-    effect.details,
-    ['RECOVER_AP_NUM_BASE', 'RECOVER_AP_NUM_BONUS_MOOD'],
-    'AP recovery',
-  );
-  const bonusMood = details.get('RECOVER_AP_NUM_BONUS_MOOD');
-  if (bonusMood === undefined) {
-    throw new Error('Live AP recovery bonus mood detail is absent');
-  }
-  const addValue = Math.trunc(
-    calculateLiveSkillEffectValue(
-      requireLiveSkillEffectDetailValue(details, 'RECOVER_AP_NUM_BASE', 'AP recovery'),
-      bonusMood,
-      currentMoodValue,
-    ),
-  );
-  return {
-    ...state,
-    currentAp: Math.min(Math.max(state.currentAp + addValue, 0), state.maxAp),
-  };
 }
 
 function validateState(state: LiveApGaugeState): void {
@@ -97,10 +68,3 @@ function validateFiniteNonNegative(value: number, label: string): void {
     throw new Error(`Live AP ${label} is invalid`);
   }
 }
-
-import {
-  calculateLiveSkillEffectValue,
-  type LiveSkillEffectDetail,
-  requireLiveSkillEffectDetails,
-  requireLiveSkillEffectDetailValue,
-} from '../skills/skillEffectValue.ts';

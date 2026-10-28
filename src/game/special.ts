@@ -35,7 +35,7 @@ export function canUseSpecial(state: GameState, cardId: string): boolean {
     (state.phase === 'playing' || state.phase === 'paused') &&
     !state.mental.mentalDown &&
     (token ? token.remainingCoolTime <= 0 : !state.specialUsed.includes(cardId)) &&
-    (state.genesis.effects.length > 0 || state.currentAp >= specialCost(card)),
+    (state.genesis.effects.length > 0 || state.ap.currentAp >= specialCost(card)),
   );
 }
 

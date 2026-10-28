@@ -68,6 +68,10 @@ function projectAp(
         mentalDown: runtimeState.mentalDown.value,
         increaseIntervalSeconds: runtimeState.increaseIntervalSeconds.value,
       },
+      {
+        setAp: (requestedAp) => Math.min(requestedAp, inputs.maxAp),
+        addAp: (currentAp, amount) => Math.min(currentAp + amount, inputs.maxAp),
+      },
     ),
   };
 }

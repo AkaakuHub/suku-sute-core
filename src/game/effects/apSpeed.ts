@@ -163,10 +163,13 @@ function updateApTimeEffects(
   const after = apIncreaseIntervalSeconds(candidate);
   return {
     ...candidate,
-    apTimerSeconds:
-      before > 0 && after > 0
-        ? Math.fround(Math.fround(after / before) * state.apTimerSeconds)
-        : state.apTimerSeconds,
+    ap: {
+      ...candidate.ap,
+      timerSeconds:
+        before > 0 && after > 0
+          ? Math.fround(Math.fround(after / before) * state.ap.timerSeconds)
+          : state.ap.timerSeconds,
+    },
   };
 }
 

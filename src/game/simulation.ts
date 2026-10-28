@@ -117,8 +117,6 @@ export function createGame(
     skillActivationCounts: {},
     activation: null,
     randomSeed: seed,
-    currentAp: 0,
-    maxAp: track.stage.maxAp,
     ...createInitialEffectState(track),
     apTimeEffects: [],
     voltageConversions: [],
@@ -136,7 +134,6 @@ export function createGame(
     mentalBarrierAdditionalBuffs: [],
     nextSkillAdditionalBuffId: 1,
     temporaryScoreBoosts: [],
-    apTimerSeconds: 0,
     voltageTimerSeconds: 0,
     voltageStops: [],
     nextVoltageStopId: 1,
@@ -209,6 +206,7 @@ export function createGame(
       bestCombo: 0,
     },
     mental: { timerSeconds: 0, currentMental: 100, mentalDown: false },
+    ap: { currentAp: 0, maxAp: track.stage.maxAp, timerSeconds: 0 },
   };
   return fillHand(initializeHandCardStats(initializeParameterValueFactors(initial), [lead.id]));
 }

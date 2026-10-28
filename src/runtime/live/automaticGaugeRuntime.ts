@@ -65,6 +65,8 @@ export function advanceLiveAutomaticGaugeRuntime(
     stopVoltageIncreaseRequestCount: number;
     disableMentalDown: boolean;
     mentalDecreaseIntervalFactor: number;
+    setAp: (requestedAp: number) => number;
+    addAp: (currentAp: number, amount: 1) => number;
     subMentalOne: (currentMental: number) => number;
     addVoltage: (currentVoltage: bigint) => bigint;
   }>,
@@ -76,13 +78,18 @@ export function advanceLiveAutomaticGaugeRuntime(
   ) {
     throw new Error('Live Mental decrease interval factor is invalid');
   }
-  const ap = state.apInfinity
-    ? { state: state.ap, gaugeDisplayValue: null }
-    : advanceLiveApGauge(state.ap, {
-        deltaTimeSeconds,
-        mentalDown: state.mental.mentalDown,
-        increaseIntervalSeconds: input.apIncreaseIntervalSeconds,
-      });
+  const ap =
+    state.apInfinity && !control.genesisSkillActive
+      ? { state: state.ap, gaugeDisplayValue: null }
+      : advanceLiveApGauge(
+          state.ap,
+          {
+            deltaTimeSeconds,
+            mentalDown: state.mental.mentalDown,
+            increaseIntervalSeconds: input.apIncreaseIntervalSeconds,
+          },
+          { setAp: control.setAp, addAp: control.addAp },
+        );
   const maximumVoltageThreshold = input.voltageThresholds[input.voltageThresholds.length - 1];
   if (maximumVoltageThreshold === undefined) {
     throw new Error('Live Voltage thresholds are absent');
