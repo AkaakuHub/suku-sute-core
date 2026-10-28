@@ -1,4 +1,9 @@
 import {
+  absorbLiveProxySkillEffect,
+  createLiveProxyAbsorbInfo,
+  liveProxyTargetReached,
+} from '../../runtime/skills/proxyAbsorption.ts';
+import {
   updateLiveCardSkillUseAtBoardState,
   liveDeckBoardCardInstanceIds,
   liveBoardState,
@@ -21,23 +26,22 @@ export function registerProxySkill(
   if (!card) return state;
   if (effect.periodType === 3 ? effect.induceTiming !== 1 : effect.periodParam < 1n) return state;
   const common = {
-    id: state.nextProxyAbsorptionId,
-    sourceId: card.cardInstanceId,
-    hasAbsorbLimit: (effect.absorbLimit & 1) === 1,
-    isAbsoluteAdd: (effect.absorbLimit & 2) === 2,
-    isAbsorbEnd: false,
+    id: state.nextProxySkillId,
+    ...createLiveProxyAbsorbInfo(
+      card.cardInstanceId,
+      BigInt(effect.absorbLimit),
+      effect.targets.map((target) => ({
+        actionType: BigInt(Math.trunc(target.actionType)),
+        targetAmount: BigInt(Math.trunc(target.targetAmount)),
+      })),
+    ),
     induceTiming: effect.induceTiming,
     induceCondition: effect.induceCondition,
     inducePowerType: effect.inducePowerType,
     inducePowerParam: effect.inducePowerParam,
     inducedEffects: effect.effects,
-    effects: effect.targets.map((target) => ({
-      actionType: signedInt32(target.actionType),
-      targetAmount: BigInt(signedInt32(target.targetAmount)),
-      totalAmount: 0n,
-    })),
   };
-  const absorption: GameState['proxyAbsorptions'][number] =
+  const absorption: GameState['proxySkills'][number] =
     effect.periodType === 1
       ? {
           ...common,
@@ -51,8 +55,8 @@ export function registerProxySkill(
         };
   return {
     ...state,
-    proxyAbsorptions: [...state.proxyAbsorptions, absorption],
-    nextProxyAbsorptionId: state.nextProxyAbsorptionId + 1,
+    proxySkills: [...state.proxySkills, absorption],
+    nextProxySkillId: state.nextProxySkillId + 1,
     deckBoard: setCardSkillUseAtBoardState(state, card.cardInstanceId, liveBoardState.proxy)
       .deckBoard,
   };
@@ -64,34 +68,34 @@ export function advanceProxySkillPeriods(
   apply: ApplyProxyEffect,
 ): GameState {
   let next = state;
-  for (const initialAbsorption of state.proxyAbsorptions) {
-    const absorption = next.proxyAbsorptions.find((item) => item.id === initialAbsorption.id);
+  for (const initialAbsorption of state.proxySkills) {
+    const absorption = next.proxySkills.find((item) => item.id === initialAbsorption.id);
     if (!absorption) continue;
     if (absorption.isAbsorbEnd) continue;
     if (absorption.periodType !== 1) continue;
     const remainingPeriod = Math.fround(absorption.remainingPeriod - Math.fround(elapsedSeconds));
     if (remainingPeriod <= 0 && absorption.induceTiming === 3)
-      next = endProxyAbsorption(next, absorption, apply);
-    else if (remainingPeriod <= 0) next = finishProxyAbsorption(next, absorption, apply);
-    else next = updateProxyAbsorptionPeriod(next, absorption, remainingPeriod);
+      next = endProxySkillState(next, absorption, apply);
+    else if (remainingPeriod <= 0) next = finishProxySkillState(next, absorption, apply);
+    else next = updateProxySkillStatePeriod(next, absorption, remainingPeriod);
   }
   return next;
 }
 
 export function advanceProxySkillSections(state: GameState, apply: ApplyProxyEffect): GameState {
   let next = state;
-  for (const initialAbsorption of state.proxyAbsorptions) {
-    const absorption = next.proxyAbsorptions.find((item) => item.id === initialAbsorption.id);
+  for (const initialAbsorption of state.proxySkills) {
+    const absorption = next.proxySkills.find((item) => item.id === initialAbsorption.id);
     if (!absorption) continue;
     if (absorption.isAbsorbEnd) continue;
     if (absorption.periodType !== 2) continue;
     const remainingPeriod = absorption.remainingPeriod - 1n;
     if (remainingPeriod <= 0n && absorption.induceTiming === 1)
-      next = endProxyAbsorption(next, absorption, apply);
+      next = endProxySkillState(next, absorption, apply);
     else if (remainingPeriod <= 0n && absorption.induceTiming === 3)
-      next = endProxyAbsorption(next, absorption, apply);
-    else if (remainingPeriod <= 0n) next = finishProxyAbsorption(next, absorption, apply);
-    else next = updateProxyAbsorptionPeriod(next, absorption, remainingPeriod);
+      next = endProxySkillState(next, absorption, apply);
+    else if (remainingPeriod <= 0n) next = finishProxySkillState(next, absorption, apply);
+    else next = updateProxySkillStatePeriod(next, absorption, remainingPeriod);
   }
   return next;
 }
@@ -103,29 +107,20 @@ export function advanceProxySkillUses(
   apply: ApplyProxyEffect,
 ): GameState {
   let next = state;
-  for (const initialAbsorption of state.proxyAbsorptions) {
-    const absorption = next.proxyAbsorptions.find((item) => item.id === initialAbsorption.id);
+  for (const initialAbsorption of state.proxySkills) {
+    const absorption = next.proxySkills.find((item) => item.id === initialAbsorption.id);
     if (!absorption) continue;
     if (absorption.isAbsorbEnd) continue;
-    if (absorption.sourceId === usedSourceId) continue;
+    if (absorption.cardInstanceId === usedSourceId) continue;
     if (absorption.periodType !== 4 && absorption.periodType !== 5) continue;
     const decrement = BigInt(absorption.periodType === 4 ? 1 : Math.trunc(skillCost));
     const remainingPeriod = absorption.remainingPeriod - decrement;
     if (remainingPeriod <= 0n && absorption.induceTiming === 3)
-      next = endProxyAbsorption(next, absorption, apply);
-    else if (remainingPeriod <= 0n) next = finishProxyAbsorption(next, absorption, apply);
-    else next = updateProxyAbsorptionPeriod(next, absorption, remainingPeriod);
+      next = endProxySkillState(next, absorption, apply);
+    else if (remainingPeriod <= 0n) next = finishProxySkillState(next, absorption, apply);
+    else next = updateProxySkillStatePeriod(next, absorption, remainingPeriod);
   }
   return next;
-}
-
-export function isProxyTargetReached(
-  effect: GameState['proxyAbsorptions'][number]['effects'][number],
-  isAbsoluteAdd = false,
-): boolean {
-  if (effect.actionType === 48 && !isAbsoluteAdd && effect.targetAmount < 0n)
-    return effect.totalAmount <= effect.targetAmount;
-  return effect.totalAmount >= effect.targetAmount;
 }
 
 export function absorbSkillEffect(
@@ -133,33 +128,11 @@ export function absorbSkillEffect(
   actionType: number,
   amount: bigint,
 ): Readonly<{ state: GameState; absorbed: boolean }> {
-  if (actionType !== 48 && amount < 0n) return { state, absorbed: false };
-  for (
-    let absorptionIndex = 0;
-    absorptionIndex < state.proxyAbsorptions.length;
-    absorptionIndex++
-  ) {
-    const absorption = state.proxyAbsorptions[absorptionIndex];
-    if (!absorption) continue;
-    const effectIndex = absorption.effects.findIndex((effect) => effect.actionType === actionType);
-    if (effectIndex < 0) continue;
-    const effect = absorption.effects[effectIndex];
-    if (!effect) continue;
-    if (absorption.hasAbsorbLimit && isProxyTargetReached(effect, absorption.isAbsoluteAdd))
-      return { state, absorbed: true };
-    const absorbedAmount =
-      actionType === 48 && absorption.isAbsoluteAdd && amount < 0n ? -amount : amount;
-    const effects = absorption.effects.map((item, index) =>
-      index === effectIndex
-        ? { ...item, totalAmount: BigInt.asIntN(64, item.totalAmount + absorbedAmount) }
-        : item,
-    );
-    const proxyAbsorptions = state.proxyAbsorptions.map((item, index) =>
-      index === absorptionIndex ? { ...item, effects } : item,
-    );
-    return { state: { ...state, proxyAbsorptions }, absorbed: true };
-  }
-  return { state, absorbed: false };
+  const result = absorbLiveProxySkillEffect(state.proxySkills, actionType, amount);
+  return {
+    state: result.states === state.proxySkills ? state : { ...state, proxySkills: result.states },
+    absorbed: result.absorbed,
+  };
 }
 
 export function forceProxySkillActivation(
@@ -168,7 +141,7 @@ export function forceProxySkillActivation(
 ): GameState {
   return {
     ...state,
-    proxyAbsorptions: state.proxyAbsorptions.map((absorption) =>
+    proxySkills: state.proxySkills.map((absorption) =>
       matchesForcedActivationTarget(absorption, targetType)
         ? { ...absorption, isAbsorbEnd: true }
         : absorption,
@@ -177,7 +150,7 @@ export function forceProxySkillActivation(
 }
 
 function matchesForcedActivationTarget(
-  absorption: GameState['proxyAbsorptions'][number],
+  absorption: GameState['proxySkills'][number],
   targetType: 1 | 2 | 3 | 4 | 5,
 ): boolean {
   switch (targetType) {
@@ -190,30 +163,34 @@ function matchesForcedActivationTarget(
     case 4:
       return (
         absorption.effects.length > 0 &&
-        absorption.effects.every((effect) => isProxyTargetReached(effect, absorption.isAbsoluteAdd))
+        absorption.effects.every((effect) =>
+          liveProxyTargetReached(effect, absorption.isAbsoluteAdd),
+        )
       );
     case 5:
       return !(
         absorption.effects.length > 0 &&
-        absorption.effects.every((effect) => isProxyTargetReached(effect, absorption.isAbsoluteAdd))
+        absorption.effects.every((effect) =>
+          liveProxyTargetReached(effect, absorption.isAbsoluteAdd),
+        )
       );
   }
 }
 
-function finishProxyAbsorption(
+function finishProxySkillState(
   state: GameState,
-  absorption: GameState['proxyAbsorptions'][number],
+  absorption: GameState['proxySkills'][number],
   apply: ApplyProxyEffect,
 ): GameState {
   const checkTargets = absorption.induceTiming === 1 || absorption.induceCondition === 2;
   const allTargetsReached = absorption.effects.every((effect) =>
-    isProxyTargetReached(effect, absorption.isAbsoluteAdd),
+    liveProxyTargetReached(effect, absorption.isAbsoluteAdd),
   );
   if (checkTargets && !allTargetsReached)
-    return releaseFailedProxyAbsorption(state, absorption, apply);
-  const card = state.cardPool.find((item) => item.cardInstanceId === absorption.sourceId);
-  if (!card) return removeProxyAbsorption(state, absorption);
-  let next = updateProxyAbsorption(state, absorption, { ...absorption, isAbsorbEnd: true });
+    return releaseFailedProxySkillState(state, absorption, apply);
+  const card = state.cardPool.find((item) => item.cardInstanceId === absorption.cardInstanceId);
+  if (!card) return removeProxySkillState(state, absorption);
+  let next = updateProxySkillState(state, absorption, { ...absorption, isAbsorbEnd: true });
   if (absorption.inducePowerType === 3) {
     let multiplier = 1;
     for (const effect of absorption.effects) {
@@ -240,12 +217,12 @@ function finishProxyAbsorption(
       next,
     );
   }
-  return removeProxyAbsorption(next, absorption);
+  return removeProxySkillState(next, absorption);
 }
 
 function applyProxyChild(
   state: GameState,
-  child: GameState['proxyAbsorptions'][number]['inducedEffects'][number],
+  child: GameState['proxySkills'][number]['inducedEffects'][number],
   card: Card,
   multiplier: number,
   addValue: number,
@@ -254,82 +231,80 @@ function applyProxyChild(
   return completeDeckOutChecks(apply(state, child.effect, card, multiplier, addValue), apply);
 }
 
-function endProxyAbsorption(
+function endProxySkillState(
   state: GameState,
-  absorption: GameState['proxyAbsorptions'][number],
+  absorption: GameState['proxySkills'][number],
   apply: ApplyProxyEffect,
 ): GameState {
   const checkTargets = absorption.induceTiming === 1 || absorption.induceCondition === 2;
   const allTargetsReached = absorption.effects.every((effect) =>
-    isProxyTargetReached(effect, absorption.isAbsoluteAdd),
+    liveProxyTargetReached(effect, absorption.isAbsoluteAdd),
   );
   if (checkTargets && !allTargetsReached)
-    return releaseFailedProxyAbsorption(state, absorption, apply);
-  return updateProxyAbsorption(state, absorption, { ...absorption, isAbsorbEnd: true });
+    return releaseFailedProxySkillState(state, absorption, apply);
+  return updateProxySkillState(state, absorption, { ...absorption, isAbsorbEnd: true });
 }
 
-function updateProxyAbsorptionPeriod(
+function updateProxySkillStatePeriod(
   state: GameState,
-  current: GameState['proxyAbsorptions'][number],
+  current: GameState['proxySkills'][number],
   remainingPeriod: number | bigint,
 ): GameState {
   if (current.periodType === 1) {
     if (typeof remainingPeriod !== 'number') throw new Error('Proxyの期限値が正しくありません。');
-    return updateProxyAbsorption(state, current, { ...current, remainingPeriod });
+    return updateProxySkillState(state, current, { ...current, remainingPeriod });
   }
   if (typeof remainingPeriod !== 'bigint') throw new Error('Proxyの期限値が正しくありません。');
-  return updateProxyAbsorption(state, current, { ...current, remainingPeriod });
+  return updateProxySkillState(state, current, { ...current, remainingPeriod });
 }
 
-function updateProxyAbsorption(
+function updateProxySkillState(
   state: GameState,
-  current: GameState['proxyAbsorptions'][number],
-  updated: GameState['proxyAbsorptions'][number],
+  current: GameState['proxySkills'][number],
+  updated: GameState['proxySkills'][number],
 ): GameState {
   let replaced = false;
-  const proxyAbsorptions = state.proxyAbsorptions.map((item) => {
+  const proxySkills = state.proxySkills.map((item) => {
     if (replaced || item.id !== current.id) return item;
     replaced = true;
     return updated;
   });
-  return replaced ? { ...state, proxyAbsorptions } : state;
+  return replaced ? { ...state, proxySkills } : state;
 }
 
-function removeProxyAbsorption(
+function removeProxySkillState(
   state: GameState,
-  absorption: GameState['proxyAbsorptions'][number],
+  absorption: GameState['proxySkills'][number],
 ): GameState {
   let removed = false;
-  const proxyAbsorptions = state.proxyAbsorptions.filter((item) => {
+  const proxySkills = state.proxySkills.filter((item) => {
     if (removed || item.id !== absorption.id) return true;
     removed = true;
     return false;
   });
-  return removed ? { ...state, proxyAbsorptions } : state;
+  return removed ? { ...state, proxySkills } : state;
 }
 
-function releaseFailedProxyAbsorption(
+function releaseFailedProxySkillState(
   state: GameState,
-  absorption: GameState['proxyAbsorptions'][number],
+  absorption: GameState['proxySkills'][number],
   apply: ApplyProxyEffect,
 ): GameState {
-  let next = removeProxyAbsorption(state, absorption);
+  let next = removeProxySkillState(state, absorption);
   if (
     !liveDeckBoardCardInstanceIds(state.deckBoard, liveBoardState.proxy).includes(
-      absorption.sourceId,
+      absorption.cardInstanceId,
     )
   )
     return next;
   if (
-    liveDeckBoardCardInstanceIds(next.deckBoard, liveBoardState.proxy).includes(absorption.sourceId)
+    liveDeckBoardCardInstanceIds(next.deckBoard, liveBoardState.proxy).includes(
+      absorption.cardInstanceId,
+    )
   )
-    next = induceCardMoves(next, new Set([absorption.sourceId]), apply);
+    next = induceCardMoves(next, new Set([absorption.cardInstanceId]), apply);
   return {
     ...next,
-    deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, absorption.sourceId),
+    deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, absorption.cardInstanceId),
   };
-}
-
-function signedInt32(value: number): number {
-  return Number(BigInt.asIntN(32, BigInt(Math.trunc(value))));
 }

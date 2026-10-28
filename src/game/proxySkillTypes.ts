@@ -1,26 +1,19 @@
+import type { LiveProxyAbsorbInfo } from '../runtime/skills/proxyAbsorption.ts';
 import type { Effect } from './modelTypes.ts';
 
-type ProxyAbsorptionBase = Readonly<{
-  id: number;
-  sourceId: string;
-  hasAbsorbLimit: boolean;
-  isAbsoluteAdd: boolean;
-  isAbsorbEnd: boolean;
-  induceTiming: 1 | 2 | 3;
-  induceCondition: 1 | 2;
-  inducePowerType: 1 | 2 | 3;
-  inducePowerParam: number;
-  inducedEffects: readonly Readonly<{ actionType: number; effect: Effect }>[];
-  effects: readonly Readonly<{
-    actionType: number;
-    targetAmount: bigint;
-    totalAmount: bigint;
-  }>[];
-}>;
+type ProxySkillStateBase = LiveProxyAbsorbInfo<string> &
+  Readonly<{
+    id: number;
+    induceTiming: 1 | 2 | 3;
+    induceCondition: 1 | 2;
+    inducePowerType: 1 | 2 | 3;
+    inducePowerParam: number;
+    inducedEffects: readonly Readonly<{ actionType: number; effect: Effect }>[];
+  }>;
 
-export type ProxyAbsorption =
-  | (ProxyAbsorptionBase & Readonly<{ periodType: 1; remainingPeriod: number }>)
-  | (ProxyAbsorptionBase & Readonly<{ periodType: 2 | 3 | 4 | 5; remainingPeriod: bigint }>);
+export type ProxySkillState =
+  | (ProxySkillStateBase & Readonly<{ periodType: 1; remainingPeriod: number }>)
+  | (ProxySkillStateBase & Readonly<{ periodType: 2 | 3 | 4 | 5; remainingPeriod: bigint }>);
 
 export type ProxySkillEffect = Readonly<{
   kind: 'proxy-skill';

@@ -3,7 +3,7 @@ import { calculateLiveSkillMoodCorrection } from '../../runtime/live/skillMood.t
 import { moodValue } from '../projection.ts';
 import { skillValue } from './skillValue.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
-import { isProxyTargetReached } from './proxySkill.ts';
+import { absorbLiveProxySkillEffect } from '../../runtime/skills/proxyAbsorption.ts';
 import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type ApSpeedChange = Extract<Effect, { kind: 'ap-speed-change' }>;
@@ -85,8 +85,11 @@ export function applyApSpeedChange(
   }
   if ((calculation === 'multiply' && value === 1) || (calculation === 'add' && value === 0))
     return currentState;
-  const absorption = absorbedAmount > 0 ? absorbApSpeed(currentState, absorbedAmount) : null;
-  if (absorption?.absorbed) return { ...currentState, proxyAbsorptions: absorption.absorptions };
+  const absorption =
+    absorbedAmount > 0
+      ? absorbLiveProxySkillEffect(currentState.proxySkills, 21, BigInt(absorbedAmount))
+      : null;
+  if (absorption?.absorbed) return { ...currentState, proxySkills: absorption.states };
   const suppressDuration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const entry: GameState['apTimeEffects'][number] = {
     calculation,
@@ -101,7 +104,7 @@ export function applyApSpeedChange(
   return updateApTimeEffects(
     currentState,
     [...currentState.apTimeEffects, entry],
-    absorption?.absorptions,
+    absorption?.states,
   );
 }
 
@@ -154,12 +157,11 @@ export function deactivateApSpeedEffects(state: GameState, deactivationKey: stri
 function updateApTimeEffects(
   state: GameState,
   apTimeEffects: GameState['apTimeEffects'],
-  proxyAbsorptions: GameState['proxyAbsorptions'] = state.proxyAbsorptions,
+  proxySkills: GameState['proxySkills'] = state.proxySkills,
 ): GameState {
-  if (apTimeEffects === state.apTimeEffects && proxyAbsorptions === state.proxyAbsorptions)
-    return state;
+  if (apTimeEffects === state.apTimeEffects && proxySkills === state.proxySkills) return state;
   const before = apIncreaseIntervalSeconds(state);
-  const candidate = { ...state, apTimeEffects, proxyAbsorptions };
+  const candidate = { ...state, apTimeEffects, proxySkills };
   const after = apIncreaseIntervalSeconds(candidate);
   return {
     ...candidate,
@@ -171,32 +173,4 @@ function updateApTimeEffects(
           : state.ap.timerSeconds,
     },
   };
-}
-
-function absorbApSpeed(
-  state: GameState,
-  amount: number,
-): Readonly<{ absorptions: GameState['proxyAbsorptions']; absorbed: boolean }> | null {
-  for (
-    let absorptionIndex = 0;
-    absorptionIndex < state.proxyAbsorptions.length;
-    absorptionIndex++
-  ) {
-    const absorption = state.proxyAbsorptions[absorptionIndex];
-    if (!absorption) continue;
-    for (let effectIndex = 0; effectIndex < absorption.effects.length; effectIndex++) {
-      const target = absorption.effects[effectIndex];
-      if (!target || target.actionType !== 21) continue;
-      if (absorption.hasAbsorbLimit && isProxyTargetReached(target))
-        return { absorptions: state.proxyAbsorptions, absorbed: true };
-      const effects = absorption.effects.map((item, index) =>
-        index === effectIndex ? { ...item, totalAmount: item.totalAmount + BigInt(amount) } : item,
-      );
-      const absorptions = state.proxyAbsorptions.map((item, index) =>
-        index === absorptionIndex ? { ...item, effects } : item,
-      );
-      return { absorptions, absorbed: true };
-    }
-  }
-  return null;
 }

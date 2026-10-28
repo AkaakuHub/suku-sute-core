@@ -9,7 +9,7 @@ import {
 import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { skillValue } from './skillValue.ts';
-import { isProxyTargetReached } from './proxySkill.ts';
+import { absorbLiveProxySkillEffect } from '../../runtime/skills/proxyAbsorption.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { ceilToInt32 } from '../../runtime/numeric.ts';
 import { markLiveCardHandCountActivated } from '../../runtime/cards/cardSkillActivatedFlags.ts';
@@ -33,7 +33,9 @@ export function applyHandCardCount(
   const amount = ceilToInt32(action52.value);
   const current = action52.state;
   const absorption =
-    effect.calculationType === 1 && amount >= 0 ? absorbHandCardCount(current, amount) : null;
+    effect.calculationType === 1 && amount >= 0
+      ? absorbLiveProxySkillEffect(current.proxySkills, 20, BigInt(amount))
+      : null;
   const appliedAmount = effect.calculationType !== 1 || absorption?.absorbed ? 0 : amount;
   let activated = current;
   if (!absorption?.absorbed) {
@@ -70,7 +72,7 @@ export function applyHandCardCount(
     deckBoard: card
       ? markLiveCardHandCountActivated(activated.deckBoard, card.cardInstanceId, appliedAmount)
       : activated.deckBoard,
-    ...(absorption ? { proxyAbsorptions: absorption.absorptions } : {}),
+    ...(absorption ? { proxySkills: absorption.states } : {}),
   };
 }
 
@@ -119,34 +121,4 @@ export function applyHandCardCountTransition(
     (current, amount) => notifyLiveHandCardCountReset(current, amount),
     { ...state, handCardCountEffects: transition.state, tokenCardDeck: transition.tokenCardDeck },
   );
-}
-
-function absorbHandCardCount(
-  state: GameState,
-  amount: number,
-): Readonly<{ absorptions: GameState['proxyAbsorptions']; absorbed: boolean }> | null {
-  for (
-    let absorptionIndex = 0;
-    absorptionIndex < state.proxyAbsorptions.length;
-    absorptionIndex += 1
-  ) {
-    const absorption = state.proxyAbsorptions[absorptionIndex];
-    if (!absorption) continue;
-    for (let effectIndex = 0; effectIndex < absorption.effects.length; effectIndex += 1) {
-      const effect = absorption.effects[effectIndex];
-      if (!effect) continue;
-      if (effect.actionType !== 20) continue;
-      if (absorption.hasAbsorbLimit && isProxyTargetReached(effect))
-        return { absorptions: state.proxyAbsorptions, absorbed: true };
-      const totalAmount = BigInt.asIntN(64, effect.totalAmount + BigInt(amount));
-      const effects = absorption.effects.map((item, index) =>
-        index === effectIndex ? { ...item, totalAmount } : item,
-      );
-      const absorptions = state.proxyAbsorptions.map((item, index) =>
-        index === absorptionIndex ? { ...item, effects } : item,
-      );
-      return { absorptions, absorbed: true };
-    }
-  }
-  return null;
 }

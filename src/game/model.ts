@@ -49,7 +49,7 @@ import type {
   TokenBoost,
 } from './modelTypes.ts';
 import type { TokenDeckSplit } from './tokenDeckSplitTypes.ts';
-import type { ProxyAbsorption } from './proxySkillTypes.ts';
+import type { ProxySkillState } from './proxySkillTypes.ts';
 import type { IngameMission, IngameMissionGroup } from './ingameMissionTypes.ts';
 import type { HeartLimitAdditionalBuff } from './heartLimitBoostTypes.ts';
 import type { MoodValueAdditionalBuff } from './moodValueBoostTypes.ts';
@@ -156,8 +156,8 @@ export type GameState = Readonly<{
     requests: readonly TokenRequest[];
   }>[];
   tokenBoosts: readonly TokenBoost[];
-  proxyAbsorptions: readonly ProxyAbsorption[];
-  nextProxyAbsorptionId: number;
+  proxySkills: readonly ProxySkillState[];
+  nextProxySkillId: number;
   handCardCountEffects: LiveHandCardCountState<string>;
   heartLimitBase: number;
   heartLimitBuffs: readonly Readonly<{
