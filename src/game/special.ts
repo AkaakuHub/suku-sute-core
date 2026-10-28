@@ -23,8 +23,8 @@ export function specialCost(card: Card): number {
   return card.special.cost;
 }
 
-export function isBloomSpecial(card: Card): boolean {
-  return card.special?.effects.some((effect) => effect.kind === 'bloom') ?? false;
+export function isGenesisSpecial(card: Card): boolean {
+  return card.special?.effects.some((effect) => effect.kind === 'genesis') ?? false;
 }
 
 export function canUseSpecial(state: GameState, cardId: string): boolean {
@@ -35,7 +35,7 @@ export function canUseSpecial(state: GameState, cardId: string): boolean {
     (state.phase === 'playing' || state.phase === 'paused') &&
     !state.mentalDown &&
     (token ? token.remainingCoolTime <= 0 : !state.specialUsed.includes(cardId)) &&
-    (state.bloom || state.currentAp >= specialCost(card)),
+    (state.genesis.effects.length > 0 || state.currentAp >= specialCost(card)),
   );
 }
 

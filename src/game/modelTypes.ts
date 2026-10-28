@@ -266,7 +266,7 @@ type EffectShape =
       count: number;
       deactivationKey?: string;
     }>
-  | Readonly<{ kind: 'bloom'; strength: number }>
+  | Readonly<{ kind: 'genesis'; effectValue: number }>
   | SkillCooldownEffectInput
   | InduceSkillEffectInput
   | Readonly<{ kind: 'ap-limit'; amount: number }>

@@ -19,7 +19,7 @@ export function skillValue(state: GameState, value: number, effect: Effect, card
     effect.kind === 'voltage' ||
     effect.kind === 'heart-boost'
       ? Math.trunc(raw)
-      : effect.kind === 'bloom' || effect.kind === 'amplify' || effect.kind === 'ap'
+      : effect.kind === 'genesis' || effect.kind === 'amplify' || effect.kind === 'ap'
         ? raw
         : Math.ceil(raw);
   return applyStarGatherSkillBoost(base, skillBoostPercent(state, card));

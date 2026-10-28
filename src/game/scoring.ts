@@ -22,9 +22,10 @@ export function collectionScore(
   rankHeartCount: number,
 ): bigint {
   const voltage = voltageLevel(state.currentVoltage, state.maximumVoltageLevel);
-  const rank = state.bloom
-    ? calculateLiveFlowerRank(rankHeartCount, Number(state.bloom.progress))
-    : calculateLiveHeartRank(rankHeartCount, voltage, null);
+  const rank =
+    state.genesis.effects.length > 0
+      ? calculateLiveFlowerRank(rankHeartCount, Number(state.genesis.currentGauge))
+      : calculateLiveHeartRank(rankHeartCount, voltage, null);
   const bonusScoreValue =
     state.boosts.reduce((sum, boost) => sum + boost.percent, 0) +
     state.skillScoreUps.reduce((sum, boost) => sum + boost.percent, 0) +
@@ -41,7 +42,7 @@ export function collectionScore(
       isDisappearCollect: missed,
       masteryLoveBonusEffect: calculateLiveMasteryLoveBonusEffect(0),
       skillLoveBonusEffect: 1,
-      currentGenesisGauge: Number(state.bloom?.progress ?? 0n),
+      currentGenesisGauge: state.genesis.currentGauge,
       bonusScoreValue,
       challengeBonusFactor: 1,
     },
@@ -55,8 +56,8 @@ export function collectionScore(
             state.track.scoreLimit.voltageMultipliers.find(
               (row) => row.minimumLevel <= voltage && voltage <= row.maximumLevel,
             )?.multiplier ?? 0n,
-          bloomActive: state.bloom !== null,
-          bloomGauge: Number(state.bloom?.progress ?? 0n),
+          genesisActive: state.genesis.effects.length > 0,
+          currentGenesisGauge: state.genesis.currentGauge,
         }),
     },
   );

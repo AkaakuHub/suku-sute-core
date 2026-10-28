@@ -7,8 +7,8 @@ const ordinaryLimit = {
   additionalEnabled: false,
   bonusScoreValue: 0,
   voltageMultiplier: 0n,
-  bloomActive: false,
-  bloomGauge: 0,
+  genesisActive: false,
+  currentGenesisGauge: 0,
 };
 
 it('基本消費量が1以上のカードは、減少効果を重ねても最低1を消費する', () => {

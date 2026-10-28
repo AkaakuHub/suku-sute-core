@@ -10,18 +10,20 @@ export type ScoreLimitParameters = Readonly<{
   additionalEnabled: boolean;
   bonusScoreValue: number;
   voltageMultiplier: bigint;
-  bloomActive: boolean;
-  bloomGauge: number;
+  genesisActive: boolean;
+  currentGenesisGauge: number;
 }>;
 
 export function additionalScoreLimit(parameters: ScoreLimitParameters): number {
   const bonus = parameters.additionalEnabled ? scoreBuffLimit(parameters.bonusScoreValue) : 0;
   const ordinary = parameters.additionalEnabled ? Number(parameters.voltageMultiplier) / 10000 : 0;
-  const bloom =
-    parameters.bloomGauge < 1
+  const genesis =
+    parameters.currentGenesisGauge < 1
       ? 0
-      : Math.ceil(Math.fround(Math.sqrt(Math.fround(Math.fround(parameters.bloomGauge) * 2))));
-  return bonus + (parameters.bloomActive ? bloom : ordinary);
+      : Math.ceil(
+          Math.fround(Math.sqrt(Math.fround(Math.fround(parameters.currentGenesisGauge) * 2))),
+        );
+  return bonus + (parameters.genesisActive ? genesis : ordinary);
 }
 
 function scoreBuffLimit(value: number): number {

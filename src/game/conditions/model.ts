@@ -28,5 +28,5 @@ export type ConditionContext = Readonly<{
   tokenSeries: readonly (readonly number[])[];
   supportLevels: Readonly<Record<number, number>>;
   naturalStars: number;
-  bloomActive: boolean;
+  genesisActive: boolean;
 }>;

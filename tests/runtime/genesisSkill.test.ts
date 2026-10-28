@@ -6,6 +6,7 @@ import {
   calculateLiveGenesisGaugeDelta,
   calculateLiveInitialGenesisGauge,
   createLiveGenesisEffect,
+  createLiveGenesisEffectFromParameters,
   createLiveGenesisState,
 } from '../../src/runtime/skills/genesisSkill.ts';
 
@@ -19,28 +20,51 @@ test('開始時のAP・Mental・Voltage levelから公式Genesis gaugeを作る'
   ).toBe(71);
 });
 
-test('Genesis skillの効果値とsection期限をmaster detailから作る', () => {
-  expect(
-    createLiveGenesisEffect(
-      {
-        id: '51000000001',
-        actionType: 51,
-        orderId: 1,
-        details: [
-          detail('510000000011', 'GENESIS_EFFECT_BASE_NUM', 20_000),
-          detail('510000000012', 'GENESIS_DISPLAY_TIME_TYPE', 2),
-          detail('510000000013', 'GENESIS_DISPLAY_TIME', 3),
-        ],
-      },
-      12,
-      (value) => value * 1.5,
-    ),
-  ).toEqual({
-    effectId: '51000000001',
-    effectValue: 3,
-    duration: { kind: 'sections', remainingChanges: 3 },
-  });
-});
+test.each([20_000, 4_294_987_296])(
+  'Genesis skillの効果値%sをint32化してmaster detailから作る',
+  (baseValue) => {
+    expect(
+      createLiveGenesisEffect(
+        {
+          id: '51000000001',
+          actionType: 51,
+          orderId: 1,
+          details: [
+            detail('510000000011', 'GENESIS_EFFECT_BASE_NUM', baseValue),
+            detail('510000000012', 'GENESIS_DISPLAY_TIME_TYPE', 2),
+            detail('510000000013', 'GENESIS_DISPLAY_TIME', 3),
+          ],
+        },
+        12,
+        (value) => value * 1.5,
+      ),
+    ).toEqual({
+      effectId: '51000000001',
+      effectValue: 3,
+      duration: { kind: 'sections', remainingChanges: 3 },
+    });
+  },
+);
+
+test.each([0n, 2_147_483_648n, 4_294_967_296n])(
+  '期限%sをint32化して無効なら強化処理の前に終了する',
+  (displayTime) => {
+    expect(
+      createLiveGenesisEffectFromParameters(
+        {
+          effectId: '1',
+          effectBaseNum: 20_000n,
+          displayTimeType: 2n,
+          displayTime,
+          currentTimeSeconds: 0,
+        },
+        () => {
+          throw new Error('無効な期限では強化を消費しません。');
+        },
+      ),
+    ).toBeNull();
+  },
+);
 
 test('Genesis中の各gauge変化を公式平方根式でGenesis gaugeへ変換する', () => {
   expect(
@@ -104,15 +128,15 @@ test('Float32の平方根と乗除算を丸めてから切り上げ、減少量�
   ).toBe(2);
 });
 
-test('最大効果を適用し期限終了時に開始前gaugeを返す', () => {
+test('最大効果を適用し曲末で開始前gaugeを返す', () => {
   const rollback = {
-    skillPoint: 7,
-    mental: 81,
-    voltagePoint: 120n,
-    voltageLevel: 3,
+    currentAp: 7,
+    currentMental: 81,
+    currentVoltage: 120n,
+    currentVoltageLevel: 3,
   };
-  const weaker = genesisEffect('1', 2, 2);
-  const stronger = genesisEffect('2', 3, 1);
+  const weaker = genesisEffect('1', 2);
+  const stronger = genesisEffect('2', 3);
   const active = activateLiveGenesisEffect(
     activateLiveGenesisEffect(createLiveGenesisState(), weaker, rollback),
     stronger,
@@ -131,30 +155,30 @@ test('最大効果を適用し期限終了時に開始前gaugeを返す', () => 
     sectionChangeCount: 1,
     musicEnded: false,
   });
-  expect(firstSection.state.effects.map(({ effectId }) => effectId)).toEqual(['1']);
+  expect(firstSection.state.effects.map(({ effectId }) => effectId)).toEqual(['2', '1']);
   expect(firstSection.finishedRollback).toBeNull();
   const secondSection = advanceLiveGenesisState(firstSection.state, {
     currentTimeSeconds: 2,
     sectionChangeCount: 1,
-    musicEnded: false,
+    musicEnded: true,
   });
   expect(secondSection.state).toEqual(createLiveGenesisState());
   expect(secondSection.finishedRollback).toEqual(rollback);
 });
 
-test('同じGenesis effectの再発動を独立した期限として保持する', () => {
+test('同じGenesis effectの再発動を独立した効果として曲末まで保持する', () => {
   const rollback = {
-    skillPoint: 7,
-    mental: 81,
-    voltagePoint: 120n,
-    voltageLevel: 3,
+    currentAp: 7,
+    currentMental: 81,
+    currentVoltage: 120n,
+    currentVoltageLevel: 3,
   };
   const first = activateLiveGenesisEffect(
     createLiveGenesisState(),
-    genesisEffect('same-effect', 2, 1),
+    genesisEffect('same-effect', 2),
     rollback,
   );
-  const repeated = activateLiveGenesisEffect(first, genesisEffect('same-effect', 2, 2), rollback);
+  const repeated = activateLiveGenesisEffect(first, genesisEffect('same-effect', 2), rollback);
 
   const advanced = advanceLiveGenesisState(repeated, {
     currentTimeSeconds: 1,
@@ -162,16 +186,19 @@ test('同じGenesis effectの再発動を独立した期限として保持する
     musicEnded: false,
   });
 
-  expect(advanced.state.effects).toEqual([genesisEffect('same-effect', 2, 1)]);
+  expect(advanced.state.effects).toEqual([
+    genesisEffect('same-effect', 2),
+    genesisEffect('same-effect', 2),
+  ]);
   expect(advanced.finishedRollback).toBeNull();
 });
 
 test('Genesis gaugeはAPKのint32加算と同じく上限超過で負数へ折り返す', () => {
-  const active = activateLiveGenesisEffect(createLiveGenesisState(), genesisEffect('1', 1, 1), {
-    skillPoint: 0,
-    mental: 100,
-    voltagePoint: 0n,
-    voltageLevel: 0,
+  const active = activateLiveGenesisEffect(createLiveGenesisState(), genesisEffect('1', 1), {
+    currentAp: 0,
+    currentMental: 100,
+    currentVoltage: 0n,
+    currentVoltageLevel: 0,
   });
   const overflow = addLiveGenesisGauge(
     { ...active, currentGauge: 2_147_483_647 },
@@ -213,10 +240,24 @@ function detail(id: string, detailType: string, effectValue: number) {
   };
 }
 
-function genesisEffect(effectId: string, effectValue: number, remainingChanges: number) {
+test.each([
+  { kind: 'milliseconds', expiresAtSeconds: 1 },
+  { kind: 'sections', remainingChanges: 1 },
+] as const)('期限付きGenesis%sはAPKの開始条件に従って発動しない', (duration) => {
+  const state = createLiveGenesisState();
+  expect(
+    activateLiveGenesisEffect(
+      state,
+      { effectId: '1', effectValue: 2, duration },
+      { currentAp: 7, currentMental: 81, currentVoltage: 120n, currentVoltageLevel: 3 },
+    ),
+  ).toBe(state);
+});
+
+function genesisEffect(effectId: string, effectValue: number) {
   return {
     effectId,
     effectValue,
-    duration: { kind: 'sections' as const, remainingChanges },
+    duration: { kind: 'full-end' as const },
   };
 }

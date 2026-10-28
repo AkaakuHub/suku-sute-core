@@ -7,7 +7,7 @@ import { applyResourceEffect } from './effects/resourceEffect.ts';
 import { applyScoreBoost } from './effects/scoreBoost.ts';
 import { moodValue, sectionAt } from './projection.ts';
 import { voltageLevel } from './live/voltageLevel.ts';
-import { activateBloom } from './bloom.ts';
+import { activateGenesis } from './genesis.ts';
 import { collectHearts } from './hearts.ts';
 import { type Card, type Effect, type GameState } from './model.ts';
 import { applyTokenCardEffect, requestTokens } from './cards/tokens.ts';
@@ -110,13 +110,13 @@ function applyEffectInternal(
   switch (effect.kind) {
     case 'branch': {
       const context = conditionContext(state);
-      const bothBloomBranches =
-        context.bloomActive &&
+      const bothGenesisBranches =
+        context.genesisActive &&
         (effect.condition.kind === 'mental-at-most' ||
           effect.condition.kind === 'voltage-level-at-most');
       const alwaysTrueBranch =
         effect.condition.kind === 'heat' || effect.condition.kind === 'mental';
-      const effects = bothBloomBranches
+      const effects = bothGenesisBranches
         ? [...effect.whenTrue, ...effect.whenFalse]
         : alwaysTrueBranch || evaluateCondition(effect.condition, context)
           ? effect.whenTrue
@@ -137,7 +137,7 @@ function applyEffectInternal(
           : effect.condition === 'mellow100'
             ? moodValue(state) <= -100
             : effect.condition === 'mental0'
-              ? state.bloom !== null || Math.trunc(state.currentMental) === 0
+              ? state.genesis.effects.length > 0 || Math.trunc(state.currentMental) === 0
               : effect.condition === 'deck80'
                 ? state.deck.length >= 80
                 : effect.condition === 'first-section'
@@ -311,10 +311,10 @@ function applyEffectInternal(
     }
     case 'skill-cooldown':
       return activateSkillCooldown(state, effect);
-    case 'bloom': {
-      const base = value(effect.strength);
+    case 'genesis': {
+      const base = value(effect.effectValue);
       const boosted = applyAction52SkillBoostForCard(state, card, base);
-      return activateBloom(boosted.state, boosted.value);
+      return activateGenesis(boosted.state, boosted.value);
     }
     case 'resource-boost': {
       const eligible =

@@ -4,6 +4,7 @@ import { induceMentalHearts } from './mentalHeartInduce.ts';
 import { convertVoltageIncrease } from './voltageConversion.ts';
 import { induceSkillEffects, type EffectApplier } from './induceSkillEffect.ts';
 import { addMasteryVoltage, notifyVoltageBaseLevelChange } from '../resources.ts';
+import { addLiveGenesisGauge } from '../../runtime/skills/genesisSkill.ts';
 
 export function activateInfinityGauge(
   state: GameState,
@@ -13,8 +14,7 @@ export function activateInfinityGauge(
   if (effect.duration.kind === 'sections' && effect.duration.value === 0n)
     throw new Error('Display section count is 0. (displayTimeType: SECTION, displayTime: 0)');
   const suppressDuration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
-  const bloom = state.bloom;
-  const suspended = bloom !== null;
+  const suspended = state.genesis.effects.length > 0;
   const active = {
     gauge: effect.gauge,
     remainingSeconds:
@@ -30,9 +30,15 @@ export function activateInfinityGauge(
     (infinity) => infinity.gauge === effect.gauge,
   );
   let next: GameState = { ...state, gaugeInfinities: [...state.gaugeInfinities, active] };
-  if (bloom) {
-    const progress = BigInt.asIntN(32, bloom.progress + 500n);
-    return { ...next, bloom: { ...bloom, progress: progress < 0n ? 0n : progress } };
+  if (suspended) {
+    return {
+      ...next,
+      genesis: addLiveGenesisGauge(state.genesis, {
+        actionType: 39,
+        gaugeType: 0,
+        effectValue: 500,
+      }),
+    };
   }
   if (!firstActivation) return next;
   if (effect.gauge === 'ap') return { ...next, currentAp: next.maxAp };

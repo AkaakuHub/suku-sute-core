@@ -58,7 +58,7 @@ export function canUseCard(state: GameState, index: number): boolean {
     index < state.hand.length &&
     !state.mentalDown &&
     state.tick - state.lastActionTick >= cardCooldownTicks(state) &&
-    (state.bloom !== null || state.currentAp >= cardCost(state, cardAt(state, index)))
+    (state.genesis.effects.length > 0 || state.currentAp >= cardCost(state, cardAt(state, index)))
   );
 }
 

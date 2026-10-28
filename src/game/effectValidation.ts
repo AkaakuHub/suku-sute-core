@@ -323,8 +323,8 @@ export function validateEffect(effect: Effect): void {
     !Number.isFinite(effect.lifetimeSeconds)
   )
     throw new Error('きらめき寿命が正しくありません。');
-  if (effect.kind === 'bloom') {
-    if (!Number.isFinite(effect.strength) || effect.strength < 0)
+  if (effect.kind === 'genesis') {
+    if (!Number.isFinite(effect.effectValue) || effect.effectValue < 0)
       throw new Error('開花の効果量が正しくありません。');
     return;
   }

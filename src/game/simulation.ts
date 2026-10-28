@@ -10,7 +10,8 @@ import { addHearts, collectHearts, advanceHearts, heartCount } from './hearts.ts
 import { advanceAutomaticHeart } from './live/automaticHeart.ts';
 import { type Card, type GameState, type Track, rules } from './model.ts';
 import { durationSeconds, sectionAt, moodValue } from './projection.ts';
-import { finishBloom } from './bloom.ts';
+import { finishGenesis } from './genesis.ts';
+import { createLiveGenesisState } from '../runtime/skills/genesisSkill.ts';
 import { fillHand, restoreHandLimitCount } from './cards/drawing.ts';
 import { advanceHandLimitEffects } from './effects/handLimit.ts';
 import { createStarGatherHeartRuntimeState } from './live/heartSpawn.ts';
@@ -180,7 +181,7 @@ export function createGame(
     sectionAmplification: 0,
     targetBoosts: [],
     resourceBoosts: [],
-    bloom: null,
+    genesis: createLiveGenesisState(),
     relayUsed: [],
     handHeartCollectCounts: {},
     combo: 0,
@@ -223,7 +224,7 @@ export function advanceTo(state: GameState, seconds: number): GameState {
   if (next.tick === endTick) {
     const collected = collectHearts({ ...next, relayUsed: [...next.hand] });
     return {
-      ...finishBloom(collected),
+      ...finishGenesis(collected),
       scoreHistory: recordScoreHistory(collected.scoreHistory, {
         timeMilliseconds: Math.trunc(durationSeconds(collected) * 1000),
         totalScore: collected.score,

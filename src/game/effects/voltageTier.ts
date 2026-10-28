@@ -20,7 +20,7 @@ export function applyVoltageTier(
   applyEffect: ApplyEffect,
   effectPower: number,
 ): GameState {
-  if (state.bloom)
+  if (state.genesis.effects.length > 0)
     return effect.tiers.reduceRight(
       (next, tier) =>
         tier.reduce(

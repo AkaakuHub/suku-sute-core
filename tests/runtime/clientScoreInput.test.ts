@@ -10,8 +10,8 @@ const ordinaryLimit = {
   additionalEnabled: false,
   bonusScoreValue: 0,
   voltageMultiplier: 0n,
-  bloomActive: false,
-  bloomGauge: 0,
+  genesisActive: false,
+  currentGenesisGauge: 0,
 };
 
 test('Card appealはmusic type一致attributeだけ1.5倍にしtimeline秒数で正規化する', () => {

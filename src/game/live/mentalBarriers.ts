@@ -56,7 +56,7 @@ export function absorbSkillMentalDamage(
   state: GameState,
   amount: bigint,
 ): Readonly<{ state: GameState; amount: bigint }> {
-  if (amount >= 0n || state.bloom) return { state, amount };
+  if (amount >= 0n || state.genesis.effects.length > 0) return { state, amount };
   let damage = Math.trunc(-Number(amount));
   const attenuation = state.mentalBarriers
     .filter((barrier) => barrier.kind === 'attenuation')

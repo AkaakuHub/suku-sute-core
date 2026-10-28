@@ -1,4 +1,4 @@
-import { calculateLiveGenesisGaugeDelta } from '../../runtime/skills/genesisSkill.ts';
+import { addLiveGenesisGauge } from '../../runtime/skills/genesisSkill.ts';
 import { changeResource } from '../resources.ts';
 import type { GaugeRegeneration } from '../modelTypes.ts';
 import type { GameState } from '../model.ts';
@@ -124,11 +124,11 @@ function pulseGauge(
       : amount,
   );
   if (gauge === 'mental') {
-    return state.bloom
+    return state.genesis.effects.length > 0
       ? state
       : changeResource(state, 'mental', BigInt(value), 'skill', undefined, applyEffect);
   }
-  if (!state.bloom)
+  if (state.genesis.effects.length === 0)
     return changeResource(
       state,
       'voltage',
@@ -138,13 +138,12 @@ function pulseGauge(
       applyEffect,
       true,
     );
-  const delta = calculateLiveGenesisGaugeDelta({
-    actionType: 0,
-    gaugeType: 1,
-    effectValue: value,
-    currentGenesisEffectValue: state.bloom.strength,
-  });
-  if (delta === null) return state;
-  const progress = BigInt.asIntN(32, state.bloom.progress + BigInt(delta));
-  return { ...state, bloom: { ...state.bloom, progress: progress < 0n ? 0n : progress } };
+  return {
+    ...state,
+    genesis: addLiveGenesisGauge(state.genesis, {
+      actionType: 0,
+      gaugeType: 1,
+      effectValue: value,
+    }),
+  };
 }

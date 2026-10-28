@@ -54,7 +54,8 @@ export function advanceAutomaticGauges(
       applyEffect,
     );
   }
-  if (next.bloom && (next.mentalProtected || next.sectionMentalProtected)) return next;
+  if (next.genesis.effects.length > 0 && (next.mentalProtected || next.sectionMentalProtected))
+    return next;
   let mentalTimerSeconds = Math.fround(Math.fround(next.mentalTimerSeconds) + Math.fround(dt));
   const mentalDown =
     !(
@@ -88,7 +89,7 @@ export function advanceAutomaticGauges(
   }
   const mentalInterval = mentalDecreaseInterval(next, stage.mentalDecreaseIntervalSeconds);
   if (mentalInterval <= 0) {
-    if (!next.bloom) {
+    if (next.genesis.effects.length === 0) {
       next = changeResource(next, 'mental', -BigInt(Math.trunc(next.currentMental)), 'natural');
       if (
         next.currentMental <= 0 &&

@@ -1,5 +1,5 @@
 import type { LiveSkillEffect } from './skillTypes.ts';
-import { ceilToInt32, floatToInt32 } from '../numeric.ts';
+import { ceilToInt32, floatToInt32, isInt64 } from '../numeric.ts';
 import {
   advanceLiveSkillEffectDuration,
   createLiveSkillEffectDuration,
@@ -17,10 +17,10 @@ export type LiveGenesisEffect = Readonly<{
 }>;
 
 export type LiveGenesisRollback = Readonly<{
-  skillPoint: number;
-  mental: number;
-  voltagePoint: bigint;
-  voltageLevel: number;
+  currentAp: number;
+  currentMental: number;
+  currentVoltage: bigint;
+  currentVoltageLevel: number;
 }>;
 
 export type LiveGenesisState = Readonly<{
@@ -45,14 +45,15 @@ export function activateLiveGenesisEffect(
 ): LiveGenesisState {
   validateGenesisState(state);
   validateRollback(rollback);
+  if (effect.duration.kind !== 'full-end') return state;
   const first = state.effects.length === 0;
   return {
     effects: [...state.effects, effect].sort((left, right) => right.effectValue - left.effectValue),
     currentGauge: first
       ? calculateLiveInitialGenesisGauge({
-          currentAp: rollback.skillPoint,
-          currentMental: rollback.mental,
-          currentVoltageLevel: rollback.voltageLevel,
+          currentAp: rollback.currentAp,
+          currentMental: rollback.currentMental,
+          currentVoltageLevel: rollback.currentVoltageLevel,
         })
       : state.currentGauge,
     rollback: first ? rollback : state.rollback,
@@ -118,7 +119,7 @@ export function createLiveGenesisEffect(
   effect: LiveSkillEffect,
   currentTimeSeconds: number,
   applySkillBoost: (value: number) => number,
-): LiveGenesisEffect {
+): LiveGenesisEffect | null {
   if (effect.actionType !== 51 || !Number.isFinite(currentTimeSeconds)) {
     throw new Error('Live Genesis skill input is invalid');
   }
@@ -127,20 +128,57 @@ export function createLiveGenesisEffect(
     ['GENESIS_EFFECT_BASE_NUM', 'GENESIS_DISPLAY_TIME_TYPE', 'GENESIS_DISPLAY_TIME'],
     'Genesis',
   );
-  const baseValue = Math.fround(
-    requireLiveSkillEffectDetailValue(details, 'GENESIS_EFFECT_BASE_NUM', 'Genesis') / 10_000,
+  return createLiveGenesisEffectFromParameters(
+    {
+      effectId: effect.id,
+      effectBaseNum: BigInt(
+        requireLiveSkillEffectDetailValue(details, 'GENESIS_EFFECT_BASE_NUM', 'Genesis'),
+      ),
+      displayTimeType: BigInt(
+        requireLiveSkillEffectDetailValue(details, 'GENESIS_DISPLAY_TIME_TYPE', 'Genesis'),
+      ),
+      displayTime: BigInt(
+        requireLiveSkillEffectDetailValue(details, 'GENESIS_DISPLAY_TIME', 'Genesis'),
+      ),
+      currentTimeSeconds,
+    },
+    applySkillBoost,
   );
-  const effectValue = Math.fround(applySkillBoost(baseValue));
+}
+
+export function createLiveGenesisEffectFromParameters(
+  input: Readonly<{
+    effectId: string;
+    effectBaseNum: bigint;
+    displayTimeType: bigint;
+    displayTime: bigint;
+    currentTimeSeconds: number;
+  }>,
+  applySkillBoost: (value: number) => number,
+): LiveGenesisEffect | null {
+  if (
+    !isInt64(input.effectBaseNum) ||
+    !isInt64(input.displayTimeType) ||
+    !isInt64(input.displayTime)
+  )
+    throw new Error('Live Genesis skill parameters are invalid');
+  const displayTimeType = Number(BigInt.asIntN(32, input.displayTimeType));
+  const displayTime = Number(BigInt.asIntN(32, input.displayTime));
+  if (displayTimeType !== 3 && displayTime < 1) return null;
+  const baseValue = Math.fround(
+    Math.fround(Number(BigInt.asIntN(32, input.effectBaseNum))) / 10_000,
+  );
+  const effectValue = baseValue > 0 ? Math.fround(applySkillBoost(baseValue)) : baseValue;
   if (!Number.isFinite(effectValue)) {
     throw new Error('Live Genesis skill effect value is invalid');
   }
   return {
-    effectId: effect.id,
+    effectId: input.effectId,
     effectValue,
     duration: createLiveSkillEffectDuration(
-      requireLiveSkillEffectDetailValue(details, 'GENESIS_DISPLAY_TIME_TYPE', 'Genesis'),
-      requireLiveSkillEffectDetailValue(details, 'GENESIS_DISPLAY_TIME', 'Genesis'),
-      currentTimeSeconds,
+      displayTimeType === 1 || displayTimeType === 2 ? displayTimeType : 3,
+      displayTimeType === 3 ? 0 : displayTime,
+      input.currentTimeSeconds,
       'Genesis',
     ),
   };
@@ -230,13 +268,13 @@ function validateGenesisState(state: LiveGenesisState): void {
 
 function validateRollback(rollback: LiveGenesisRollback): void {
   if (
-    !Number.isSafeInteger(rollback.skillPoint) ||
-    rollback.skillPoint < 0 ||
-    !Number.isSafeInteger(rollback.mental) ||
-    rollback.mental < 0 ||
-    rollback.voltagePoint < 0n ||
-    !Number.isSafeInteger(rollback.voltageLevel) ||
-    rollback.voltageLevel < 0
+    !Number.isSafeInteger(rollback.currentAp) ||
+    rollback.currentAp < 0 ||
+    !Number.isSafeInteger(rollback.currentMental) ||
+    rollback.currentMental < 0 ||
+    rollback.currentVoltage < 0n ||
+    !Number.isSafeInteger(rollback.currentVoltageLevel) ||
+    rollback.currentVoltageLevel < 0
   ) {
     throw new Error('Live Genesis rollback is invalid');
   }

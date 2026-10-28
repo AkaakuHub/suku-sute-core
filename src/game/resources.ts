@@ -1,6 +1,6 @@
 import type { GameState } from './model.ts';
 import { voltageLevel, voltageThreshold } from './live/voltageLevel.ts';
-import { changeBloomGauge, changeBloomResource } from './bloom.ts';
+import { changeGenesisGauge, changeGenesisResource } from './genesis.ts';
 import { breakMentalShields } from './effects/mentalShield.ts';
 import { absorbNaturalMentalDecrease, absorbSkillMentalDamage } from './live/mentalBarriers.ts';
 import type { Card } from './model.ts';
@@ -72,7 +72,12 @@ export function changeResource(
     }
     return state;
   }
-  if (resource === 'mental' && amount < 0n && source === 'skill' && !state.bloom) {
+  if (
+    resource === 'mental' &&
+    amount < 0n &&
+    source === 'skill' &&
+    state.genesis.effects.length === 0
+  ) {
     const absorbed = absorbSkillMentalDamage(state, amount);
     state = absorbed.state;
     amount = absorbed.amount;
@@ -89,10 +94,12 @@ export function changeResource(
       ) &&
       !state.mentalDown
     )
-      return state.bloom ? changeBloomResource(state, 'mental', amount) : state;
+      return state.genesis.effects.length > 0
+        ? changeGenesisResource(state, 'mental', amount)
+        : state;
   }
-  if (state.bloom) {
-    const changed = changeBloomResource(state, resource, amount);
+  if (state.genesis.effects.length > 0) {
+    const changed = changeGenesisResource(state, resource, amount);
     let withHandInduce =
       resource === 'voltage' ? notifyVoltageBaseLevelChange(state, changed, applyEffect) : changed;
     if (resource === 'voltage' && applyEffect) {
@@ -155,8 +162,8 @@ export function setVoltageValue(
   _applyEffect?: EffectApplier,
 ): GameState {
   const target = Math.max(0, Math.trunc(Math.fround(amount)));
-  if (state.bloom) {
-    return changeBloomGauge(state, Math.fround(target - state.currentVoltage));
+  if (state.genesis.effects.length > 0) {
+    return changeGenesisGauge(state, Math.fround(target - state.currentVoltage));
   }
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'voltage' && !infinity.suspended))
     return state;
@@ -249,18 +256,20 @@ export function expireGaugeInfinities(
   for (const gauge of ended) {
     if (active.some((infinity) => infinity.gauge === gauge)) continue;
     if (gauge === 'mental') {
-      next = next.bloom
-        ? { ...next, mentalTimerSeconds: 0 }
-        : induceMentalHearts(
-            { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
-            next.maximumMental,
-          );
+      next =
+        next.genesis.effects.length > 0
+          ? { ...next, mentalTimerSeconds: 0 }
+          : induceMentalHearts(
+              { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
+              next.maximumMental,
+            );
     }
     if (gauge === 'voltage') {
       const target = voltageThreshold(Math.min(10, next.maximumVoltageLevel));
-      next = next.bloom
-        ? changeBloomGauge(next, Math.fround(target - next.currentVoltage))
-        : setVoltageValue(next, target, applyEffect);
+      next =
+        next.genesis.effects.length > 0
+          ? changeGenesisGauge(next, Math.fround(target - next.currentVoltage))
+          : setVoltageValue(next, target, applyEffect);
     }
   }
   return next;
@@ -281,18 +290,20 @@ export function deactivateGaugeInfinities(
   for (const gauge of new Set(removed.map((infinity) => infinity.gauge))) {
     if (active.some((infinity) => infinity.gauge === gauge)) continue;
     if (gauge === 'mental') {
-      next = next.bloom
-        ? { ...next, mentalTimerSeconds: 0 }
-        : induceMentalHearts(
-            { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
-            next.maximumMental,
-          );
+      next =
+        next.genesis.effects.length > 0
+          ? { ...next, mentalTimerSeconds: 0 }
+          : induceMentalHearts(
+              { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
+              next.maximumMental,
+            );
     }
     if (gauge === 'voltage') {
       const target = voltageThreshold(Math.min(10, next.maximumVoltageLevel));
-      next = next.bloom
-        ? changeBloomGauge(next, Math.fround(target - next.currentVoltage))
-        : setVoltageValue(next, target, applyEffect);
+      next =
+        next.genesis.effects.length > 0
+          ? changeGenesisGauge(next, Math.fround(target - next.currentVoltage))
+          : setVoltageValue(next, target, applyEffect);
     }
   }
   return next;

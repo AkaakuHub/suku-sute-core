@@ -10,6 +10,7 @@ import type { MentalRecoverAdditionalBuff } from './mentalRecoverAdditionalBuffT
 import type { VoltageUpAdditionalBuff } from './voltageUpAdditionalBuffTypes.ts';
 import type { LoveUpAdditionalBuff } from './loveUpAdditionalBuffTypes.ts';
 import type { ScoreLimitSettings } from './live/scoreLimit.ts';
+import type { LiveGenesisState } from '../runtime/skills/genesisSkill.ts';
 import type { StarGatherHeartRuntimeState } from './live/heartTypes.ts';
 import type { StageGauges } from './live/gaugeTiming.ts';
 import type { AutomaticHeartState } from './live/automaticHeart.ts';
@@ -107,11 +108,6 @@ export type CardUse = Readonly<{
   handIndex: number;
   handCount: number;
   cost: number;
-}>;
-export type Bloom = Readonly<{
-  progress: bigint;
-  strength: number;
-  rollback: Readonly<{ currentAp: number; currentMental: number; currentVoltage: number }>;
 }>;
 export type PlayStats = Readonly<{
   cardsUsed: number;
@@ -305,7 +301,7 @@ export type GameState = Readonly<{
   sectionAmplification: number;
   targetBoosts: readonly TargetBoost[];
   resourceBoosts: readonly ResourceBoost[];
-  bloom: Bloom | null;
+  genesis: LiveGenesisState;
   relayUsed: readonly string[];
   handHeartCollectCounts: Readonly<Record<string, number>>;
   handCollectionActivationCounts: Readonly<Record<string, number>>;

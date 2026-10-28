@@ -23,6 +23,6 @@ export function conditionContext(state: GameState): ConditionContext {
     tokenSeries: state.deck.map((card) => card.tokenSeriesIds ?? []),
     supportLevels: state.supportLevels,
     naturalStars: beatHeartCount(state),
-    bloomActive: state.bloom !== null,
+    genesisActive: state.genesis.effects.length > 0,
   };
 }
