@@ -9,7 +9,7 @@ import type { LiveSpecialAppealTokenLevelType } from './specialAppealTokenTypes.
 import type { LiveSpecialAppealTokenEffect } from './specialAppealTokenTypes.ts';
 import type { LiveSpecialAppealTokenCardSetRecord } from './specialAppealTokenTypes.ts';
 import type { LiveSpecialAppealTokenState } from './specialAppealTokenTypes.ts';
-import type { LiveSpecialAppealTokenActivation } from './specialAppealTokenTypes.ts';
+import { isLiveSkillCostOver, type LiveSkillCostInput } from '../live/skillCost.ts';
 import { validateTokenCardSetRecord } from './specialAppealTokenSelection.ts';
 
 const specialAppealTokenDetailTypes = [
@@ -111,43 +111,26 @@ export function advanceLiveSpecialAppealTokenState(
 }
 
 export function canUseLiveSpecialAppealToken(
-  input: Readonly<{
-    token: LiveSpecialAppealTokenState;
-    mentalDown: boolean;
-    currentAp: number;
-    consumeAp: number;
-  }>,
+  input: LiveSkillCostInput &
+    Readonly<{
+      token: LiveSpecialAppealTokenState;
+      mentalDown: boolean;
+    }>,
 ): boolean {
-  if (
-    !Number.isSafeInteger(input.currentAp) ||
-    input.currentAp < 0 ||
-    !Number.isSafeInteger(input.consumeAp) ||
-    input.consumeAp < 0
-  ) {
-    throw new Error('Live Special Appeal token AP is invalid');
-  }
-  return (
-    !input.mentalDown &&
-    input.currentAp >= input.consumeAp &&
-    input.token.remainCoolTimeSeconds <= 0
-  );
+  return !input.mentalDown && !isLiveSkillCostOver(input) && input.token.remainCoolTimeSeconds <= 0;
 }
 
 export function activateLiveSpecialAppealToken(
-  input: Readonly<{
-    token: LiveSpecialAppealTokenState;
-    mentalDown: boolean;
-    currentAp: number;
-    consumeAp: number;
-  }>,
-): LiveSpecialAppealTokenActivation | null {
+  input: LiveSkillCostInput &
+    Readonly<{
+      token: LiveSpecialAppealTokenState;
+      mentalDown: boolean;
+    }>,
+): LiveSpecialAppealTokenState | null {
   if (!canUseLiveSpecialAppealToken(input)) return null;
   return {
-    token: {
-      ...input.token,
-      remainCoolTimeSeconds: input.token.coolTimeSeconds,
-    },
-    currentAp: input.currentAp - input.consumeAp,
+    ...input.token,
+    remainCoolTimeSeconds: input.token.coolTimeSeconds,
   };
 }
 

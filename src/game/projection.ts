@@ -1,3 +1,4 @@
+import { isLiveSkillCostOver } from '../runtime/live/skillCost.ts';
 import { calculateLiveBaseSkillCooldownSeconds } from '../runtime/live/skillActivation.ts';
 import { cardCost } from './cards/cost.ts';
 import { moodAtTime } from './live/moodTimeline.ts';
@@ -58,8 +59,14 @@ export function canUseCard(state: GameState, index: number): boolean {
     index < state.hand.length &&
     !state.mental.mentalDown &&
     state.tick - state.lastActionTick >= cardCooldownTicks(state) &&
-    (state.genesis.effects.length > 0 ||
-      state.ap.currentAp >= cardCost(state, cardAt(state, index)))
+    !isLiveSkillCostOver({
+      ap: state.ap,
+      genesis: state.genesis,
+      apInfinity: state.gaugeInfinities.some(
+        (effect) => effect.gauge === 'ap' && !effect.suspended,
+      ),
+      consumeAp: cardCost(state, cardAt(state, index)),
+    })
   );
 }
 

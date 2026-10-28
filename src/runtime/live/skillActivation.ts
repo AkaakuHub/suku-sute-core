@@ -1,3 +1,4 @@
+import { isLiveSkillCostOver, type LiveSkillCostInput } from './skillCost.ts';
 export type LiveSkillActivationUnresolvedReason =
   | 'verified-skill-cost-missing'
   | 'verified-card-draw-plan-missing';
@@ -10,7 +11,7 @@ export type LiveSkillActivationCommand = Readonly<
       source: 'registered' | 'base';
     }
   | { kind: 'set-card-board-state'; state: 5 }
-  | { kind: 'consume-skill-cost'; consumeAp: number; apAfter: number }
+  | { kind: 'consume-skill-cost'; consumeAp: number }
   | { kind: 'activate-card-skill' }
   | { kind: 'activate-card-ability' }
   | { kind: 'draw-card' }
@@ -99,13 +100,12 @@ export function advanceLiveSkillCooldown(
 }
 
 export function canActivateLiveHandCardSkill(
-  input: Readonly<{
-    isHand: boolean;
-    mentalDown: boolean;
-    currentAp: number;
-    consumeAp: number;
-    skillCooldown: LiveSkillCooldownState;
-  }>,
+  input: LiveSkillCostInput &
+    Readonly<{
+      isHand: boolean;
+      mentalDown: boolean;
+      skillCooldown: LiveSkillCooldownState;
+    }>,
 ): boolean {
   validateCooldownState(input.skillCooldown);
   return (
@@ -114,23 +114,6 @@ export function canActivateLiveHandCardSkill(
     !isLiveSkillCostOver(input) &&
     input.skillCooldown.remainingSeconds <= 0
   );
-}
-
-export function isLiveSkillCostOver(
-  input: Readonly<{
-    currentAp: number;
-    consumeAp: number;
-  }>,
-): boolean {
-  if (
-    !Number.isSafeInteger(input.currentAp) ||
-    input.currentAp < 0 ||
-    !Number.isSafeInteger(input.consumeAp) ||
-    input.consumeAp < 0
-  ) {
-    throw new Error('Live card skill AP is invalid');
-  }
-  return input.currentAp < input.consumeAp;
 }
 
 export function calculateLiveBaseSkillCooldownSeconds(playTimeMilliseconds: number): number {
@@ -158,7 +141,6 @@ function validateSkillCoolTimeProfile(profile: LiveSkillCoolTimeProfile): void {
 
 type VerifiedSkillCost = Readonly<{
   kind: 'verified';
-  currentAp: number;
   consumeAp: number;
 }>;
 
@@ -207,7 +189,6 @@ export function resolveLiveSkillActivation(
     {
       kind: 'consume-skill-cost',
       consumeAp: input.skillCost.consumeAp,
-      apAfter: input.skillCost.currentAp - input.skillCost.consumeAp,
     },
     { kind: 'activate-card-skill' },
     { kind: 'activate-card-ability' },
@@ -275,13 +256,7 @@ function validateInput(
     }
   }
   if (input.skillCost.kind === 'verified') {
-    if (
-      !Number.isSafeInteger(input.skillCost.currentAp) ||
-      input.skillCost.currentAp < 0 ||
-      !Number.isSafeInteger(input.skillCost.consumeAp) ||
-      input.skillCost.consumeAp < 0 ||
-      input.skillCost.consumeAp > input.skillCost.currentAp
-    ) {
+    if (!Number.isSafeInteger(input.skillCost.consumeAp) || input.skillCost.consumeAp < 0) {
       throw new Error('Live skill cost is invalid');
     }
   }

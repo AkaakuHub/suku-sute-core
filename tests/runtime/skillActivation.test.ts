@@ -1,3 +1,4 @@
+import { createLiveGenesisState } from '../../src/runtime/skills/genesisSkill.ts';
 import { expect, test } from 'vite-plus/test';
 import {
   advanceLiveSkillCooldown,
@@ -31,7 +32,9 @@ test('Live skill cooldownは全hand共通で0以下になるまで発動を止�
     canActivateLiveHandCardSkill({
       isHand: true,
       mentalDown: false,
-      currentAp: 10,
+      ap: { currentAp: 10, maxAp: 20, timerSeconds: 0 },
+      genesis: createLiveGenesisState(),
+      apInfinity: false,
       consumeAp: 3,
       skillCooldown: cooldown,
     }),
@@ -45,7 +48,9 @@ test('Live skill cooldownは全hand共通で0以下になるまで発動を止�
     canActivateLiveHandCardSkill({
       isHand: true,
       mentalDown: false,
-      currentAp: 10,
+      ap: { currentAp: 10, maxAp: 20, timerSeconds: 0 },
+      genesis: createLiveGenesisState(),
+      apInfinity: false,
       consumeAp: 3,
       skillCooldown: elapsed,
     }),
@@ -56,7 +61,9 @@ test('Live card skillはMental Down、AP不足、hand外で発動しない', () 
   const availableInput = {
     isHand: true,
     mentalDown: false,
-    currentAp: 3,
+    ap: { currentAp: 3, maxAp: 20, timerSeconds: 0 },
+    genesis: createLiveGenesisState(),
+    apInfinity: false,
     consumeAp: 3,
     skillCooldown: createLiveSkillCooldownState(),
   };
@@ -70,7 +77,7 @@ test('Live card skillはMental Down、AP不足、hand外で発動しない', () 
   expect(
     canActivateLiveHandCardSkill({
       ...availableInput,
-      currentAp: 2,
+      ap: { ...availableInput.ap, currentAp: 2 },
     }),
   ).toBe(false);
   expect(
@@ -87,7 +94,7 @@ test('Live通常skillはcooldownからResetSearch後の確認まで公式順で�
     deckActionRunning: false,
     registeredCooldownSeconds: null,
     baseCooldownSeconds: 1.5,
-    skillCost: { kind: 'verified', currentAp: 8, consumeAp: 3 },
+    skillCost: { kind: 'verified', consumeAp: 3 },
     drawPlan: {
       kind: 'verified',
       hasUseAllHandSkill: false,
@@ -105,7 +112,7 @@ test('Live通常skillはcooldownからResetSearch後の確認まで公式順で�
         source: 'base',
       },
       { kind: 'set-card-board-state', state: 5 },
-      { kind: 'consume-skill-cost', consumeAp: 3, apAfter: 5 },
+      { kind: 'consume-skill-cost', consumeAp: 3 },
       { kind: 'activate-card-skill' },
       { kind: 'activate-card-ability' },
       { kind: 'draw-card' },
@@ -124,7 +131,7 @@ test('Live all-hand skillはDrawAllHandとEndをenqueueしてから共通action�
     deckActionRunning: false,
     registeredCooldownSeconds: null,
     baseCooldownSeconds: calculateLiveBaseSkillCooldownSeconds(139_259),
-    skillCost: { kind: 'verified', currentAp: 2, consumeAp: 2 },
+    skillCost: { kind: 'verified', consumeAp: 2 },
     drawPlan: {
       kind: 'verified',
       hasUseAllHandSkill: true,
@@ -169,7 +176,7 @@ test('Live skillは未確定costとcard draw planを推測しない', () => {
   expect(
     resolveLiveSkillActivation({
       ...baseInput,
-      skillCost: { kind: 'verified', currentAp: 4, consumeAp: 1 },
+      skillCost: { kind: 'verified', consumeAp: 1 },
       drawPlan: { kind: 'unresolved' },
     }),
   ).toEqual({

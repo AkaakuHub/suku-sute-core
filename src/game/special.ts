@@ -1,3 +1,4 @@
+import { isLiveSkillCostOver } from '../runtime/live/skillCost.ts';
 import { beginTokenGeneration, finishTokenGeneration } from './cards/tokens.ts';
 import type { Card, GameState } from './model.ts';
 import { applyEffect } from './effects.ts';
@@ -35,7 +36,14 @@ export function canUseSpecial(state: GameState, cardId: string): boolean {
     (state.phase === 'playing' || state.phase === 'paused') &&
     !state.mental.mentalDown &&
     (token ? token.remainingCoolTime <= 0 : !state.specialUsed.includes(cardId)) &&
-    (state.genesis.effects.length > 0 || state.ap.currentAp >= specialCost(card)),
+    !isLiveSkillCostOver({
+      ap: state.ap,
+      genesis: state.genesis,
+      apInfinity: state.gaugeInfinities.some(
+        (effect) => effect.gauge === 'ap' && !effect.suspended,
+      ),
+      consumeAp: specialCost(card),
+    }),
   );
 }
 

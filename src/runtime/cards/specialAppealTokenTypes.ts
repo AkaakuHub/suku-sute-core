@@ -73,8 +73,3 @@ export type LiveSpecialAppealTokenModel = Readonly<{
   mood: number;
   style: number;
 }>;
-
-export type LiveSpecialAppealTokenActivation = Readonly<{
-  token: LiveSpecialAppealTokenState;
-  currentAp: number;
-}>;
