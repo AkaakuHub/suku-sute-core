@@ -152,10 +152,7 @@ function addTokenCards(
           ...state.deckBoard.cards,
           ...generated.map((card) => ({
             cardInstanceId: card.id,
-            cardDatasId:
-              templateReference.kind === 'token-id'
-                ? templateReference.token
-                : String(templateReference.effect.resourceId),
+            cardDatasId: card.cardDatasId,
             boardState: 1 as const,
             skillUseAtBoardState: 3 as const,
           })),
@@ -181,6 +178,7 @@ function createActionTokenCard(
       : abilityVariant(effect.ability.variant);
   return {
     id,
+    cardDatasId: String(effect.resourceId),
     name: '',
     costume: null,
     performer: null,

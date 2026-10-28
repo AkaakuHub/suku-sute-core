@@ -1,3 +1,4 @@
+import type { LiveDeckBoardCard } from '../../runtime/cards/deckBoardState.ts';
 import type { LiveCardSkillLevel } from '../../runtime/skills/skillTypes.ts';
 import type { LiveSkillCardIdentity } from '../../runtime/cards/cardIdentity.ts';
 import type { DrawProbabilityRule } from './drawProbability.ts';
@@ -361,4 +362,5 @@ export type Card = Readonly<{
   collectionAbility?: 'rain-echo' | 'rain-pulse';
 }> &
   LiveSkillCardIdentity &
-  Pick<LiveCardSkillLevel, 'consumeAp'>;
+  Pick<LiveCardSkillLevel, 'consumeAp'> &
+  Pick<LiveDeckBoardCard<string>, 'cardDatasId'>;

@@ -17,6 +17,7 @@ export function validateDeck(
 export function validateCard(card: Card): void {
   if (
     !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(card.id) ||
+    card.cardDatasId.length === 0 ||
     (!card.tokenCard && !card.name.trim()) ||
     (card.costume !== null && !costumeIds.includes(card.costume)) ||
     (!card.tokenCard && (card.costume === null || card.performer === null)) ||

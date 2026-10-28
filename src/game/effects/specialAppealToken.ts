@@ -49,7 +49,11 @@ export function activateSpecialAppealToken(
         remainingCoolTime = token.remainingCoolTime;
     }
 
-    const card: Card = { ...cardForLevel.card, id: String(tokenCardSet.resourceId) };
+    const card: Card = {
+      ...cardForLevel.card,
+      id: String(tokenCardSet.resourceId),
+      cardDatasId: String(tokenCardSet.resourceId),
+    };
     additions.push({
       recordId: tokenCardSet.id,
       tokenSetId: tokenCardSet.tokenSetId,

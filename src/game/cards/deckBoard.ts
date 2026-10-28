@@ -14,7 +14,7 @@ export function createCardDeckBoard(
   return {
     cards: cards.map((card) => ({
       cardInstanceId: card.id,
-      cardDatasId: card.id,
+      cardDatasId: card.cardDatasId,
       boardState: hand.includes(card.id) ? liveBoardState.hand : liveBoardState.deck,
       skillUseAtBoardState: liveBoardState.graveyard,
     })),
