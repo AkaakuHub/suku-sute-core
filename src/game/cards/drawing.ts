@@ -193,11 +193,23 @@ function drawUntil(
         Number(Boolean(next.deck.find((card) => card.cardInstanceId === right)?.passive)) -
         Number(Boolean(next.deck.find((card) => card.cardInstanceId === left)?.passive)),
     );
-    next = {
-      ...removeHandCardEffects(next, ordered.slice(maximum)),
-      liveHands: setLiveCurrentHandCards(next, ordered.slice(0, maximum)).liveHands,
-      deckBoard: moveCardsToBoard(next, ordered.slice(maximum), liveBoardState.graveyard).deckBoard,
-    };
+    const removed = ordered.slice(maximum);
+    next = removeHandCardEffects(next, removed);
+    for (const id of removed) {
+      const hand = next.liveHands[next.tokenCardDeck.currentDeck];
+      next = {
+        ...next,
+        liveHands: {
+          ...next.liveHands,
+          [next.tokenCardDeck.currentDeck]: removeLiveHandCard(
+            hand,
+            hand.handCards.indexOf(id),
+            true,
+          ),
+        },
+      };
+    }
+    next = moveCardsToBoard(next, removed, liveBoardState.graveyard);
   }
   return { state: next, drawSucceeded: drawnCards.length > 0 };
 }
