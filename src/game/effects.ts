@@ -112,7 +112,7 @@ function applyEffectInternal(
     case 'branch': {
       const context = conditionContext(state);
       const bothGenesisBranches =
-        context.genesisActive &&
+        state.genesis.effects.length > 0 &&
         (effect.condition.kind === 'mental-at-most' ||
           effect.condition.kind === 'voltage-level-at-most');
       const alwaysTrueBranch =

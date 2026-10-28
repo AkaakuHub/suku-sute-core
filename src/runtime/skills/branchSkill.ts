@@ -1,19 +1,13 @@
+import {
+  type LiveConditionContext,
+  liveConditionVoltageLevel,
+  liveConditionMoodValue,
+  liveConditionSectionNumber,
+  liveConditionRatioThreshold,
+  liveConditionMoodType,
+} from '../live/conditionContext.ts';
+import { liveMentalRatio } from '../live/mentalGauge.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
-
-export type LiveBranchConditionInput = Readonly<{
-  voltageLevel: number;
-  mentalRatio: number;
-  moodValue: number | null;
-  currentSection: number;
-  feverSection: number;
-  cardTotal: number;
-  deckCount: number;
-  graveyardCount: number;
-  tokenCardSeriesCount: (seriesIds: readonly number[]) => number;
-  memberFanLevelTotal: (characterIds: readonly number[]) => number;
-  beatHeartValue: number;
-  exclusionCount: number;
-}>;
 
 export type LiveBranchSkill = Readonly<{
   effectId: string;
@@ -70,7 +64,7 @@ export function createLiveBranchSkill(
 
 export function resolveLiveBranchEffect(
   branch: LiveBranchSkill,
-  input: LiveBranchConditionInput,
+  input: LiveConditionContext,
 ): LiveSkillEffect | null {
   validateInput(input);
   return isLiveBranchConditionSatisfied(branch, input) ? branch.trueEffect : branch.falseEffect;
@@ -79,7 +73,7 @@ export function resolveLiveBranchEffect(
 export function resolveLiveBranchLeafEffect(
   effect: LiveSkillEffect,
   effects: readonly LiveSkillEffect[],
-  input: LiveBranchConditionInput,
+  input: LiveConditionContext,
 ): LiveSkillEffect | null {
   let current: LiveSkillEffect | null = effect;
   const visited = new Set<string>();
@@ -110,19 +104,22 @@ export function liveBranchEmbeddedSkillEffectIds(
 
 function isLiveBranchConditionSatisfied(
   branch: LiveBranchSkill,
-  input: LiveBranchConditionInput,
+  input: LiveConditionContext,
 ): boolean {
   switch (branch.branchType) {
     case 1:
-      return input.voltageLevel >= branch.branchValue;
+      return liveConditionVoltageLevel(input) >= branch.branchValue;
     case 2:
-      return input.mentalRatio >= Math.fround(branch.branchValue / 1_000_000);
+      return (
+        liveMentalRatio(input.mental, input.maximumMental) >=
+        liveConditionRatioThreshold(branch.branchValue)
+      );
     case 3:
-      return requireMoodValue(input.moodValue) >= branch.branchValue;
+      return liveConditionMoodValue(input) >= branch.branchValue;
     case 4:
       return input.currentSection + 1 >= branch.branchValue;
     case 5:
-      return resolveSectionNumber(input) === branch.branchValue;
+      return liveConditionSectionNumber(input) === branch.branchValue;
     case 6:
       return input.cardTotal >= branch.branchValue;
     case 7:
@@ -136,31 +133,12 @@ function isLiveBranchConditionSatisfied(
     case 11:
       return input.beatHeartValue >= branch.branchValue / 10_000;
     case 12:
-      return resolveMood(requireMoodValue(input.moodValue)) === branch.branchValue;
+      return liveConditionMoodType(input) === branch.branchValue;
     case 13:
       return input.exclusionCount >= branch.branchValue;
     default:
       throw new Error('Live Branch type is invalid');
   }
-}
-
-function resolveSectionNumber(
-  input: Pick<LiveBranchConditionInput, 'currentSection' | 'feverSection'>,
-): number {
-  if (input.currentSection === input.feverSection) return 99;
-  return input.currentSection - (input.currentSection > input.feverSection ? 1 : 0) + 1;
-}
-
-function resolveMood(moodValue: number): 1 | 2 | 3 {
-  if (moodValue > 0) return 1;
-  return moodValue < 0 ? 3 : 2;
-}
-
-function requireMoodValue(moodValue: number | null): number {
-  if (moodValue === null) {
-    throw new Error('Live Branch mood is unresolved');
-  }
-  return moodValue;
 }
 
 function requireBranchType(value: number): LiveBranchType {
@@ -233,11 +211,12 @@ function resolveEmbeddedEffect(
   return effect;
 }
 
-function validateInput(input: LiveBranchConditionInput): void {
+function validateInput(input: LiveConditionContext): void {
   for (const value of [
-    input.voltageLevel,
+    input.maximumVoltageLevel,
+    input.maximumMental,
     input.currentSection,
-    input.feverSection,
+    ...(input.feverSection === null ? [] : [input.feverSection]),
     input.cardTotal,
     input.deckCount,
     input.graveyardCount,
@@ -249,8 +228,8 @@ function validateInput(input: LiveBranchConditionInput): void {
   }
   if (
     (input.moodValue !== null && !Number.isSafeInteger(input.moodValue)) ||
-    !Number.isFinite(input.mentalRatio) ||
-    input.mentalRatio < 0 ||
+    !Number.isFinite(liveMentalRatio(input.mental, input.maximumMental)) ||
+    liveMentalRatio(input.mental, input.maximumMental) < 0 ||
     !Number.isFinite(input.beatHeartValue) ||
     input.beatHeartValue < 0
   ) {

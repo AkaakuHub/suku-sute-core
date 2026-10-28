@@ -1,7 +1,7 @@
+import type { LiveConditionContext } from '../../src/runtime/live/conditionContext.ts';
 import { describe, expect, test } from 'vite-plus/test';
 import {
   createLiveBranchSkill,
-  type LiveBranchConditionInput,
   resolveLiveBranchEffect,
   resolveLiveBranchLeafEffect,
 } from '../../src/runtime/skills/branchSkill.ts';
@@ -9,8 +9,8 @@ import type { LiveSkillEffect } from '../../src/runtime/skills/skillTypes.ts';
 
 describe('Live Branch skill', () => {
   test.each([
-    [1, 4, { voltageLevel: 4 }],
-    [2, 500_000, { mentalRatio: 0.5 }],
+    [1, 4, { voltage: { currentVoltage: 3n, timerSeconds: 0 } }],
+    [2, 500_000, { mental: { currentMental: 50, timerSeconds: 0, mentalDown: false } }],
     [3, 25, { moodValue: 25 }],
     [4, 3, { currentSection: 2 }],
     [5, 99, { currentSection: 2, feverSection: 2 }],
@@ -35,6 +35,30 @@ describe('Live Branch skill', () => {
       ).toBe('1002');
     },
   );
+
+  test('メンタル現在値の小数部を切り捨ててから割合を判定する', () => {
+    const effects = branchEffects(2, 500_000);
+    const input = {
+      ...conditionInput(),
+      mental: { currentMental: 1.9, timerSeconds: 0, mentalDown: false },
+      maximumMental: 3,
+    };
+    expect(resolveLiveBranchEffect(createLiveBranchSkill(effects[0], effects), input)?.id).toBe(
+      '1003',
+    );
+  });
+
+  test('条件値をFloat32で10000と100に順番に割って境界を判定する', () => {
+    const effects = branchEffects(2, 5);
+    const input = {
+      ...conditionInput(),
+      mental: { currentMental: 5, timerSeconds: 0, mentalDown: false },
+      maximumMental: 1_000_000,
+    };
+    expect(resolveLiveBranchEffect(createLiveBranchSkill(effects[0], effects), input)?.id).toBe(
+      '1003',
+    );
+  });
 
   test('通常section番号はFever sectionを除外して1始まりで照合する', () => {
     const effects = branchEffects(5, 3);
@@ -147,10 +171,16 @@ function detail(id: string, detailType: string, effectValue: number) {
   return { id, detailType, targetMood: 0, effectValue, params: [] };
 }
 
-function conditionInput(): LiveBranchConditionInput {
+function conditionInput(): LiveConditionContext {
   return {
-    voltageLevel: 4,
-    mentalRatio: 0.49,
+    voltage: { currentVoltage: 3n, timerSeconds: 0 },
+    voltageThresholds: [0n, 1n, 2n, 3n].map((requiredVoltagePoint, index) => ({
+      voltageLevel: index + 1,
+      requiredVoltagePoint,
+    })),
+    maximumVoltageLevel: 4,
+    mental: { currentMental: 49, timerSeconds: 0, mentalDown: false },
+    maximumMental: 100,
     moodValue: 0,
     currentSection: 0,
     feverSection: 2,

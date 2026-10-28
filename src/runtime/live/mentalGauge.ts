@@ -1,8 +1,16 @@
+import { floatToInt32 } from '../numeric.ts';
+
 export type LiveMentalGaugeState = Readonly<{
   currentMental: number;
   timerSeconds: number;
   mentalDown: boolean;
 }>;
+
+export function liveMentalRatio(state: LiveMentalGaugeState, maximumMental: number): number {
+  const value = Math.fround(state.currentMental);
+  const currentMental = value === Number.POSITIVE_INFINITY ? -2_147_483_648 : floatToInt32(value);
+  return Math.fround(Math.fround(currentMental) / Math.fround(maximumMental));
+}
 
 export type LiveMentalGaugePorts = Readonly<{
   setMental: (requestedMental: number) => number;

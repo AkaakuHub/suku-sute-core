@@ -20,18 +20,3 @@ export type GameCondition =
   | Readonly<{ kind: 'support-level'; members: readonly number[]; minimum: number }>
   | Readonly<{ kind: 'natural-stars'; minimum: number }>
   | Readonly<{ kind: 'weather-type'; weather: 'sun' | 'cloud' | 'rain' }>;
-
-export type ConditionContext = Readonly<{
-  heatLevel: number;
-  mentalFraction: number;
-  moodValue: number;
-  staminaPercent: number;
-  weather: number;
-  partIndex: number;
-  partNumber: number;
-  cardCounts: Readonly<Record<'all' | 'draw' | 'discard' | 'excluded', number>>;
-  tokenSeries: readonly (readonly number[])[];
-  supportLevels: Readonly<Record<number, number>>;
-  naturalStars: number;
-  genesisActive: boolean;
-}>;

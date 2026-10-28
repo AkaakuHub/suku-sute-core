@@ -6,7 +6,7 @@ import {
   projectLiveVoltageLevel,
 } from '../../runtime/live/voltageThresholds.ts';
 
-const thresholds = createLiveVoltageThresholds(
+export const voltageThresholds = createLiveVoltageThresholds(
   rawThresholds.map((requiredVoltagePoint, index) => ({
     voltageLevel: index + 1,
     requiredVoltagePoint: BigInt(requiredVoltagePoint),
@@ -15,11 +15,11 @@ const thresholds = createLiveVoltageThresholds(
 );
 
 export function voltageThreshold(level: number): bigint {
-  return getLiveVoltageThreshold(thresholds, level);
+  return getLiveVoltageThreshold(voltageThresholds, level);
 }
 
 export function voltageLevel(points: bigint, maximumLevel: number): number {
-  return projectLiveVoltageLevel(thresholds, points, maximumLevel).currentLevel;
+  return projectLiveVoltageLevel(voltageThresholds, points, maximumLevel).currentLevel;
 }
 
 export function voltageProgress(points: bigint, maximumLevel: number): number {

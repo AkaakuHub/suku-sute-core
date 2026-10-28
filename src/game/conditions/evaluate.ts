@@ -1,52 +1,79 @@
-import type { ConditionContext, GameCondition } from './model.ts';
+import {
+  type LiveConditionContext,
+  liveConditionVoltageLevel,
+  liveConditionSectionNumber,
+  liveConditionMoodValue,
+  liveConditionMoodType,
+} from '../../runtime/live/conditionContext.ts';
+import { liveMentalRatio } from '../../runtime/live/mentalGauge.ts';
+import type { GameCondition } from './model.ts';
 
-export function evaluateCondition(condition: GameCondition, context: ConditionContext): boolean {
+export function evaluateCondition(
+  condition: GameCondition,
+  context: LiveConditionContext,
+): boolean {
   switch (condition.kind) {
     case 'always':
       return true;
     case 'mental-at-most':
-      return context.mentalFraction <= condition.fraction;
+      return (
+        liveMentalRatio(context.mental, context.maximumMental) <= Math.fround(condition.fraction)
+      );
     case 'mood-at-most':
-      return context.moodValue <= condition.value;
+      return liveConditionMoodValue(context) <= condition.value;
     case 'mood-at-least':
-      return context.moodValue >= condition.value;
+      return liveConditionMoodValue(context) >= condition.value;
     case 'mood-equal':
-      return Math.trunc(context.moodValue) === Math.trunc(condition.value);
+      return Math.trunc(liveConditionMoodValue(context)) === Math.trunc(condition.value);
     case 'voltage-level-at-most':
-      return context.heatLevel <= condition.level;
+      return liveConditionVoltageLevel(context) <= condition.level;
     case 'part-at-most':
-      return context.partIndex + 1 <= condition.number;
+      return context.currentSection + 1 <= condition.number;
     case 'relative-part':
-      return context.partNumber === condition.number;
+      return liveConditionSectionNumber(context) === condition.number;
     case 'heat':
-      return context.heatLevel >= condition.minimum;
+      return liveConditionVoltageLevel(context) >= condition.minimum;
     case 'mental':
-      return context.staminaPercent >= condition.minimumPercent;
+      return (
+        liveMentalRatio(context.mental, context.maximumMental) >=
+        Math.fround(Math.fround(condition.minimumPercent) / 100)
+      );
     case 'weather':
-      return context.weather >= condition.minimum;
+      return liveConditionMoodValue(context) >= condition.minimum;
     case 'part-from':
-      return context.partIndex + 1 >= condition.number;
+      return context.currentSection + 1 >= condition.number;
     case 'part':
-      return context.partNumber === condition.number;
+      return liveConditionSectionNumber(context) === condition.number;
     case 'cards':
-      return context.cardCounts[condition.zone] >= condition.minimum;
+      return cardCount(context, condition.zone) >= condition.minimum;
     case 'card-count-parity':
-      return context.cardCounts[condition.zone] % 2 === (condition.parity === 'even' ? 0 : 1);
+      return cardCount(context, condition.zone) % 2 === (condition.parity === 'even' ? 0 : 1);
     case 'token-series':
-      return (
-        context.tokenSeries.filter((series) => condition.series.some((id) => series.includes(id)))
-          .length >= condition.minimum
-      );
+      return context.tokenCardSeriesCount(condition.series) >= condition.minimum;
     case 'support-level':
-      return (
-        condition.members.reduce((sum, id) => sum + (context.supportLevels[id] ?? 0), 0) >=
-        condition.minimum
-      );
+      return context.memberFanLevelTotal(condition.members) >= condition.minimum;
     case 'natural-stars':
-      return context.naturalStars >= condition.minimum;
+      return context.beatHeartValue >= condition.minimum;
     case 'weather-type':
       return (
-        (context.weather > 0 ? 'sun' : context.weather < 0 ? 'rain' : 'cloud') === condition.weather
+        liveConditionMoodType(context) ===
+        (condition.weather === 'sun' ? 1 : condition.weather === 'rain' ? 3 : 2)
       );
+  }
+}
+
+function cardCount(
+  context: LiveConditionContext,
+  zone: 'all' | 'draw' | 'discard' | 'excluded',
+): number {
+  switch (zone) {
+    case 'all':
+      return context.cardTotal;
+    case 'draw':
+      return context.deckCount;
+    case 'discard':
+      return context.graveyardCount;
+    case 'excluded':
+      return context.exclusionCount;
   }
 }
