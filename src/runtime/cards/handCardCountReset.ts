@@ -2,6 +2,7 @@ import type { LiveCardIdentifier, LiveDeckBoardState } from './deckBoardState.ts
 import type { LiveDeckActionQueueState } from './deckActionQueue.ts';
 import { liveCurrentDeckCardCount, type LiveTokenCardDeckState } from './tokenCardDeck.ts';
 import { resetLiveHandCardTargetCount } from './handCardTarget.ts';
+import { resetLiveCardSearchParams } from './cardSearchState.ts';
 
 type HandCountRuntime = Readonly<{
   tokenCardDeck: LiveTokenCardDeckState<LiveCardIdentifier>;
@@ -87,6 +88,8 @@ export function flushLiveHandCardCountActions<State extends HandCountRuntime>(
           resetCount: (next.tokenCardDeck.resetCount + action.param1) | 0,
         },
       };
+    } else if (action.type === 5) {
+      next = { ...next, deckBoard: resetLiveCardSearchParams(next.deckBoard) };
     } else if (action.type === 8) {
       next = { ...next, tokenCardDeck: { ...next.tokenCardDeck, isAllHandSkill: false } };
     } else if (next.tokenCardDeck.isAllHandSkill) {

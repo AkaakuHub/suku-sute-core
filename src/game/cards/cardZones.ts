@@ -3,6 +3,7 @@ import {
   executeLiveAllHandDraw,
 } from '../../runtime/cards/allHandDeckActions.ts';
 import { liveCurrentDeckCardCount } from '../../runtime/cards/tokenCardDeck.ts';
+import { enqueueLiveCardSearchReset } from '../../runtime/cards/deckActionQueue.ts';
 import { completeDeckOutChecks } from '../effects/deckOutCheck.ts';
 import { applyEffect } from '../effects.ts';
 import { cardSkillUseState } from './skillUseAtBoardState.ts';
@@ -16,6 +17,7 @@ import { removeHandCardEffects } from './handEffects.ts';
 import { flushDeckActions } from './boardActions.ts';
 import {
   fillHand,
+  flushHandCardCountActions,
   fillHandToCountRetainingOverflow,
   handCapacity,
   removeRandomHandCards,
@@ -59,7 +61,7 @@ export function finishCardActivation(state: GameState): GameState {
   };
   if (cardSkillUseState(next, source.cardInstanceId).boardState === liveBoardState.exclusion)
     next = excludeCards(next, [source.cardInstanceId]);
-  return { ...next, activation: null };
+  return flushHandCardCountActions(enqueueLiveCardSearchReset({ ...next, activation: null }));
 }
 
 function completeUsedCards(state: GameState, sourceId: string): GameState {
@@ -80,7 +82,9 @@ function completeUsedCards(state: GameState, sourceId: string): GameState {
 }
 
 function finishAllHandActivation(state: GameState, source: GameState['deck'][number]): GameState {
-  const queued = enqueueLiveAllHandDraw(flushDeckActions(state), source);
+  const queued = enqueueLiveCardSearchReset(
+    enqueueLiveAllHandDraw(flushDeckActions(state), source),
+  );
   const ready = completeDeckOutChecks(queued, applyEffect);
   const drawn = executeLiveAllHandDraw(ready, (current, card) => {
     let next = current.tokenCardDeck.allHandSkillDeckReload

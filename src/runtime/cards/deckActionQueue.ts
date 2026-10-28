@@ -8,7 +8,7 @@ import {
 
 export type LiveDeckAction = Readonly<
   | { type: 1; param1: number }
-  | { type: 2 | 6 | 8 }
+  | { type: 2 | 5 | 6 | 8 }
   | { type: 7; card: LiveCardIdentity & Readonly<{ cardInstanceId: LiveCardIdentifier }> }
 >;
 
@@ -25,6 +25,15 @@ type DeckActionState = Readonly<{
 
 export function createLiveDeckActionQueueState(): LiveDeckActionQueueState {
   return { queue: [], currentAction: null };
+}
+
+export function enqueueLiveCardSearchReset<
+  State extends Readonly<{ deckActions: LiveDeckActionQueueState }>,
+>(state: State): State {
+  return {
+    ...state,
+    deckActions: { ...state.deckActions, queue: [...state.deckActions.queue, { type: 5 }] },
+  };
 }
 
 export function checkLiveDeckOut<State extends DeckActionState>(
