@@ -1,14 +1,16 @@
 import { prepareLiveDeckDraw } from './deckDraw.ts';
 import {
   type LiveBoardState,
+  type LiveCardIdentifier,
   type LiveDeckBoardState,
   liveBoardState,
   reloadLiveDeckCardInstanceIds,
 } from './deckBoardState.ts';
 
-export type LiveTokenCardDeckState = Readonly<{
+export type LiveTokenCardDeckState<Id extends LiveCardIdentifier = number> = Readonly<{
   currentDeck: 'main' | 'sub';
-  subDeckCardInstanceIds: readonly number[] | null;
+  subDeckCardInstanceIds: readonly Id[] | null;
+  tokenCardSeriesIds: readonly number[] | null;
   handTargetCounts: Readonly<{
     current: number;
     main: number;
@@ -16,28 +18,31 @@ export type LiveTokenCardDeckState = Readonly<{
   }> | null;
 }>;
 
-export type LiveTokenCardDeckIdentity = Readonly<{
-  cardInstanceId: number;
+export type LiveTokenCardDeckIdentity<Id extends LiveCardIdentifier = number> = Readonly<{
+  cardInstanceId: Id;
   tokenCardSeriesIds: readonly number[];
 }>;
 
-export function createLiveTokenCardDeckState(): LiveTokenCardDeckState {
+export function createLiveTokenCardDeckState<
+  Id extends LiveCardIdentifier = number,
+>(): LiveTokenCardDeckState<Id> {
   return {
     currentDeck: 'main',
     subDeckCardInstanceIds: null,
+    tokenCardSeriesIds: null,
     handTargetCounts: null,
   };
 }
 
-export function splitLiveTokenCardDeck(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
-  cards: readonly LiveTokenCardDeckIdentity[],
+export function splitLiveTokenCardDeck<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
+  cards: readonly LiveTokenCardDeckIdentity<Id>[],
   tokenCardSeriesId: number,
   handTargetCount: number,
 ): Readonly<{
-  state: LiveTokenCardDeckState;
-  deckBoard: LiveDeckBoardState;
+  state: LiveTokenCardDeckState<Id>;
+  deckBoard: LiveDeckBoardState<Id>;
 }> {
   validateState(state, deckBoard);
   validateCards(deckBoard, cards);
@@ -54,6 +59,7 @@ export function splitLiveTokenCardDeck(
     state: {
       currentDeck: 'main',
       subDeckCardInstanceIds,
+      tokenCardSeriesIds: [tokenCardSeriesId],
       handTargetCounts: {
         current: handTargetCount,
         main: handTargetCount,
@@ -69,10 +75,10 @@ export function splitLiveTokenCardDeck(
   };
 }
 
-export function switchLiveTokenCardDeck(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
-): LiveTokenCardDeckState {
+export function switchLiveTokenCardDeck<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
+): LiveTokenCardDeckState<Id> {
   validateState(state, deckBoard);
   if (state.subDeckCardInstanceIds === null) return state;
   if (state.handTargetCounts === null) {
@@ -87,10 +93,10 @@ export function switchLiveTokenCardDeck(
   );
 }
 
-export function reconcileLiveTokenCardDeckHandTarget(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
-): LiveTokenCardDeckState {
+export function reconcileLiveTokenCardDeckHandTarget<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
+): LiveTokenCardDeckState<Id> {
   validateState(state, deckBoard);
   if (state.handTargetCounts === null) return state;
   const currentHandCount = liveCurrentDeckBoardCardInstanceIds(
@@ -119,18 +125,18 @@ export function reconcileLiveTokenCardDeckHandTarget(
   };
 }
 
-export function mergeLiveTokenCardDeck(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
+export function mergeLiveTokenCardDeck<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
 ): Readonly<{
-  state: LiveTokenCardDeckState;
-  deckBoard: LiveDeckBoardState;
+  state: LiveTokenCardDeckState<Id>;
+  deckBoard: LiveDeckBoardState<Id>;
 }> {
   validateState(state, deckBoard);
   if (state.subDeckCardInstanceIds === null) return { state, deckBoard };
   const subDeckIds = new Set(state.subDeckCardInstanceIds);
   return {
-    state: createLiveTokenCardDeckState(),
+    state: createLiveTokenCardDeckState<Id>(),
     deckBoard: {
       ...deckBoard,
       cards: deckBoard.cards.map((card) =>
@@ -142,17 +148,21 @@ export function mergeLiveTokenCardDeck(
   };
 }
 
-export function addLiveCurrentDeckCard(
-  state: LiveTokenCardDeckState,
-  cardInstanceId: number,
-): LiveTokenCardDeckState {
-  if (!Number.isSafeInteger(cardInstanceId) || cardInstanceId < 1) {
+export function addLiveTokenCardDeckCard<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  card: LiveTokenCardDeckIdentity<Id>,
+): LiveTokenCardDeckState<Id> {
+  const cardInstanceId = card.cardInstanceId;
+  if (
+    typeof cardInstanceId === 'number'
+      ? !Number.isSafeInteger(cardInstanceId) || cardInstanceId < 1
+      : cardInstanceId.length === 0
+  ) {
     throw new Error('Live sub deck card instance ID is invalid');
   }
-  if (state.currentDeck === 'main') return state;
-  if (state.subDeckCardInstanceIds === null) {
-    throw new Error('Live current sub deck is absent');
-  }
+  if (state.subDeckCardInstanceIds === null) return state;
+  if (state.tokenCardSeriesIds === null) throw new Error('Live sub deck token series are absent');
+  if (!card.tokenCardSeriesIds.some((id) => state.tokenCardSeriesIds?.includes(id))) return state;
   if (state.subDeckCardInstanceIds.includes(cardInstanceId)) {
     throw new Error('Live sub deck card instance ID is duplicated');
   }
@@ -162,11 +172,11 @@ export function addLiveCurrentDeckCard(
   };
 }
 
-export function liveCurrentDeckBoardCardInstanceIds(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
+export function liveCurrentDeckBoardCardInstanceIds<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
   boardState: LiveBoardState,
-): readonly number[] {
+): readonly Id[] {
   validateState(state, deckBoard);
   const subDeckIds = new Set(state.subDeckCardInstanceIds ?? []);
   return deckBoard.cards.flatMap((card) => {
@@ -178,19 +188,19 @@ export function liveCurrentDeckBoardCardInstanceIds(
   });
 }
 
-export function liveCurrentDeckCardCount(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
+export function liveCurrentDeckCardCount<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
 ): number {
   validateState(state, deckBoard);
   return liveDeckCardInstanceIds(state, deckBoard, state.currentDeck).length;
 }
 
-export function prepareLiveCurrentDeckDraw(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
-  drawProbability: (cardInstanceId: number) => number,
-): LiveDeckBoardState {
+export function prepareLiveCurrentDeckDraw<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
+  drawProbability: (cardInstanceId: Id) => number,
+): LiveDeckBoardState<Id> {
   validateState(state, deckBoard);
   return prepareLiveDeckDraw(
     deckBoard,
@@ -199,10 +209,10 @@ export function prepareLiveCurrentDeckDraw(
   );
 }
 
-export function reloadLiveCurrentDeckCards(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
-): LiveDeckBoardState {
+export function reloadLiveCurrentDeckCards<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
+): LiveDeckBoardState<Id> {
   validateState(state, deckBoard);
   return reloadLiveDeckCardInstanceIds(
     deckBoard,
@@ -210,12 +220,12 @@ export function reloadLiveCurrentDeckCards(
   );
 }
 
-export function moveLiveCurrentDeckHandCardsToBoardState(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
-  handCardInstanceIds: readonly number[],
+export function moveLiveCurrentDeckHandCardsToBoardState<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
+  handCardInstanceIds: readonly Id[],
   boardState: Extract<LiveBoardState, (typeof liveBoardState)['deck' | 'graveyard']>,
-): LiveDeckBoardState {
+): LiveDeckBoardState<Id> {
   validateState(state, deckBoard);
   const currentHandIds = liveCurrentDeckBoardCardInstanceIds(state, deckBoard, liveBoardState.hand);
   if (
@@ -234,12 +244,12 @@ export function moveLiveCurrentDeckHandCardsToBoardState(
   };
 }
 
-export function moveLiveCurrentDeckHandCardToBoardState(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
-  cardInstanceId: number,
+export function moveLiveCurrentDeckHandCardToBoardState<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
   boardState: Extract<LiveBoardState, (typeof liveBoardState)['deck' | 'graveyard']>,
-): LiveDeckBoardState {
+): LiveDeckBoardState<Id> {
   validateState(state, deckBoard);
   if (
     !liveCurrentDeckBoardCardInstanceIds(state, deckBoard, liveBoardState.hand).includes(
@@ -256,18 +266,23 @@ export function moveLiveCurrentDeckHandCardToBoardState(
   };
 }
 
-function liveDeckCardInstanceIds(
-  state: LiveTokenCardDeckState,
-  deckBoard: LiveDeckBoardState,
+function liveDeckCardInstanceIds<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
   deck: 'main' | 'sub',
-): readonly number[] {
+): readonly Id[] {
   const subDeckIds = new Set(state.subDeckCardInstanceIds ?? []);
   return deckBoard.cards.flatMap((card) =>
     (deck === 'sub') === subDeckIds.has(card.cardInstanceId) ? [card.cardInstanceId] : [],
   );
 }
 
-function validateState(state: LiveTokenCardDeckState, deckBoard: LiveDeckBoardState): void {
+function validateState<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  deckBoard: LiveDeckBoardState<Id>,
+): void {
+  if ((state.subDeckCardInstanceIds === null) !== (state.tokenCardSeriesIds === null))
+    throw new Error('Live sub deck token series are inconsistent');
   if (state.currentDeck === 'sub' && state.subDeckCardInstanceIds === null) {
     throw new Error('Live current sub deck is absent');
   }
@@ -295,9 +310,9 @@ function validateHandTargetCount(handTargetCount: number): void {
   }
 }
 
-function validateCards(
-  deckBoard: LiveDeckBoardState,
-  cards: readonly LiveTokenCardDeckIdentity[],
+function validateCards<Id extends LiveCardIdentifier>(
+  deckBoard: LiveDeckBoardState<Id>,
+  cards: readonly LiveTokenCardDeckIdentity<Id>[],
 ): void {
   const boardIds = deckBoard.cards.map((card) => card.cardInstanceId);
   if (

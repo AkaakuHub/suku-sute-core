@@ -6,7 +6,7 @@ import {
   liveBoardState,
 } from '../../src/runtime/cards/deckBoardState.ts';
 import {
-  addLiveCurrentDeckCard,
+  addLiveTokenCardDeckCard,
   createLiveTokenCardDeckState,
   mergeLiveTokenCardDeck,
   prepareLiveCurrentDeckDraw,
@@ -45,7 +45,7 @@ test('MergeDeckはsub deckのGraveyardだけを保持してmainへ戻す', () =>
   expect(merged.deckBoard.cards[2]?.boardState).toBe(liveBoardState.deck);
 });
 
-test('current sub deck中に生成したtoken cardをsub deckへ追加する', () => {
+test('指定系列の生成カードをsub deckへ追加する', () => {
   const split = splitLiveTokenCardDeck(
     createLiveTokenCardDeckState(),
     createLiveDeckBoardState([1001, 1002, 1003], []),
@@ -55,7 +55,10 @@ test('current sub deck中に生成したtoken cardをsub deckへ追加する', (
   );
   const state = switchLiveTokenCardDeck(split.state, split.deckBoard);
 
-  expect(addLiveCurrentDeckCard(state, 1004).subDeckCardInstanceIds).toEqual([1002, 1003, 1004]);
+  expect(
+    addLiveTokenCardDeckCard(state, { cardInstanceId: 1004, tokenCardSeriesIds: [2] })
+      .subDeckCardInstanceIds,
+  ).toEqual([1002, 1003, 1004]);
 });
 
 test('deck切替はruntimeと同じ手札差分補正と切替先deck枚数上限を適用する', () => {
@@ -92,4 +95,41 @@ test('current deckの明示的な墓地回収はDeckOutCountを増やさない',
   const reloaded = reloadLiveCurrentDeckCards(switched, { ...used, deckOutCount: 2 });
   expect(reloaded.deckOutCount).toBe(2);
   expect(reloaded.cards[1]?.boardState).toBe(liveBoardState.deck);
+});
+
+for (const currentDeck of ['main', 'sub'] as const) {
+  test(`生成カードは現在の${currentDeck}表示ではなく分割系列で所属を決める`, () => {
+    const split = splitLiveTokenCardDeck(
+      createLiveTokenCardDeckState(),
+      createLiveDeckBoardState([1001, 1002, 1003], []),
+      cards,
+      2,
+      5,
+    );
+    const state = { ...split.state, currentDeck };
+    const matching = addLiveTokenCardDeckCard(state, {
+      cardInstanceId: 1004,
+      tokenCardSeriesIds: [2, 9],
+    });
+    const other = addLiveTokenCardDeckCard(state, {
+      cardInstanceId: 1005,
+      tokenCardSeriesIds: [9],
+    });
+    expect(matching.subDeckCardInstanceIds).toEqual([1002, 1003, 1004]);
+    expect(other.subDeckCardInstanceIds).toEqual([1002, 1003]);
+    expect(matching.tokenCardSeriesIds).toEqual([2]);
+  });
+}
+
+test('文字列IDも同じ分割状態と生成時の系列判定を使う', () => {
+  const state = {
+    currentDeck: 'main' as const,
+    subDeckCardInstanceIds: ['sub'],
+    tokenCardSeriesIds: [2],
+    handTargetCounts: { current: 3, main: 3, sub: 0 },
+  };
+  expect(
+    addLiveTokenCardDeckCard(state, { cardInstanceId: 'new', tokenCardSeriesIds: [2] })
+      .subDeckCardInstanceIds,
+  ).toEqual(['sub', 'new']);
 });
