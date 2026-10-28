@@ -127,7 +127,8 @@ export function forceProxySkillActivation(
   let next = state;
   for (const target of targets) {
     const current = next.proxySkills.find((entry) => entry.id === target.id);
-    const ended = forceLiveProxySkillActivation(current ?? target);
+    if (!current) continue;
+    const ended = forceLiveProxySkillActivation(current);
     next = updateProxySkillState(next, target, ended);
     next = induceProxySkillState(next, ended, apply);
   }
