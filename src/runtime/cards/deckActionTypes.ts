@@ -46,7 +46,8 @@ export type LiveCardMoveEffect = Readonly<{
 }>;
 
 export type LiveHandCardCountEffect = Readonly<{
-  effectId: string;
+  effectId: string | null;
+  calculationType: number;
   amount: number;
   duration: LiveSkillEffectDuration;
 }>;

@@ -33,6 +33,7 @@ function activateAndFlushCount(
     cardInstanceId,
     effect,
     amount,
+    null,
   );
   const runtime = flushLiveDeckActions(
     {
@@ -102,7 +103,7 @@ function effect(
   effectId: string,
   duration: LiveHandCardCountEffect['duration'],
 ): LiveHandCardCountEffect {
-  return { effectId, amount: 0, duration };
+  return { effectId, calculationType: 1, amount: 0, duration };
 }
 
 test('変更量0の加算効果は期限解除の通知を登録しない', () => {
@@ -167,9 +168,16 @@ test('手札最大化中の枚数変更は保存した目標も更新し、解�
     effect('increase', { kind: 'full-end' }),
     4,
   );
-  const maximum = activateLiveHandCardMaxEffect(initial.state, initial.tokenCardDeck, 2, 'max', {
-    kind: 'full-end',
-  });
+  const maximum = activateLiveHandCardMaxEffect(
+    initial.state,
+    initial.tokenCardDeck,
+    2,
+    'max',
+    {
+      kind: 'full-end',
+    },
+    null,
+  );
   expect(maximum.tokenCardDeck.handTargetCounts.current).toBe(8);
   const decreased = activateAndFlushCount(
     maximum.state,
@@ -202,10 +210,18 @@ test('重複した最大化は各発動時の現在目標を保存し、最後�
     1,
     'first',
     { kind: 'full-end' },
+    null,
   );
-  const second = activateLiveHandCardMaxEffect(first.state, first.tokenCardDeck, 2, 'second', {
-    kind: 'full-end',
-  });
+  const second = activateLiveHandCardMaxEffect(
+    first.state,
+    first.tokenCardDeck,
+    2,
+    'second',
+    {
+      kind: 'full-end',
+    },
+    null,
+  );
   const remaining = deactivateLiveHandCardCountEffect(
     second.state,
     second.tokenCardDeck,

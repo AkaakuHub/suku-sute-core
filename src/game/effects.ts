@@ -32,7 +32,7 @@ import { createHeartsFromEffect } from './effects/heartCreation.ts';
 import { createSkillHeartsFromEffect } from './effects/skillHearts.ts';
 import { resolveEffectParameterDetails } from './parameters/parameterValueChange.ts';
 import { applyParameterEffect, isParameterEffect } from './parameters/applyParameterEffect.ts';
-import { applyHandLimit } from './effects/handLimit.ts';
+import { applyHandCardCount } from './effects/handCardCount.ts';
 import { activateHeartLimitChange, applyHeartLimitEffect } from './effects/heartLimit.ts';
 import { dispatchEarlyEffect } from './effects/earlyEffectDispatch.ts';
 import { applyVoltageTier } from './effects/voltageTier.ts';
@@ -88,7 +88,7 @@ function applyEffectInternal(
     applyEffect,
   );
   if (earlyEffect) return earlyEffect;
-  if (effect.kind === 'hand-max-card') return activateHandMaxCard(state, effect);
+  if (effect.kind === 'hand-max-card') return activateHandMaxCard(state, effect, card);
   if (effect.kind === 'mental-heart-induce')
     return activateMentalHeartInduce(state, effect, card, multiplier, addValue);
   if (effect.kind === 'combo-induce')
@@ -193,7 +193,7 @@ function applyEffectInternal(
     case 'ingame-mission':
       return startIngameMission(state, effect.groupId);
     case 'hand-limit':
-      return applyHandLimit(state, effect, card, multiplier, addValue);
+      return applyHandCardCount(state, effect, card, multiplier, addValue);
     case 'heart-limit':
       return applyHeartLimitEffect(state, value(effect.amount), card, effectPower);
     case 'shuffle':

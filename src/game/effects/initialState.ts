@@ -9,7 +9,6 @@ export function createInitialEffectState(
   | 'fixedParameterExtends'
   | 'nextFixedParameterExtendId'
   | 'specialAppealTokens'
-  | 'handMaxCardEffects'
   | 'mentalShields'
   | 'handCollectionActivationCounts'
   | 'handUseActivationCounts'
@@ -21,7 +20,6 @@ export function createInitialEffectState(
     fixedParameterExtends: [],
     nextFixedParameterExtendId: 1,
     specialAppealTokens: [],
-    handMaxCardEffects: [],
     mentalShields: [],
     handCollectionActivationCounts: {},
     handUseActivationCounts: {},

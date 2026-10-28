@@ -1,68 +1,46 @@
 import {
-  activateLiveHandCardMax,
-  deactivateLiveHandCardMax,
-} from '../../runtime/cards/handCardTarget.ts';
-import type { GameState } from '../model.ts';
-import type { HandMaxCardEffect } from '../handMaxCardTypes.ts';
+  activateLiveHandCardMaxEffect,
+  deactivateLiveHandCardCountEffectsByKey,
+} from '../../runtime/skills/handCardCount.ts';
+import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
+import type { Card, Effect, GameState } from '../model.ts';
 import { fillHand } from '../cards/drawing.ts';
-import { int64ToFloat32 } from '../../runtime/numeric.ts';
+import { applyHandCardCountTransition } from './handCardCount.ts';
 
-export function activateHandMaxCard(state: GameState, effect: HandMaxCardEffect): GameState {
+export function activateHandMaxCard(
+  state: GameState,
+  effect: Extract<Effect, { kind: 'hand-max-card' }>,
+  card: Card | undefined,
+): GameState {
   if (effect.duration.kind === 'sections' && effect.duration.value === 0n)
     throw new Error('Display section count is 0. (displayTimeType: SECTION, displayTime: 0)');
-  const suspended = effect.invocationType !== undefined;
-  const handMaxCardEffect = {
-    remainingSeconds:
-      !suspended && effect.duration.kind === 'milliseconds'
-        ? Math.fround(int64ToFloat32(effect.duration.value) / 1000)
-        : null,
-    remainingSections:
-      !suspended && effect.duration.kind === 'sections' ? effect.duration.value : null,
-    deactivationKey: effect.deactivationKey ?? null,
-  };
-  return fillHand({
-    ...state,
-    tokenCardDeck: activateLiveHandCardMax(state.tokenCardDeck),
-    handMaxCardEffects: [...state.handMaxCardEffects, handMaxCardEffect],
-  });
-}
-
-export function advanceHandMaxCardEffects(state: GameState, elapsedSeconds: number): GameState {
-  return retainEffects(
-    state,
-    state.handMaxCardEffects.flatMap((effect) => {
-      if (effect.remainingSeconds === null) return [effect];
-      const remainingSeconds = Math.fround(effect.remainingSeconds - Math.fround(elapsedSeconds));
-      return remainingSeconds > 0 ? [{ ...effect, remainingSeconds }] : [];
-    }),
+  const duration =
+    effect.invocationType !== undefined || effect.duration.kind === 'stage'
+      ? { kind: 'full-end' as const }
+      : createLiveSkillEffectDuration(
+          effect.duration.kind === 'milliseconds' ? 1 : 2,
+          effect.duration.value,
+          'HandCardMax',
+        );
+  const activated = activateLiveHandCardMaxEffect(
+    state.handCardCountEffects,
+    state.tokenCardDeck,
+    card?.cardInstanceId ?? null,
+    effect.skillEffectId === undefined ? null : String(effect.skillEffectId),
+    duration,
+    effect.deactivationKey ?? null,
   );
-}
-
-export function expireHandMaxCardSections(state: GameState): GameState {
-  return retainEffects(
-    state,
-    state.handMaxCardEffects.flatMap((effect) => {
-      if (effect.remainingSections === null) return [effect];
-      const remainingSections = effect.remainingSections - 1n;
-      return remainingSections > 0n ? [{ ...effect, remainingSections }] : [];
-    }),
-  );
+  return fillHand(applyHandCardCountTransition(state, activated));
 }
 
 export function deactivateHandMaxCardEffects(state: GameState, deactivationKey: string): GameState {
-  const handMaxCardEffects = state.handMaxCardEffects.filter(
-    (effect) => effect.deactivationKey !== deactivationKey,
+  return applyHandCardCountTransition(
+    state,
+    deactivateLiveHandCardCountEffectsByKey(
+      state.handCardCountEffects,
+      state.tokenCardDeck,
+      deactivationKey,
+      'max',
+    ),
   );
-  return retainEffects(state, handMaxCardEffects);
-}
-
-function retainEffects(
-  state: GameState,
-  handMaxCardEffects: GameState['handMaxCardEffects'],
-): GameState {
-  let tokenCardDeck = state.tokenCardDeck;
-  for (let index = handMaxCardEffects.length; index < state.handMaxCardEffects.length; index += 1) {
-    tokenCardDeck = deactivateLiveHandCardMax(tokenCardDeck);
-  }
-  return { ...state, tokenCardDeck, handMaxCardEffects };
 }

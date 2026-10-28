@@ -20,20 +20,17 @@ export function createLiveSkillEffectDuration(
     throw new Error(`Live ${label} display time is invalid`);
   }
   const value = BigInt(displayTime);
-  if (value < 0n || value > (1n << 63n) - 1n) {
+  if (value < -(1n << 63n) || value > (1n << 63n) - 1n) {
     throw new Error(`Live ${label} display time is invalid`);
   }
   switch (displayTimeType) {
     case 1:
-      if (value < 1n) {
-        throw new Error(`Live ${label} display time is invalid`);
-      }
       return {
         kind: 'milliseconds',
         remainingSeconds: Math.fround(int64ToFloat32(value) / 1_000),
       };
     case 2:
-      if (value < 1n) {
+      if (value === 0n) {
         throw new Error(`Live ${label} display time is invalid`);
       }
       return { kind: 'sections', remainingChanges: value };

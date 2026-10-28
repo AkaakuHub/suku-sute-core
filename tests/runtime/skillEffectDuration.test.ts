@@ -78,3 +78,27 @@ test('失われた整数精度と負の経過時間を受け入れない', () =>
     ),
   ).toThrow();
 });
+
+test.each([0n, -1n])('時間期限%sは次の時間通知で終了する', (milliseconds) => {
+  const duration = createLiveSkillEffectDuration(1, milliseconds, 'test');
+  expect(duration.kind).toBe('milliseconds');
+  expect(
+    advanceLiveSkillEffectDuration(duration, {
+      deltaTimeSeconds: 0,
+      sectionChangeCount: 0,
+      musicEnded: false,
+    }),
+  ).toBeNull();
+});
+
+test('負のセクション数は64bitの値として保持して次の変更通知で終了する', () => {
+  const duration = createLiveSkillEffectDuration(2, -1n, 'test');
+  expect(duration).toEqual({ kind: 'sections', remainingChanges: -1n });
+  expect(
+    advanceLiveSkillEffectDuration(duration, {
+      deltaTimeSeconds: 0,
+      sectionChangeCount: 1,
+      musicEnded: false,
+    }),
+  ).toBeNull();
+});

@@ -1,3 +1,4 @@
+import { createLiveHandCardCountState } from '../runtime/skills/handCardCount.ts';
 import { liveCurrentHandCardInstanceIds } from '../runtime/cards/liveHand.ts';
 import { createLiveDeckHandsState } from '../runtime/cards/liveHand.ts';
 import { createLiveDeckDrawContextState } from '../runtime/cards/cardDraw.ts';
@@ -19,7 +20,7 @@ import { durationSeconds, sectionAt, moodValue } from './projection.ts';
 import { finishGenesis } from './genesis.ts';
 import { createLiveGenesisState } from '../runtime/skills/genesisSkill.ts';
 import { fillHand, flushHandCardCountActions } from './cards/drawing.ts';
-import { advanceHandLimitEffects } from './effects/handLimit.ts';
+import { advanceHandCardCountEffects } from './effects/handCardCount.ts';
 import { createStarGatherHeartRuntimeState } from './live/heartSpawn.ts';
 import { recordScoreHistory } from './scoreHistory.ts';
 import { recordMoodHistory } from './moodHistory.ts';
@@ -101,7 +102,7 @@ export function createGame(
     tokenBoosts: [],
     proxyAbsorptions: [],
     nextProxyAbsorptionId: 1,
-    handLimitEffects: [],
+    handCardCountEffects: createLiveHandCardCountState<string>(),
     heartLimitBase: 100,
     heartLimitBuffs: [],
     nextHeartLimitBuffId: 1,
@@ -291,7 +292,7 @@ function advanceTick(state: GameState): GameState {
   });
   next = advanceSkillCooldownEffects(next, dt);
   next = advanceInducedSkillEffects(next, dt);
-  next = advanceHandLimitEffects(next, dt);
+  next = advanceHandCardCountEffects(next, dt);
   next = advanceHeartLimitBuffs(next, dt);
   next = advanceVoltageIncreaseStops(next, dt);
   next = advanceAdditionalHeartInducers(next, dt);

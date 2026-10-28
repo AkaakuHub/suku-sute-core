@@ -9,10 +9,8 @@ import {
   createLiveCardMoveEffect,
   createLiveCardSearchEffect,
   createLiveChangeApEffect,
-  createLiveHandCardCountEffect,
   createLiveReshuffleEffect,
   createLiveUseAllHandEffect,
-  resolveLiveHandCardCountActivation,
 } from '../../src/runtime/cards/deckSkillActions.ts';
 import {
   createLiveBoostTokenCardEffect,
@@ -51,7 +49,7 @@ test('runtime enumのdeck action 13/15を保存masterのdetailから共通descri
   });
 });
 
-test('ActionType17/20は保存detailの加算条件と表示期間を保持する', () => {
+test('ActionType17は保存detailの加算条件と表示期間を保持する', () => {
   const changeAp = createLiveChangeApEffect(
     effect(17, [
       detail('CHANGE_AP_NUM', -10_000),
@@ -83,18 +81,6 @@ test('ActionType17/20は保存detailの加算条件と表示期間を保持す�
       ]),
     ),
   ).toThrow('Live ChangeAP amount has unsupported precision');
-  const handCount = createLiveHandCardCountEffect(
-    effect(20, [
-      detail('CHANGE_HAND_CARD_COUNT_CALC_TYPE', 1),
-      detail('CHANGE_HAND_CARD_COUNT_NUM', -1),
-      detail('CHANGE_HAND_CARD_COUNT_DISPLAY_TIME_TYPE', 3),
-      detail('CHANGE_HAND_CARD_COUNT_DISPLAY_TIME', 0),
-    ]),
-  );
-  expect(resolveLiveHandCardCountActivation(5, handCount)).toEqual({
-    targetHandCount: 4,
-    changeCount: -1,
-  });
 });
 
 test('ActionType19は使用後の行き先だけを保存して現在の盤面を変えない', () => {

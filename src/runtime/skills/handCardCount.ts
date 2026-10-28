@@ -31,8 +31,9 @@ export function calculateLiveHandCardCountAmount(
 }
 
 type HandCountEffect<Id extends LiveCardIdentifier> = Readonly<{
-  effectId: string;
-  cardInstanceId: Id;
+  effectId: string | null;
+  cardInstanceId: Id | null;
+  deactivationKey: string | null;
   duration: LiveSkillEffectDuration;
 }> &
   Readonly<{ kind: 'count'; amount: number } | { kind: 'max' }>;
@@ -41,7 +42,7 @@ export type LiveHandCardCountState<Id extends LiveCardIdentifier = number> = Rea
   effects: readonly HandCountEffect<Id>[];
 }>;
 
-type HandCountTransition<Id extends LiveCardIdentifier> = Readonly<{
+export type LiveHandCardCountTransition<Id extends LiveCardIdentifier> = Readonly<{
   state: LiveHandCardCountState<Id>;
   tokenCardDeck: LiveTokenCardDeckState<Id>;
   resetNotifications: readonly number[];
@@ -57,16 +58,32 @@ export function activateLiveHandCardCountEffect<Id extends LiveCardIdentifier>(
   state: LiveHandCardCountState<Id>,
   tokenCardDeck: LiveTokenCardDeckState<Id>,
   deckActions: LiveDeckActionQueueState,
-  cardInstanceId: Id,
+  cardInstanceId: Id | null,
   effect: LiveHandCardCountEffect,
   amount: number,
-): HandCountTransition<Id> & Readonly<{ deckActions: LiveDeckActionQueueState }> {
-  const notified = notifyLiveHandCardCountAdd({ tokenCardDeck, deckActions }, amount);
+  deactivationKey: string | null,
+): LiveHandCardCountTransition<Id> & Readonly<{ deckActions: LiveDeckActionQueueState }> {
+  const notified =
+    effect.calculationType === 1
+      ? notifyLiveHandCardCountAdd({ tokenCardDeck, deckActions }, amount)
+      : { tokenCardDeck, deckActions };
   return {
     state:
-      amount === 0
+      effect.calculationType === 1 && amount === 0
         ? state
-        : { effects: [...state.effects, { ...effect, cardInstanceId, kind: 'count', amount }] },
+        : {
+            effects: [
+              ...state.effects,
+              {
+                effectId: effect.effectId,
+                duration: effect.duration,
+                cardInstanceId,
+                deactivationKey,
+                kind: 'count',
+                amount,
+              },
+            ],
+          },
     tokenCardDeck: notified.tokenCardDeck,
     deckActions: notified.deckActions,
     resetNotifications: [],
@@ -76,12 +93,18 @@ export function activateLiveHandCardCountEffect<Id extends LiveCardIdentifier>(
 export function activateLiveHandCardMaxEffect<Id extends LiveCardIdentifier>(
   state: LiveHandCardCountState<Id>,
   tokenCardDeck: LiveTokenCardDeckState<Id>,
-  cardInstanceId: Id,
-  effectId: string,
+  cardInstanceId: Id | null,
+  effectId: string | null,
   duration: LiveSkillEffectDuration,
-): HandCountTransition<Id> {
+  deactivationKey: string | null,
+): LiveHandCardCountTransition<Id> {
   return {
-    state: { effects: [...state.effects, { effectId, cardInstanceId, kind: 'max', duration }] },
+    state: {
+      effects: [
+        ...state.effects,
+        { effectId, cardInstanceId, deactivationKey, kind: 'max', duration },
+      ],
+    },
     tokenCardDeck: activateLiveHandCardMax(tokenCardDeck),
     resetNotifications: [],
   };
@@ -91,7 +114,7 @@ export function advanceLiveHandCardCountState<Id extends LiveCardIdentifier>(
   state: LiveHandCardCountState<Id>,
   tokenCardDeck: LiveTokenCardDeckState<Id>,
   input: LiveSkillEffectClock,
-): HandCountTransition<Id> {
+): LiveHandCardCountTransition<Id> {
   const removed: HandCountEffect<Id>[] = [];
   const effects = state.effects.flatMap((effect) => {
     const duration = advanceLiveSkillEffectDuration(effect.duration, input);
@@ -107,7 +130,7 @@ export function deactivateLiveHandCardCountEffect<Id extends LiveCardIdentifier>
   tokenCardDeck: LiveTokenCardDeckState<Id>,
   cardInstanceId: Id,
   effectId: string,
-): HandCountTransition<Id> {
+): LiveHandCardCountTransition<Id> {
   const matches = (effect: HandCountEffect<Id>) =>
     effect.cardInstanceId === cardInstanceId && effect.effectId === effectId;
   return removeEffects(
@@ -124,11 +147,26 @@ export function liveHandCardCount(state: LiveTokenCardDeckState<LiveCardIdentifi
   );
 }
 
+export function deactivateLiveHandCardCountEffectsByKey<Id extends LiveCardIdentifier>(
+  state: LiveHandCardCountState<Id>,
+  tokenCardDeck: LiveTokenCardDeckState<Id>,
+  deactivationKey: string,
+  kind: 'count' | 'max',
+): LiveHandCardCountTransition<Id> {
+  const matches = (effect: HandCountEffect<Id>) =>
+    effect.deactivationKey === deactivationKey && effect.kind === kind;
+  return removeEffects(
+    state.effects.filter((effect) => !matches(effect)),
+    state.effects.filter(matches),
+    tokenCardDeck,
+  );
+}
+
 function removeEffects<Id extends LiveCardIdentifier>(
   retained: readonly HandCountEffect<Id>[],
   removed: readonly HandCountEffect<Id>[],
   tokenCardDeck: LiveTokenCardDeckState<Id>,
-): HandCountTransition<Id> {
+): LiveHandCardCountTransition<Id> {
   let next = tokenCardDeck;
   const resetNotifications: number[] = [];
   for (const effect of removed) {

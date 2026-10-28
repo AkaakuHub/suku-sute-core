@@ -9,12 +9,6 @@ export type HandMaxCardEffect = Readonly<{
   deactivationKey?: string;
 }>;
 
-export type HandMaxCardEffectState = Readonly<{
-  remainingSeconds: number | null;
-  remainingSections: bigint | null;
-  deactivationKey: string | null;
-}>;
-
 export function validateHandMaxCardEffect(effect: HandMaxCardEffect): void {
   if (
     (effect.duration.kind !== 'stage' && !isInt64(effect.duration.value)) ||

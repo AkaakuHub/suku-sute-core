@@ -54,7 +54,7 @@ import type { IngameMission, IngameMissionGroup } from './ingameMissionTypes.ts'
 import type { HeartLimitAdditionalBuff } from './heartLimitBoostTypes.ts';
 import type { MoodValueAdditionalBuff } from './moodValueBoostTypes.ts';
 import type { SpecialAppealToken } from './specialAppealTokenTypes.ts';
-import type { HandMaxCardEffectState } from './handMaxCardTypes.ts';
+import type { LiveHandCardCountState } from '../runtime/skills/handCardCount.ts';
 import type { MentalShield } from './mentalShieldTypes.ts';
 import type { FixedParameterExtend } from './fixedParameterExtendTypes.ts';
 import type { BeatPointBuff } from './beatPointBuffTypes.ts';
@@ -158,13 +158,7 @@ export type GameState = Readonly<{
   tokenBoosts: readonly TokenBoost[];
   proxyAbsorptions: readonly ProxyAbsorption[];
   nextProxyAbsorptionId: number;
-  handLimitEffects: readonly Readonly<{
-    amount: number;
-    expirationAmount: number;
-    deactivationKey: string | null;
-    remainingSeconds: number | null;
-    remainingSections: bigint | null;
-  }>[];
+  handCardCountEffects: LiveHandCardCountState<string>;
   heartLimitBase: number;
   heartLimitBuffs: readonly Readonly<{
     id: number;
@@ -269,7 +263,6 @@ export type GameState = Readonly<{
   masteryVoltageProgress: number;
   maximumVoltageLevel: number;
   specialAppealTokens: readonly SpecialAppealToken[];
-  handMaxCardEffects: readonly HandMaxCardEffectState[];
   specialUsed: readonly string[];
   score: bigint;
   scoreMultiplier: bigint;

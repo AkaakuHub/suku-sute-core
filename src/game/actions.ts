@@ -26,7 +26,7 @@ import {
   notifyHandSkillUse,
 } from './cards/useAbilities.ts';
 import { advanceProxySkillUses } from './effects/proxySkill.ts';
-import { deactivateHandLimitEffects } from './effects/handLimit.ts';
+import { deactivateHandCardCountEffects } from './effects/handCardCount.ts';
 import { deactivateHandMaxCardEffects } from './effects/handMaxCard.ts';
 import { deactivateApSpeedEffects } from './effects/apSpeed.ts';
 import { deactivateVoltageConversions } from './effects/voltageConversion.ts';
@@ -86,7 +86,7 @@ function actInternal(state: GameState, action: Action): GameState {
     case 'skip-ingame-mission':
       return skipIngameMission(state);
     case 'deactivate-hand-limit': {
-      const changed = deactivateHandLimitEffects(state, action.deactivationKey);
+      const changed = deactivateHandCardCountEffects(state, action.deactivationKey);
       return state.activation === null ? flushHandCardCountActions(changed) : changed;
     }
     case 'deactivate-hand-max-card':

@@ -129,11 +129,12 @@ export function createLiveHandCardCountEffect(effect: LiveSkillEffect): LiveHand
     ],
     'HandCardCount',
   );
-  if (details.get('CHANGE_HAND_CARD_COUNT_CALC_TYPE')?.effectValue !== 1) {
-    throw new Error('Live HandCardCount calculation type is invalid');
-  }
   return {
     effectId: effect.id,
+    calculationType: requireSafeInteger(
+      details.get('CHANGE_HAND_CARD_COUNT_CALC_TYPE')?.effectValue,
+      'HandCardCount calculation type',
+    ),
     amount: requireSafeInteger(
       details.get('CHANGE_HAND_CARD_COUNT_NUM')?.effectValue,
       'HandCardCount amount',
@@ -150,20 +151,6 @@ export function createLiveHandCardCountEffect(effect: LiveSkillEffect): LiveHand
       'HandCardCount',
     ),
   };
-}
-
-export function resolveLiveHandCardCountActivation(
-  currentHandCount: number,
-  effect: LiveHandCardCountEffect,
-): Readonly<{ targetHandCount: number; changeCount: number }> {
-  if (!Number.isSafeInteger(currentHandCount) || currentHandCount < 0 || currentHandCount > 8) {
-    throw new Error('Live hand card count is invalid');
-  }
-  const targetHandCount = currentHandCount + effect.amount;
-  if (targetHandCount < 0 || targetHandCount > 8) {
-    throw new Error('Live HandCardCount target is outside the runtime hand range');
-  }
-  return { targetHandCount, changeCount: effect.amount };
 }
 
 export function createLiveUseAllHandEffect(effect: LiveSkillEffect): LiveUseAllHandEffect {
