@@ -19,6 +19,7 @@ const input: LiveAutomaticGaugeRuntimeInput = {
     { voltageLevel: 1, requiredVoltagePoint: 1n },
     { voltageLevel: 2, requiredVoltagePoint: 31n },
   ],
+  maximumVoltageLevel: 2,
 };
 
 const apInfinityEffect: LiveSkillEffect = {

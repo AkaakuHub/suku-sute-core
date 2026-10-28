@@ -2,9 +2,9 @@ import { expect, test } from 'vite-plus/test';
 import {
   advanceLiveAutomaticGaugeRuntime,
   createLiveAutomaticGaugeRuntimeState,
-  projectLiveVoltageLevel,
   type LiveAutomaticGaugeRuntimeInput,
 } from '../../src/runtime/live/automaticGaugeRuntime.ts';
+import { projectLiveVoltageLevel } from '../../src/runtime/live/voltageThresholds.ts';
 
 const input: LiveAutomaticGaugeRuntimeInput = {
   maximumAp: 20,
@@ -19,6 +19,7 @@ const input: LiveAutomaticGaugeRuntimeInput = {
     { voltageLevel: 2, requiredVoltagePoint: 31n },
     { voltageLevel: 3, requiredVoltagePoint: 61n },
   ],
+  maximumVoltageLevel: 3,
 };
 
 const defaultControl = {
@@ -95,13 +96,13 @@ test('GenesisとDisableMentalDownの併用中はMentalのtimer、値、Down状�
 });
 
 test('Live Voltage levelは現在point以下の最大thresholdから投影する', () => {
-  expect(projectLiveVoltageLevel(input.voltageThresholds, 45n)).toEqual({
+  expect(projectLiveVoltageLevel(input.voltageThresholds, 45n, input.maximumVoltageLevel)).toEqual({
     currentLevel: 2,
     currentLevelVoltage: 31n,
     nextLevelVoltage: 61n,
     maximumBaseLevel: 3,
   });
-  expect(projectLiveVoltageLevel(input.voltageThresholds, 0n)).toEqual({
+  expect(projectLiveVoltageLevel(input.voltageThresholds, 0n, input.maximumVoltageLevel)).toEqual({
     currentLevel: 1,
     currentLevelVoltage: 1n,
     nextLevelVoltage: 31n,

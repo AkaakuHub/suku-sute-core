@@ -1,3 +1,8 @@
+import {
+  getLiveVoltageThreshold,
+  validateLiveVoltageThresholds,
+  type LiveVoltageThreshold,
+} from './voltageThresholds.ts';
 import { advanceLiveApGauge, type LiveApGaugeFrame, type LiveApGaugeState } from './apGauge.ts';
 import {
   advanceLiveMentalGauge,
@@ -10,11 +15,6 @@ import {
   type LiveVoltageGaugeState,
 } from './voltageGauge.ts';
 
-export type LiveVoltageThreshold = Readonly<{
-  voltageLevel: number;
-  requiredVoltagePoint: bigint;
-}>;
-
 export type LiveAutomaticGaugeRuntimeInput = Readonly<{
   maximumAp: number;
   apIncreaseIntervalSeconds: number;
@@ -24,6 +24,7 @@ export type LiveAutomaticGaugeRuntimeInput = Readonly<{
   mentalRecoveryValue: number;
   voltageIncreaseIntervalSeconds: number;
   voltageThresholds: readonly LiveVoltageThreshold[];
+  maximumVoltageLevel: number;
 }>;
 
 export type LiveAutomaticGaugeRuntimeState = Readonly<{
@@ -90,22 +91,18 @@ export function advanceLiveAutomaticGaugeRuntime(
           },
           { setAp: control.setAp, addAp: control.addAp },
         );
-  const maximumVoltageThreshold = input.voltageThresholds[input.voltageThresholds.length - 1];
-  if (maximumVoltageThreshold === undefined) {
-    throw new Error('Live Voltage thresholds are absent');
-  }
   const voltage = advanceLiveVoltageGauge(
     state.voltage,
     {
       deltaTimeSeconds,
       stopIncreaseRequestCount: control.stopVoltageIncreaseRequestCount,
       increaseIntervalSeconds: input.voltageIncreaseIntervalSeconds,
-      maxBaseVoltageLevel: maximumVoltageThreshold.voltageLevel,
+      maxBaseVoltageLevel: input.maximumVoltageLevel,
       voltageInfinity: false,
     },
     {
       getVoltageThreshold: (voltageLevel) =>
-        requireVoltageThreshold(input.voltageThresholds, voltageLevel),
+        getLiveVoltageThreshold(input.voltageThresholds, voltageLevel),
       addVoltage: control.addVoltage,
     },
   );
@@ -140,48 +137,6 @@ export function advanceLiveAutomaticGaugeRuntime(
   };
 }
 
-export function projectLiveVoltageLevel(
-  thresholds: readonly LiveVoltageThreshold[],
-  currentVoltage: bigint,
-): Readonly<{
-  currentLevel: number;
-  currentLevelVoltage: bigint;
-  nextLevelVoltage: bigint;
-  maximumBaseLevel: number;
-}> {
-  validateThresholds(thresholds);
-  if (currentVoltage < 0n) {
-    throw new Error('Live current Voltage is invalid');
-  }
-  const resolvedIndex = thresholds.findLastIndex(
-    (threshold) => threshold.requiredVoltagePoint <= currentVoltage,
-  );
-  const currentIndex = Math.max(0, resolvedIndex);
-  const current = thresholds[currentIndex];
-  const maximum = thresholds[thresholds.length - 1];
-  if (current === undefined || maximum === undefined) {
-    throw new Error('Live current Voltage level is absent');
-  }
-  const next = thresholds[currentIndex + 1] ?? current;
-  return {
-    currentLevel: current.voltageLevel,
-    currentLevelVoltage: current.requiredVoltagePoint,
-    nextLevelVoltage: next.requiredVoltagePoint,
-    maximumBaseLevel: maximum.voltageLevel,
-  };
-}
-
-function requireVoltageThreshold(
-  thresholds: readonly LiveVoltageThreshold[],
-  voltageLevel: number,
-): bigint {
-  const threshold = thresholds.find((candidate) => candidate.voltageLevel === voltageLevel);
-  if (threshold === undefined) {
-    throw new Error(`Live Voltage threshold is absent: ${String(voltageLevel)}`);
-  }
-  return threshold.requiredVoltagePoint;
-}
-
 function validateInput(input: LiveAutomaticGaugeRuntimeInput): void {
   if (!Number.isSafeInteger(input.maximumAp) || input.maximumAp < 0) {
     throw new Error('Live maximum AP is invalid');
@@ -205,25 +160,11 @@ function validateInput(input: LiveAutomaticGaugeRuntimeInput): void {
   if (input.mentalRecoveryTimeSeconds === 0) {
     throw new Error('Live Mental recovery time is zero');
   }
-  validateThresholds(input.voltageThresholds);
-}
-
-function validateThresholds(thresholds: readonly LiveVoltageThreshold[]): void {
-  if (thresholds.length === 0) {
-    throw new Error('Live Voltage thresholds are absent');
-  }
-  for (let index = 0; index < thresholds.length; index += 1) {
-    const threshold = thresholds[index];
-    const previous = thresholds[index - 1];
-    if (
-      threshold === undefined ||
-      !Number.isSafeInteger(threshold.voltageLevel) ||
-      threshold.requiredVoltagePoint < 0n ||
-      (previous !== undefined &&
-        (threshold.voltageLevel <= previous.voltageLevel ||
-          threshold.requiredVoltagePoint <= previous.requiredVoltagePoint))
-    ) {
-      throw new Error('Live Voltage thresholds are invalid');
-    }
-  }
+  validateLiveVoltageThresholds(input.voltageThresholds);
+  if (
+    !Number.isSafeInteger(input.maximumVoltageLevel) ||
+    input.maximumVoltageLevel < 1 ||
+    input.maximumVoltageLevel > input.voltageThresholds.length
+  )
+    throw new Error('Live maximum Voltage level is invalid');
 }
