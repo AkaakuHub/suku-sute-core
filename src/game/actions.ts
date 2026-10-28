@@ -1,3 +1,4 @@
+import { canActivateLiveSkillEffect } from '../runtime/skills/skillEffectActivation.ts';
 import { beginTokenGeneration, finishTokenGeneration } from './cards/tokens.ts';
 import { applyBeforeUseAbility } from './cards/beforeUse.ts';
 import { drainModeChanges } from './effects/modeChange.ts';
@@ -229,7 +230,7 @@ function activateCard(
       next = applyEffect(next, effect, card);
       continue;
     }
-    if (allHand) continue;
+    if (!canActivateLiveSkillEffect(42, { isSkill: true, activeAllHandSkill: allHand })) continue;
     next = { ...next, modes: { ...next.modes, held: true } };
     const children = [...next.hand];
     for (const id of children) {
