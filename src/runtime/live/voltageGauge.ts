@@ -12,6 +12,7 @@ export type LiveNaturalVoltageRequest = Readonly<{
 
 export type LiveVoltageGaugePorts = Readonly<{
   getVoltageThreshold: (voltageLevel: number) => bigint;
+  setVoltage: (requestedVoltage: bigint) => bigint;
   addVoltage: (currentVoltage: bigint, request: LiveNaturalVoltageRequest) => bigint;
 }>;
 
@@ -50,7 +51,7 @@ export function advanceLiveVoltageGauge(
   );
   const increaseIntervalSeconds = Math.fround(input.increaseIntervalSeconds);
   if (increaseIntervalSeconds <= 0) {
-    currentVoltage = ports.getVoltageThreshold(input.maxBaseVoltageLevel);
+    currentVoltage = ports.setVoltage(ports.getVoltageThreshold(input.maxBaseVoltageLevel));
   } else {
     while (increaseIntervalSeconds < timerSeconds) {
       timerSeconds = Math.fround(timerSeconds - increaseIntervalSeconds);

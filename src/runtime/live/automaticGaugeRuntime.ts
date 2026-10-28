@@ -69,6 +69,7 @@ export function advanceLiveAutomaticGaugeRuntime(
     setAp: (requestedAp: number) => number;
     addAp: (currentAp: number, amount: 1) => number;
     subMentalOne: (currentMental: number) => number;
+    setVoltage: (requestedVoltage: bigint) => bigint;
     addVoltage: (currentVoltage: bigint) => bigint;
   }>,
 ): LiveAutomaticGaugeRuntimeFrame {
@@ -103,6 +104,7 @@ export function advanceLiveAutomaticGaugeRuntime(
     {
       getVoltageThreshold: (voltageLevel) =>
         getLiveVoltageThreshold(input.voltageThresholds, voltageLevel),
+      setVoltage: control.setVoltage,
       addVoltage: control.addVoltage,
     },
   );

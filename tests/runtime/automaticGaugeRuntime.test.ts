@@ -23,6 +23,7 @@ const input: LiveAutomaticGaugeRuntimeInput = {
 };
 
 const defaultControl = {
+  setVoltage: (value: bigint) => value,
   setAp: (requestedAp: number) => Math.min(20, Math.max(0, requestedAp)),
   addAp: (currentAp: number, amount: 1) => Math.min(20, currentAp + amount),
   genesisSkillActive: false,

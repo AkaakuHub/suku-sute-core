@@ -8,6 +8,7 @@ import {
 test('Live Voltageは停止requestがないframeだけ厳密なinterval超過ごとにAddVoltageを呼ぶ', () => {
   const requests: LiveNaturalVoltageRequest[] = [];
   const ports: LiveVoltageGaugePorts = {
+    setVoltage: (value) => value,
     getVoltageThreshold: () => 999n,
     addVoltage: (currentVoltage, request) => {
       requests.push(request);
@@ -63,6 +64,7 @@ test('Live Voltageはintervalが0以下ならmax levelのthresholdへ設定す�
       voltageInfinity: false,
     },
     {
+      setVoltage: (value) => value,
       getVoltageThreshold: (level) => BigInt(level) * 1_000n,
       addVoltage: () => {
         throw new Error('AddVoltage must not run');
@@ -77,6 +79,7 @@ test('Live Voltageはintervalが0以下ならmax levelのthresholdへ設定す�
 
 test('Live Voltageは停止中に更新せずInfinity時にgauge表示を更新しない', () => {
   const ports: LiveVoltageGaugePorts = {
+    setVoltage: (value) => value,
     getVoltageThreshold: () => 500n,
     addVoltage: (currentVoltage) => currentVoltage + 1n,
   };
