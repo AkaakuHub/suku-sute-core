@@ -40,11 +40,18 @@ export function handCapacity(state: GameState): number {
 }
 
 export function fillHand(state: GameState): GameState {
-  return drawUntil(state, handCapacity(state), true);
+  return drawUntil(state, handCapacity(state), true).state;
+}
+
+export function refillHand(
+  state: GameState,
+  index: number,
+): Readonly<{ state: GameState; drawSucceeded: boolean }> {
+  return drawUntil(state, handCapacity(state), true, index);
 }
 
 export function fillHandToCount(state: GameState, count: number): GameState {
-  return drawUntil(state, count, true);
+  return drawUntil(state, count, true).state;
 }
 
 export function flushHandCardCountActions(state: GameState): GameState {
@@ -59,13 +66,17 @@ export function resetHandCardCount(state: GameState, adjustment: number): GameSt
   return adjustment > 0
     ? fillHandToCountRetainingOverflow(
         next,
-        liveResetHandCardCount(next, liveCurrentHandCardInstanceIds(next).length, adjustment),
+        liveResetHandCardCount(
+          next,
+          next.liveHands[next.tokenCardDeck.currentDeck].handCount,
+          adjustment,
+        ),
       )
     : next;
 }
 
 export function fillHandToCountRetainingOverflow(state: GameState, count: number): GameState {
-  return drawUntil(state, count, false);
+  return drawUntil(state, count, false).state;
 }
 
 export function removeRandomHandCards(state: GameState, count: number): GameState {
@@ -100,11 +111,16 @@ export function removeRandomHandCards(state: GameState, count: number): GameStat
   };
 }
 
-function drawUntil(state: GameState, count: number, trimOverflow: boolean): GameState {
+function drawUntil(
+  state: GameState,
+  count: number,
+  trimOverflow: boolean,
+  firstDrawIndex?: number,
+): Readonly<{ state: GameState; drawSucceeded: boolean }> {
   let next = state;
   const drawnCards: Card[] = [];
 
-  while (liveCurrentHandCardInstanceIds(next).length < count) {
+  while (next.liveHands[next.tokenCardDeck.currentDeck].handCount < count) {
     const probability = (id: string) => {
       const card = next.deck.find((item) => item.cardInstanceId === id);
       if (!card) throw new Error('山札のカードがありません。');
@@ -139,7 +155,9 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
         ...next.liveHands,
         [next.tokenCardDeck.currentDeck]: addLiveHandCard(
           next.liveHands[next.tokenCardDeck.currentDeck],
-          next.liveHands[next.tokenCardDeck.currentDeck].handCount,
+          drawnCards.length === 0 && firstDrawIndex !== undefined
+            ? firstDrawIndex
+            : next.liveHands[next.tokenCardDeck.currentDeck].handCount,
           drawn,
         ),
       },
@@ -152,7 +170,8 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
     if (!card) throw new Error('引いたカードがありません。');
     drawnCards.push(card);
   }
-  if (state.deckDrawContext.currentDrawType === 2) return next;
+  if (state.deckDrawContext.currentDrawType === 2)
+    return { state: next, drawSucceeded: drawnCards.length > 0 };
   for (const card of drawnCards) {
     if (state.deckDrawContext.currentDrawType !== 0) next = applyDrawAbility(next, card);
     if (state.deckDrawContext.currentDrawType !== 0)
@@ -180,7 +199,7 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
       deckBoard: moveCardsToBoard(next, ordered.slice(maximum), liveBoardState.graveyard).deckBoard,
     };
   }
-  return next;
+  return { state: next, drawSucceeded: drawnCards.length > 0 };
 }
 
 export function shuffleHand(state: GameState, options: HandShuffle): GameState {

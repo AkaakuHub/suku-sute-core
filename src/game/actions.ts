@@ -1,5 +1,4 @@
 import { liveCurrentHandCardInstanceIds } from '../runtime/cards/liveHand.ts';
-import { removeLiveHandCard } from '../runtime/cards/liveHand.ts';
 import { beginLiveAllHandSkill } from '../runtime/cards/allHandDeckActions.ts';
 import { moveCardsToBoard } from './cards/deckBoard.ts';
 import { liveBoardState } from '../runtime/cards/deckBoardState.ts';
@@ -281,14 +280,6 @@ function retireCard(state: GameState, card: Card, allHand: boolean): GameState {
       [card.cardInstanceId],
       allHand ? liveBoardState.extra2 : liveBoardState.extra,
     ),
-    liveHands: {
-      ...state.liveHands,
-      [state.tokenCardDeck.currentDeck]: removeLiveHandCard(
-        state.liveHands[state.tokenCardDeck.currentDeck],
-        state.liveHands[state.tokenCardDeck.currentDeck].handCards.indexOf(card.cardInstanceId),
-        true,
-      ),
-    },
     relayUsed: state.relayUsed.filter((id) => id !== card.cardInstanceId),
     handHeartCollectCounts: Object.fromEntries(
       Object.entries(state.handHeartCollectCounts).filter(([id]) => id !== card.cardInstanceId),

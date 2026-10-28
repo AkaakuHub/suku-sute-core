@@ -1,4 +1,8 @@
-import type { LiveCardIdentifier } from './deckBoardState.ts';
+import {
+  liveBoardState,
+  type LiveCardIdentifier,
+  type LiveDeckBoardState,
+} from './deckBoardState.ts';
 
 export type LiveHandState<Id extends LiveCardIdentifier = number> = Readonly<{
   handCards: readonly (Id | null)[];
@@ -42,10 +46,53 @@ export function liveHandCardInstanceIds<Id extends LiveCardIdentifier>(
 }
 
 export function liveCurrentHandCardInstanceIds<Id extends LiveCardIdentifier>(
-  state: HandOwner<Id>,
+  state: HandOwner<Id> & Readonly<{ deckBoard: LiveDeckBoardState<Id> }>,
 ): readonly Id[] {
   if (state.liveHands === null) throw new Error('Live hand state is unresolved');
-  return liveHandCardInstanceIds(state.liveHands[state.tokenCardDeck.currentDeck]);
+  const handIds = new Set(
+    state.deckBoard.cards
+      .filter((card) => card.boardState === liveBoardState.hand)
+      .map((card) => card.cardInstanceId),
+  );
+  return liveHandCardInstanceIds(state.liveHands[state.tokenCardDeck.currentDeck]).filter((id) =>
+    handIds.has(id),
+  );
+}
+
+export function completeLiveHandCardDraw<State extends HandOwner<LiveCardIdentifier>>(
+  state: State,
+  cardInstanceId: NonNullable<NonNullable<State['liveHands']>['main']['handCards'][number]>,
+  draw:
+    | ((state: State, index: number) => Readonly<{ state: State; drawSucceeded: boolean }>)
+    | null,
+): State {
+  if (state.liveHands === null) throw new Error('Live hand state is unresolved');
+  const hand = state.liveHands[state.tokenCardDeck.currentDeck];
+  const index = hand.handCards.indexOf(cardInstanceId);
+  if (index < 0) throw new Error('Live used hand card slot is absent');
+  const removed = {
+    ...state,
+    liveHands: {
+      ...state.liveHands,
+      [state.tokenCardDeck.currentDeck]: removeLiveHandCard(hand, index, draw === null),
+    },
+  };
+  if (draw === null) return removed;
+  const result = draw(removed, index);
+  if (result.drawSucceeded) return result.state;
+  const liveHands = result.state.liveHands;
+  if (liveHands === null) throw new Error('Live hand state is unresolved after draw');
+  const currentHand = liveHands[state.tokenCardDeck.currentDeck];
+  const handCards = [...currentHand.handCards];
+  handCards.splice(index, 1);
+  handCards.push(null);
+  return {
+    ...result.state,
+    liveHands: {
+      ...liveHands,
+      [state.tokenCardDeck.currentDeck]: { ...currentHand, handCards },
+    },
+  };
 }
 
 export function setLiveCurrentHandCards<State extends HandOwner<LiveCardIdentifier>>(

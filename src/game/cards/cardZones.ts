@@ -1,3 +1,4 @@
+import { completeLiveHandCardDraw } from '../../runtime/cards/liveHand.ts';
 import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import { setLiveCurrentHandCards } from '../../runtime/cards/liveHand.ts';
 import {
@@ -18,7 +19,7 @@ import type { GameState } from '../model.ts';
 import { removeHandCardEffects } from './handEffects.ts';
 import { flushDeckActions } from './boardActions.ts';
 import {
-  fillHand,
+  refillHand,
   flushHandCardCountActions,
   fillHandToCountRetainingOverflow,
   handCapacity,
@@ -34,6 +35,9 @@ export function finishCardActivation(state: GameState): GameState {
   if (!source) throw new Error('使用したカードがありません。');
   if (activation.hasUseAllHandSkill) return finishAllHandActivation(state, source);
   let next = completeUsedCards(state, source.cardInstanceId);
+  const hasReshuffle = next.deckActions.queue.some(
+    (action) => action.type === 3 && action.cardInstanceId === source.cardInstanceId,
+  );
   next = flushDeckActions(next);
   const handCountChange = activation.handCountChanges[source.cardInstanceId] ?? 0;
   const handReady: GameState = {
@@ -45,19 +49,31 @@ export function finishCardActivation(state: GameState): GameState {
       usedSkill: { skillType: 2 as const, skillMainEffect: source.skillMainEffect ?? null },
     },
   };
-  const skipSourceRefill = next.activation?.skipSourceRefill ?? false;
+  const skipSourceRefill = (next.activation?.skipSourceRefill ?? false) || hasReshuffle;
   if (skipSourceRefill) {
-    next = handReady;
+    const sourceIndex = handReady.liveHands[handReady.tokenCardDeck.currentDeck].handCards.indexOf(
+      source.cardInstanceId,
+    );
+    next =
+      sourceIndex < 0
+        ? handReady
+        : completeLiveHandCardDraw(handReady, source.cardInstanceId, null);
   } else if (handCountChange < 0) {
-    const target = Math.min(handCapacity(handReady), handReady.deck.length);
-    const removedCount = Math.max(0, liveCurrentHandCardInstanceIds(handReady).length + 1 - target);
+    const target = Math.min(
+      handCapacity(handReady),
+      liveCurrentDeckCardCount(handReady.tokenCardDeck, handReady.deckBoard),
+    );
+    const removedCount = Math.max(0, liveCurrentHandCardInstanceIds(handReady).length - target);
     next = {
-      ...removeRandomHandCards(handReady, removedCount),
+      ...removeRandomHandCards(
+        completeLiveHandCardDraw(handReady, source.cardInstanceId, null),
+        removedCount,
+      ),
     };
   } else if (handCapacity(handReady) < liveCurrentHandCardInstanceIds(handReady).length + 1) {
-    next = handReady;
+    next = completeLiveHandCardDraw(handReady, source.cardInstanceId, null);
   } else {
-    next = fillHand(handReady);
+    next = completeLiveHandCardDraw(handReady, source.cardInstanceId, refillHand);
   }
   next = {
     ...next,

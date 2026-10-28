@@ -48,8 +48,10 @@ export function activateTokenDeckSplit(
       .filter((card) => liveTokenCardMatchesSeries(card, seriesIds))
       .map((card) => card.cardInstanceId),
   );
-  const handCount = liveCurrentHandCardInstanceIds(state).length;
-  const main = liveCurrentHandCardInstanceIds(state).filter((id) => !selected.has(id));
+  const handCount = state.liveHands[state.tokenCardDeck.currentDeck].handCount;
+  const main = liveHandCardInstanceIds(state.liveHands[state.tokenCardDeck.currentDeck]).filter(
+    (id) => !selected.has(id),
+  );
   const suppressExpiration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const split: TokenDeckSplit = {
     remainingSeconds:
