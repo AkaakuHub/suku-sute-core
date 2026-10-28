@@ -68,6 +68,7 @@ export function flushLiveHandCardCountActions<State extends HandCountRuntime>(
   if (state.deckActions.currentAction !== null || state.tokenCardDeck.isSwitchDeck) return state;
   let next = state;
   while (next.deckActions.queue.length > 0) {
+    if (next.tokenCardDeck.isSwitchDeck) return next;
     const action = next.deckActions.queue[0];
     if (!action || action.type === 6) return next;
     next = {
@@ -104,7 +105,12 @@ export function flushLiveHandCardCountActions<State extends HandCountRuntime>(
     } else next = resetLivePendingHandCardCount(next, resetHand);
     next = { ...next, deckActions: { ...next.deckActions, currentAction: null } };
   }
-  if (next.tokenCardDeck.isAllHandSkill || next.tokenCardDeck.resetCount === 0) return next;
+  if (
+    next.tokenCardDeck.isSwitchDeck ||
+    next.tokenCardDeck.isAllHandSkill ||
+    next.tokenCardDeck.resetCount === 0
+  )
+    return next;
   const reset = resetLivePendingHandCardCount(
     { ...next, deckActions: { ...next.deckActions, currentAction: { type: 2 } } },
     resetHand,

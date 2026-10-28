@@ -122,3 +122,40 @@ test('待機量0の明示的resetは抽選条件や手札を変更しない', ()
   const initial = setup();
   expect(resetLivePendingHandCardCount(initial, resetHand)).toBe(initial);
 });
+
+test('再読み込み通知で切替が始まっても後続の解除通知を取り落とさない', () => {
+  const initial = notifyLiveHandCardCountReset(setup(), 1);
+  const result = checkLiveDeckOut(
+    { ...initial, deckBoard: { ...initial.deckBoard, deckOutCount: 1 } },
+    (state) => ({
+      ...state,
+      tokenCardDeck: { ...state.tokenCardDeck, isSwitchDeck: true },
+      deckActions: {
+        ...state.deckActions,
+        queue: [...state.deckActions.queue, { type: 1 as const, param1: 2 }],
+      },
+    }),
+    resetHand,
+  );
+  expect(result.deckActions.queue).toEqual([{ type: 1, param1: 2 }]);
+  expect(result.tokenCardDeck.resetCount).toBe(1);
+  expect(result.tokenCardDeck.handTargetCounts.current).toBe(4);
+});
+
+test('補充の途中で切替が始まった場合は残りの解除通知を待機させる', () => {
+  const initial = setup();
+  const result = flushLiveHandCardCountActions(
+    {
+      ...initial,
+      tokenCardDeck: { ...initial.tokenCardDeck, resetCount: 1 },
+      deckActions: {
+        ...initial.deckActions,
+        queue: [{ type: 2 as const }, { type: 1 as const, param1: 3 }],
+      },
+    },
+    (state) => ({ ...state, tokenCardDeck: { ...state.tokenCardDeck, isSwitchDeck: true } }),
+  );
+  expect(result.deckActions.queue).toEqual([{ type: 1, param1: 3 }]);
+  expect(result.tokenCardDeck.resetCount).toBe(0);
+  expect(result.tokenCardDeck.handTargetCounts.current).toBe(5);
+});

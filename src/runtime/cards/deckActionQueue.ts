@@ -33,9 +33,11 @@ export function checkLiveDeckOut<State extends DeckActionState>(
   };
   if (next.deckActions.currentAction !== null || next.tokenCardDeck.isSwitchDeck) return next;
   while (next.deckActions.queue.length > 0) {
+    if (next.tokenCardDeck.isSwitchDeck) return next;
     if (next.deckActions.queue[0]?.type !== 6) {
       next = flushLiveHandCardCountActions(next, resetHand);
       if (next.deckActions.queue.length === 0) break;
+      if (next.deckActions.queue[0]?.type !== 6) return next;
     }
     const action = next.deckActions.queue[0];
     if (action === undefined) throw new Error('Live deck action is absent');
