@@ -6,6 +6,8 @@ import { voltageThresholds } from '../live/voltageLevel.ts';
 
 export function conditionContext(state: GameState): LiveConditionContext {
   const feverSection = state.track.sections.findIndex((section) => section.climax);
+  const split = state.tokenDeckSplit;
+  const inactiveDeck = split === null ? null : split[split.active === 'main' ? 'sub' : 'main'];
   return {
     voltage: state.voltage,
     voltageThresholds,
@@ -16,8 +18,9 @@ export function conditionContext(state: GameState): LiveConditionContext {
     currentSection: state.track.sections.indexOf(sectionAt(state)),
     feverSection: feverSection < 0 ? null : feverSection,
     cardTotal: state.deck.length,
-    deckCount: state.drawPile.length,
-    graveyardCount: state.discard.length,
+    deckCount: state.drawPile.length + (inactiveDeck === null ? 0 : inactiveDeck.drawPile.length),
+    graveyardCount:
+      state.discard.length + (inactiveDeck === null ? 0 : inactiveDeck.discard.length),
     exclusionCount: state.cardPool.length - state.deck.length,
     tokenCardSeriesCount: (seriesIds) =>
       state.deck.filter((card) => seriesIds.some((id) => card.tokenSeriesIds?.includes(id))).length,
