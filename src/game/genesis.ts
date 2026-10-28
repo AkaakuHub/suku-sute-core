@@ -40,13 +40,6 @@ export function changeGenesisMental(state: GameState, amount: bigint): GameState
   };
 }
 
-export function changeGenesisGauge(state: GameState, effectValue: number): GameState {
-  return {
-    ...state,
-    genesis: addLiveGenesisGauge(state.genesis, { actionType: 0, gaugeType: 1, effectValue }),
-  };
-}
-
 export function finishGenesis(state: GameState): GameState {
   const frame = advanceLiveGenesisState(state.genesis, {
     currentTimeSeconds: state.tick / rules.ticksPerSecond,
