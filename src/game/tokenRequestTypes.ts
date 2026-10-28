@@ -15,7 +15,7 @@ export type TokenCardEffect = Readonly<{
   kind: 'token-card';
   resourceId: number;
   count: bigint;
-  style: number;
+  styleType: number;
   mood: number;
   skillSeriesId: number;
   skillLevel: number;
@@ -35,7 +35,7 @@ export function validateTokenCardEffect(effect: TokenCardEffect): undefined {
   if (
     !isInt32(effect.resourceId) ||
     ![
-      effect.style,
+      effect.styleType,
       effect.mood,
       effect.skillSeriesId,
       effect.skillLevel,

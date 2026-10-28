@@ -1,5 +1,5 @@
 import type { LiveCardSkillLevel } from '../../runtime/skills/skillTypes.ts';
-import type { LiveCardIdentity } from '../../runtime/cards/cardIdentity.ts';
+import type { LiveSkillCardIdentity } from '../../runtime/cards/cardIdentity.ts';
 import type { DrawProbabilityRule } from './drawProbability.ts';
 import type { LiveCardAppealParameters } from '../../runtime/live/clientScoreInput.ts';
 import type { PerformerId, MemberId, CostumeId, TokenId } from '../model.ts';
@@ -226,8 +226,6 @@ export type Card = Readonly<{
   costume: CostumeId | null;
   performer: PerformerId | null;
   charactersId: MemberId;
-  mainEffect?: number;
-  style?: number;
   mood?: number;
   tokenCard?: true;
   appeal: LiveCardAppealParameters;
@@ -362,5 +360,5 @@ export type Card = Readonly<{
   }>;
   collectionAbility?: 'rain-echo' | 'rain-pulse';
 }> &
-  LiveCardIdentity &
+  LiveSkillCardIdentity &
   Pick<LiveCardSkillLevel, 'consumeAp'>;

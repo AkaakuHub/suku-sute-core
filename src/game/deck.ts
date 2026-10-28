@@ -22,7 +22,7 @@ export function validateCard(card: Card): void {
     (!card.tokenCard && (card.costume === null || card.performer === null)) ||
     !Number.isInteger(card.consumeAp) ||
     card.consumeAp < 0 ||
-    (card.mainEffect !== undefined && !Number.isSafeInteger(card.mainEffect)) ||
+    (card.skillMainEffect !== null && !Number.isSafeInteger(card.skillMainEffect)) ||
     Object.values(card.appeal).some(
       (value) => !Number.isSafeInteger(value) || (card.tokenCard ? value < 0 : value <= 0),
     ) ||

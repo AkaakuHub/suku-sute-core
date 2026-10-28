@@ -7,7 +7,7 @@ function matches(card: Card, target: SearchTarget): boolean {
     case 'skill-icon':
       return card.skillIcon === target.icon;
     case 'main-effect':
-      return card.mainEffect === target.actionType;
+      return card.skillMainEffect === target.actionType;
     case 'member':
       return card.charactersId === target.member;
     case 'unit':

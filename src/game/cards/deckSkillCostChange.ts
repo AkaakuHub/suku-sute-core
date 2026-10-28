@@ -25,7 +25,7 @@ export function applyDeckSkillCostChange(
       case 'member':
         return card.charactersId === effect.targetId;
       case 'main-effect':
-        return card.mainEffect === effect.targetId;
+        return card.skillMainEffect === effect.targetId;
       case 'unit':
         return card.unitIds.includes(effect.targetId);
       case 'token-series':

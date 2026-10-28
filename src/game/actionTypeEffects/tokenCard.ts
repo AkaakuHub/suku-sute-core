@@ -22,7 +22,7 @@ export function createTokenCardEffect(input: Input): TokenCardEffect {
   const countDetail = find(input.details, 'TOKEN_CARD_CARD_COUNT');
   const count = countDetail?.value ?? 1n;
   const resourceId = int32(find(input.details, 'TOKEN_CARD_RESOURCE_ID')?.value ?? 0n);
-  const style = int32(find(input.details, 'TOKEN_CARD_STYLE_TYPE')?.value ?? 1n);
+  const styleType = int32(find(input.details, 'TOKEN_CARD_STYLE_TYPE')?.value ?? 1n);
   const mood = int32(find(input.details, 'TOKEN_CARD_MOOD_TYPE')?.value ?? 1n);
   const skillSeriesId = int32(
     find(input.details, 'TOKEN_CARD_SKILL_CARD_SKILL_SERIES_ID')?.value ?? 0n,
@@ -54,7 +54,7 @@ export function createTokenCardEffect(input: Input): TokenCardEffect {
     kind: 'token-card',
     resourceId,
     count,
-    style,
+    styleType,
     mood,
     skillSeriesId,
     skillLevel,

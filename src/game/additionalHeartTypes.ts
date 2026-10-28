@@ -60,7 +60,7 @@ export function matchesAdditionalHeartCondition(
     case 'member':
       return BigInt(card.charactersId) === condition.member;
     case 'main-effect':
-      return card.mainEffect !== undefined && BigInt(card.mainEffect) === condition.actionType;
+      return card.skillMainEffect !== null && BigInt(card.skillMainEffect) === condition.actionType;
     case 'unit':
       return card.unitIds.includes(condition.unit);
   }

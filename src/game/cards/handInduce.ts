@@ -16,7 +16,7 @@ export function notifyHandSkillUse(state: GameState, used: Card, apply: EffectAp
       case 'member':
         return int32(trigger.member) === used.charactersId;
       case 'skill-main-effect':
-        return int32(trigger.mainEffect) === used.mainEffect;
+        return int32(trigger.mainEffect) === used.skillMainEffect;
       case 'unit':
         return used.unitIds.includes(int32(trigger.unit));
       case 'heart-quantity-count':
@@ -36,7 +36,7 @@ function updateHandCardSkillUseStats(state: GameState, used: Card): GameState {
   const handCardStats = Object.fromEntries(
     Object.entries(state.handCardStats).map(([id, stats]) => [
       id,
-      notifyLiveHandCardStatsSkillUse(stats, used.charactersId, used.mainEffect ?? null),
+      notifyLiveHandCardStatsSkillUse(stats, used.charactersId, used.skillMainEffect),
     ]),
   );
   return { ...state, handCardStats };
