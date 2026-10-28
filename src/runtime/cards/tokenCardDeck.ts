@@ -9,6 +9,8 @@ import {
 
 export type LiveTokenCardDeckState<Id extends LiveCardIdentifier = number> = Readonly<{
   initialCardCount: number;
+  maxHandSkillActiveCount: number;
+  handMaxCardSkillInfo: Readonly<{ targetHandCount: number }> | null;
   currentDeck: 'main' | 'sub';
   subDeckCardInstanceIds: readonly Id[] | null;
   tokenCardSeriesIds: readonly number[] | null;
@@ -30,25 +32,12 @@ export function createLiveTokenCardDeckState<Id extends LiveCardIdentifier = num
   validateHandTargetCount(initialCardCount);
   return {
     initialCardCount,
+    maxHandSkillActiveCount: 0,
+    handMaxCardSkillInfo: null,
     currentDeck: 'main',
     subDeckCardInstanceIds: null,
     tokenCardSeriesIds: null,
     handTargetCounts: { current: initialCardCount, main: initialCardCount, sub: initialCardCount },
-  };
-}
-
-export function addLiveHandCardTargetCount<Id extends LiveCardIdentifier>(
-  state: LiveTokenCardDeckState<Id>,
-  amount: number,
-): LiveTokenCardDeckState<Id> {
-  validateHandTargetCount(state.handTargetCounts.current);
-  validateHandTargetCount(amount);
-  return {
-    ...state,
-    handTargetCounts: {
-      ...state.handTargetCounts,
-      current: (state.handTargetCounts.current + amount) | 0,
-    },
   };
 }
 

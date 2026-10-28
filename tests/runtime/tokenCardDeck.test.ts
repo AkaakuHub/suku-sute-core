@@ -1,3 +1,4 @@
+import { addLiveHandCardTargetCount } from '../../src/runtime/cards/handCardTarget.ts';
 import { expect, test } from 'vite-plus/test';
 import {
   createLiveDeckBoardState,
@@ -7,7 +8,6 @@ import {
 } from '../../src/runtime/cards/deckBoardState.ts';
 import {
   addLiveTokenCardDeckCard,
-  addLiveHandCardTargetCount,
   createLiveTokenCardDeckState,
   mergeLiveTokenCardDeck,
   prepareLiveCurrentDeckDraw,
@@ -128,7 +128,7 @@ for (const currentDeck of ['main', 'sub'] as const) {
 
 test('文字列IDも同じ分割状態と生成時の系列判定を使う', () => {
   const state = {
-    initialCardCount: 3,
+    ...createLiveTokenCardDeckState<string>(3),
     currentDeck: 'main' as const,
     subDeckCardInstanceIds: ['sub'],
     tokenCardSeriesIds: [2],

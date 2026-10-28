@@ -1,4 +1,7 @@
-import { addLiveHandCardTargetCount } from '../../runtime/cards/tokenCardDeck.ts';
+import {
+  addLiveHandCardTargetCount,
+  resetLiveHandCardTargetCount,
+} from '../../runtime/cards/handCardTarget.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { skillValue } from './skillValue.ts';
 import { isProxyTargetReached } from './proxySkill.ts';
@@ -49,7 +52,10 @@ export function applyHandLimit(
         ];
   return {
     ...currentState,
-    tokenCardDeck: addLiveHandCardTargetCount(currentState.tokenCardDeck, appliedAmount),
+    tokenCardDeck:
+      appliedAmount === 0
+        ? currentState.tokenCardDeck
+        : addLiveHandCardTargetCount(currentState.tokenCardDeck, appliedAmount),
     handLimitEffects,
     ...(activation && card && appliedAmount !== 0
       ? {
@@ -132,7 +138,7 @@ function restoreHandLimitEffects(
   return {
     state: {
       ...state,
-      tokenCardDeck: addLiveHandCardTargetCount(state.tokenCardDeck, resetAmount),
+      tokenCardDeck: resetLiveHandCardTargetCount(state.tokenCardDeck, resetAmount),
       handLimitEffects,
     },
     handAdjustment: Math.max(0, minimumCorrection + resetAmount),

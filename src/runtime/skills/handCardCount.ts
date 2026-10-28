@@ -1,4 +1,12 @@
 import type { LiveHandCardCountEffect } from '../cards/deckActionTypes.ts';
+import type { LiveCardIdentifier } from '../cards/deckBoardState.ts';
+import type { LiveTokenCardDeckState } from '../cards/tokenCardDeck.ts';
+import {
+  activateLiveHandCardMax,
+  addLiveHandCardTargetCount,
+  deactivateLiveHandCardMax,
+  resetLiveHandCardTargetCount,
+} from '../cards/handCardTarget.ts';
 import {
   advanceLiveSkillEffectDuration,
   type LiveSkillEffectDuration,
@@ -8,64 +16,108 @@ export const liveMinimumHandCardCount = 3;
 export const liveDefaultHandCardCount = 5;
 export const liveMaximumHandCardCount = 8;
 
-export type LiveHandCardCountState = Readonly<{
-  effects: readonly Readonly<{
-    effectId: string;
-    amount: number;
-    duration: LiveSkillEffectDuration;
-  }>[];
+type HandCountEffect<Id extends LiveCardIdentifier> = Readonly<{
+  effectId: string;
+  cardInstanceId: Id;
+  duration: LiveSkillEffectDuration;
+}> &
+  Readonly<{ kind: 'count'; amount: number } | { kind: 'max' }>;
+
+export type LiveHandCardCountState<Id extends LiveCardIdentifier = number> = Readonly<{
+  effects: readonly HandCountEffect<Id>[];
 }>;
 
-export function createLiveHandCardCountState(): LiveHandCardCountState {
+type HandCountTransition<Id extends LiveCardIdentifier> = Readonly<{
+  state: LiveHandCardCountState<Id>;
+  tokenCardDeck: LiveTokenCardDeckState<Id>;
+}>;
+
+export function createLiveHandCardCountState<
+  Id extends LiveCardIdentifier = number,
+>(): LiveHandCardCountState<Id> {
   return { effects: [] };
 }
 
-export function activateLiveHandCardCountEffect(
-  state: LiveHandCardCountState,
+export function activateLiveHandCardCountEffect<Id extends LiveCardIdentifier>(
+  state: LiveHandCardCountState<Id>,
+  tokenCardDeck: LiveTokenCardDeckState<Id>,
+  cardInstanceId: Id,
   effect: LiveHandCardCountEffect,
   amount: number,
-): LiveHandCardCountState {
-  validateState(state);
-  if (!Number.isSafeInteger(amount)) {
-    throw new Error('Live HandCardCount amount is invalid');
-  }
+): HandCountTransition<Id> {
   return {
-    effects: [...state.effects, { effectId: effect.effectId, amount, duration: effect.duration }],
+    state: { effects: [...state.effects, { ...effect, cardInstanceId, kind: 'count', amount }] },
+    tokenCardDeck: addLiveHandCardTargetCount(tokenCardDeck, amount),
   };
 }
 
-export function advanceLiveHandCardCountState(
-  state: LiveHandCardCountState,
+export function activateLiveHandCardMaxEffect<Id extends LiveCardIdentifier>(
+  state: LiveHandCardCountState<Id>,
+  tokenCardDeck: LiveTokenCardDeckState<Id>,
+  cardInstanceId: Id,
+  effectId: string,
+  duration: LiveSkillEffectDuration,
+): HandCountTransition<Id> {
+  return {
+    state: { effects: [...state.effects, { effectId, cardInstanceId, kind: 'max', duration }] },
+    tokenCardDeck: activateLiveHandCardMax(tokenCardDeck),
+  };
+}
+
+export function advanceLiveHandCardCountState<Id extends LiveCardIdentifier>(
+  state: LiveHandCardCountState<Id>,
+  tokenCardDeck: LiveTokenCardDeckState<Id>,
   input: Readonly<{
     currentTimeSeconds: number;
     sectionChangeCount: number;
     musicEnded: boolean;
   }>,
-): LiveHandCardCountState {
-  validateState(state);
-  return {
-    effects: state.effects.flatMap((effect) => {
-      const duration = advanceLiveSkillEffectDuration(effect.duration, input);
-      return duration === null ? [] : [{ ...effect, duration }];
-    }),
-  };
+): HandCountTransition<Id> {
+  const removed: HandCountEffect<Id>[] = [];
+  const effects = state.effects.flatMap((effect) => {
+    const duration = advanceLiveSkillEffectDuration(effect.duration, input);
+    if (duration !== null) return [{ ...effect, duration }];
+    removed.push(effect);
+    return [];
+  });
+  return removeEffects(effects, removed, tokenCardDeck);
 }
 
-export function liveHandCardCount(state: LiveHandCardCountState): number {
-  validateState(state);
-  const count = state.effects.reduce(
-    (sum, effect) => sum + effect.amount,
-    liveDefaultHandCardCount,
+export function deactivateLiveHandCardCountEffect<Id extends LiveCardIdentifier>(
+  state: LiveHandCardCountState<Id>,
+  tokenCardDeck: LiveTokenCardDeckState<Id>,
+  cardInstanceId: Id,
+  effectId: string,
+): HandCountTransition<Id> {
+  const matches = (effect: HandCountEffect<Id>) =>
+    effect.cardInstanceId === cardInstanceId && effect.effectId === effectId;
+  return removeEffects(
+    state.effects.filter((effect) => !matches(effect)),
+    state.effects.filter(matches),
+    tokenCardDeck,
   );
-  return Math.min(Math.max(count, liveMinimumHandCardCount), liveMaximumHandCardCount);
 }
 
-function validateState(state: LiveHandCardCountState): void {
-  if (
-    state.effects.some(
-      (effect) => effect.effectId.length === 0 || !Number.isSafeInteger(effect.amount),
-    )
-  ) {
-    throw new Error('Live HandCardCount state is invalid');
+export function liveHandCardCount(state: LiveTokenCardDeckState<LiveCardIdentifier>): number {
+  return Math.min(
+    Math.max(state.handTargetCounts.current, liveMinimumHandCardCount),
+    liveMaximumHandCardCount,
+  );
+}
+
+function removeEffects<Id extends LiveCardIdentifier>(
+  retained: readonly HandCountEffect<Id>[],
+  removed: readonly HandCountEffect<Id>[],
+  tokenCardDeck: LiveTokenCardDeckState<Id>,
+): HandCountTransition<Id> {
+  let next = tokenCardDeck;
+  let resetCount = 0;
+  for (const effect of removed) {
+    if (effect.kind === 'max') next = deactivateLiveHandCardMax(next);
+    else resetCount = (resetCount - effect.amount) | 0;
   }
+  return {
+    state: { effects: retained },
+    tokenCardDeck: resetLiveHandCardTargetCount(next, resetCount),
+  };
 }

@@ -19,7 +19,6 @@ import { applyEffect } from '../effects.ts';
 import { applyAbilityEffects } from './useAbilities.ts';
 
 export function handCapacity(state: GameState): number {
-  if (state.handMaxCardEffects.length > 0) return Math.min(8, state.deck.length);
   const penalty = state.deck.reduce(
     (sum, card) =>
       sum +
