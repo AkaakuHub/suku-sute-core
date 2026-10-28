@@ -1,4 +1,5 @@
 import type { LiveSkillEffect } from './skillTypes.ts';
+import { floatToInt32 } from '../numeric.ts';
 import {
   requireLiveSkillEffectDetails,
   requireLiveSkillEffectDetailValue,
@@ -122,8 +123,9 @@ export function finalizeLiveSkillCost(baseCost: number, deltaAp: number): number
   if (!Number.isFinite(deltaAp)) {
     throw new Error('Live skill cost delta is invalid');
   }
-  const value = baseCost + deltaAp;
-  return baseCost < 1 ? Math.trunc(value) : Math.trunc(Math.max(value, 1));
+  const baseValue = Math.fround(baseCost);
+  const value = Math.max(baseValue < 1 ? 0 : 1, Math.min(Number.MAX_VALUE, baseValue + deltaAp));
+  return floatToInt32(value);
 }
 
 export function consumeLiveSkillCostBuffs(

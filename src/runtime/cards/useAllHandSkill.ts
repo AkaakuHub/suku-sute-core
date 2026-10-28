@@ -10,7 +10,8 @@ export function calculateLiveAllHandSkillCost(
   applySourceBuff: (total: number) => number,
 ): number {
   const total = cards.reduce((sum, card) => {
-    const cost = card.kind === 'source' ? toInt32(card.baseCost) + (addAp | 0) : card.skillCost;
+    const cost =
+      card.kind === 'source' ? toInt32(Math.fround(card.baseCost)) + (addAp | 0) : card.skillCost;
     return (sum + cost) | 0;
   }, 0);
   return Math.max(1, toInt32(applySourceBuff(total)));

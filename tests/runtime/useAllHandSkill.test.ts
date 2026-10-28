@@ -36,6 +36,12 @@ test('一斉発動の親補正ではFloat32へ丸めずdoubleの計算結果を�
   ).toBe(16_777_217);
 });
 
+test('一斉発動も親の基本コストをFloat32で初期化する', () => {
+  expect(
+    calculateLiveAllHandSkillCost([{ kind: 'source', baseCost: 16_777_217 }], 0, (total) => total),
+  ).toBe(16_777_216);
+});
+
 test('一斉発動のコスト合計はint32で折り返し、最後に最低1へ制限する', () => {
   expect(
     calculateLiveAllHandSkillCost(
