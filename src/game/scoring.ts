@@ -9,7 +9,7 @@ import {
   liveValueToFactor,
   calculateLiveAddScoreMax,
 } from '../runtime/live/clientScoreInput.ts';
-import { calculateLiveFlowerRank, calculateLiveHeartRank } from '../runtime/live/heartRank.ts';
+import { projectHeartRank } from './live/heartRank.ts';
 
 export function limitValue(value: bigint): bigint {
   return value > rules.maxScore ? rules.maxScore : value < 0n ? 0n : value;
@@ -22,10 +22,7 @@ export function collectionScore(
   rankHeartCount: number,
 ): bigint {
   const voltage = voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel);
-  const rank =
-    state.genesis.effects.length > 0
-      ? calculateLiveFlowerRank(rankHeartCount, Number(state.genesis.currentGauge))
-      : calculateLiveHeartRank(rankHeartCount, voltage, null);
+  const rank = projectHeartRank(state, rankHeartCount);
   const bonusScoreValue =
     state.boosts.reduce((sum, boost) => sum + boost.percent, 0) +
     state.skillScoreUps.reduce((sum, boost) => sum + boost.percent, 0) +
