@@ -1,4 +1,7 @@
-import { canActivateLiveSkillEffect } from '../runtime/skills/skillEffectActivation.ts';
+import {
+  canActivateLiveSkillEffect,
+  createLiveSkillEffectActivationState,
+} from '../runtime/skills/skillEffectActivation.ts';
 import { beginTokenGeneration, finishTokenGeneration } from './cards/tokens.ts';
 import { applyBeforeUseAbility } from './cards/beforeUse.ts';
 import { drainModeChanges } from './effects/modeChange.ts';
@@ -225,12 +228,23 @@ function activateCard(
   next = notifyHandCardBeforeUse(next, card, 2, applyEffect);
   next = beginTokenGeneration(retireCard(applyBeforeUseAbility(next, card), card), card.id);
   next = notifyComboSkillPoint(next, card, usedSkillCost);
-  for (const effect of card.effects) {
+  const effectIdentities = card.effects.map((effect, index) => ({
+    id: String(index),
+    actionType: effect.kind === 'use-hand' ? 42 : 0,
+  }));
+  const skillEffects = createLiveSkillEffectActivationState(effectIdentities);
+  for (const [index, effect] of card.effects.entries()) {
     if (effect.kind !== 'use-hand') {
       next = applyEffect(next, effect, card);
       continue;
     }
-    if (!canActivateLiveSkillEffect(42, { isSkill: true, activeAllHandSkill: allHand })) continue;
+    if (
+      !canActivateLiveSkillEffect({ id: String(index), actionType: 42 }, skillEffects, {
+        isSkill: true,
+        activeAllHandSkill: allHand,
+      })
+    )
+      continue;
     next = { ...next, modes: { ...next.modes, held: true } };
     const children = [...next.hand];
     for (const id of children) {
