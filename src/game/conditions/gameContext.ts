@@ -7,10 +7,10 @@ import type { ConditionContext } from './model.ts';
 export function conditionContext(state: GameState): ConditionContext {
   const partIndex = state.track.sections.indexOf(sectionAt(state));
   return {
-    heatLevel: voltageLevel(state.excitement, state.maximumVoltageLevel),
-    mentalFraction: state.stamina / state.maximumMental,
+    heatLevel: voltageLevel(state.currentVoltage, state.maximumVoltageLevel),
+    mentalFraction: state.currentMental / state.maximumMental,
     moodValue: moodValue(state),
-    staminaPercent: Math.trunc((state.stamina * 100) / state.maximumMental),
+    staminaPercent: Math.trunc((state.currentMental * 100) / state.maximumMental),
     weather: moodValue(state),
     partIndex,
     partNumber: sectionNumber(state),

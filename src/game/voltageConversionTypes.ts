@@ -14,7 +14,7 @@ export type StopVoltageIncreaseEffect = Readonly<{
 
 export type VoltageConversion = Readonly<{
   id: number;
-  destination: 'hearts' | 'love' | 'stamina' | 'mental-barrier';
+  destination: 'hearts' | 'love' | 'mental' | 'mental-barrier';
   num: number;
   outputDuration: VoltageConversionDuration;
   disabledOnConvertCount: bigint | null;

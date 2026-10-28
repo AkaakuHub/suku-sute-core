@@ -101,7 +101,7 @@ function recalculateFixedParameters(state: GameState): GameState {
         .filter((effect) => effect.target === target)
         .map((effect) => ({ calculation: effect.calculation, value: effect.value })),
     );
-  const maxEnergy = energyMaximum(
+  const maxAp = energyMaximum(
     state.fixedParameterBase.ap,
     state.fixedParameterExtends
       .filter((effect) => effect.target === 'ap')
@@ -121,10 +121,10 @@ function recalculateFixedParameters(state: GameState): GameState {
   );
   return {
     ...state,
-    maxEnergy,
-    energy: apInfinite ? maxEnergy : Math.min(state.energy, maxEnergy),
+    maxAp,
+    currentAp: apInfinite ? maxAp : Math.min(state.currentAp, maxAp),
     maximumVoltageLevel,
-    excitement: voltageInfinite ? voltageThreshold(maximumVoltageLevel) : state.excitement,
+    currentVoltage: voltageInfinite ? voltageThreshold(maximumVoltageLevel) : state.currentVoltage,
     maximumMental,
   };
 }

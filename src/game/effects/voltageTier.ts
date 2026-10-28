@@ -33,7 +33,7 @@ export function applyVoltageTier(
     effect.tiers[
       Math.min(
         effect.tiers.length - 1,
-        Math.floor(voltageLevel(state.excitement, state.maximumVoltageLevel) / effect.step),
+        Math.floor(voltageLevel(state.currentVoltage, state.maximumVoltageLevel) / effect.step),
       )
     ];
   if (!tier) throw new Error('熱気の段階に対応する効果がありません。');

@@ -36,7 +36,7 @@ function applyNamedDrawAbility(state: GameState, card: Card): GameState {
   }
   if (card.drawAbility === 'shadow') {
     const effects: readonly Effect[] = [
-      { kind: 'stamina', amount: -14, moodBonus: { target: 3, perPoint: -0.07 } },
+      { kind: 'mental', amount: -14, moodBonus: { target: 3, perPoint: -0.07 } },
       { kind: 'ap-speed', percent: -14, duration: 'section' },
       handCardCountEffect(-1, 2, 1n),
     ];
@@ -48,8 +48,8 @@ function applyNamedDrawAbility(state: GameState, card: Card): GameState {
   if (card.drawAbility === 'genesis') {
     const effects: readonly Effect[] = [
       { kind: 'ap-speed', percent: -10, duration: 'section' },
-      { kind: 'excitement', amount: -100, moodBonus: { target: 2, perPoint: -0.5 } },
-      { kind: 'stamina', amount: -10, moodBonus: { target: 2, perPoint: -0.05 } },
+      { kind: 'voltage', amount: -100, moodBonus: { target: 2, perPoint: -0.5 } },
+      { kind: 'mental', amount: -10, moodBonus: { target: 2, perPoint: -0.05 } },
     ];
     return effects.reduce<GameState>(
       (current, effect) => applyEffect(current, effect, card),
@@ -103,7 +103,7 @@ function applyNamedDrawAbility(state: GameState, card: Card): GameState {
   if (card.drawAbility === 'bookmark') {
     const amount =
       count >= 100 ? 8 : count >= 80 ? 6 : count >= 60 ? 4 : count >= 40 ? 3 : count >= 20 ? 2 : 1;
-    return applyEffect(next, { kind: 'energy', amount }, card);
+    return applyEffect(next, { kind: 'ap', amount }, card);
   }
   const factorRate =
     count >= 100
@@ -118,7 +118,7 @@ function applyNamedDrawAbility(state: GameState, card: Card): GameState {
               ? 9000
               : 9500;
   const reduction = Math.ceil(
-    skillValue(state, 10000 - factorRate, { kind: 'energy', amount: 10000 - factorRate }, card),
+    skillValue(state, 10000 - factorRate, { kind: 'ap', amount: 10000 - factorRate }, card),
   );
   const factor = Math.fround(Math.fround(10000 - reduction) / 10000);
   return {

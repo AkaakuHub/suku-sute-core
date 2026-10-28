@@ -193,7 +193,7 @@ export function validateEffect(effect: Effect): void {
       Number.isSafeInteger(duration.value) &&
       duration.value >= (allowZero ? 0 : duration.kind === 'sections' ? 1 : 0);
     if (
-      !['hearts', 'love', 'stamina', 'mental-barrier'].includes(effect.destination) ||
+      !['hearts', 'love', 'mental', 'mental-barrier'].includes(effect.destination) ||
       !Number.isSafeInteger(effect.num) ||
       ![0, 1, 2].includes(effect.convertDisabledType) ||
       ![0, 1].includes(effect.disabledType) ||
@@ -333,7 +333,7 @@ export function validateEffect(effect: Effect): void {
       throw new Error('得点倍率と効果時間が正しくありません。');
     return;
   }
-  if (effect.kind === 'energy' && Number.isFinite(effect.amount)) return;
+  if (effect.kind === 'ap' && Number.isFinite(effect.amount)) return;
   if (effect.kind === 'mental-barrier') return validateMentalBarrierEffect(effect);
   if (
     !('amount' in effect) ||

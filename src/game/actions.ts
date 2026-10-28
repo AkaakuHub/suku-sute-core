@@ -5,7 +5,7 @@ import { resolveModeAbility, resolveModeSkill } from './live/modes.ts';
 import { collectHearts } from './hearts.ts';
 import { type Action, type Card, type GameState } from './model.ts';
 import { applyEffect } from './effects.ts';
-import { spendEnergy } from './resources.ts';
+import { spendAp } from './resources.ts';
 import { canUseCard, cardAt } from './projection.ts';
 import { cardCost } from './cards/cost.ts';
 import { finishCardActivation } from './cards/cardZones.ts';
@@ -154,7 +154,7 @@ function actInternal(state: GameState, action: Action): GameState {
 function useCard(state: GameState, index: number): GameState {
   if (!canUseCard(state, index)) return state;
   const source = cardAt(state, index);
-  const paid = spendEnergy(state, cardCost(state, source));
+  const paid = spendAp(state, cardCost(state, source));
   const activated = {
     ...paid,
     activation: {

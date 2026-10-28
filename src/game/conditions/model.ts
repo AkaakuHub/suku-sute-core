@@ -7,7 +7,7 @@ export type GameCondition =
   | Readonly<{ kind: 'voltage-level-at-most'; level: number }>
   | Readonly<{ kind: 'part-at-most' | 'relative-part'; number: number }>
   | Readonly<{ kind: 'heat'; minimum: number }>
-  | Readonly<{ kind: 'stamina'; minimumPercent: number }>
+  | Readonly<{ kind: 'mental'; minimumPercent: number }>
   | Readonly<{ kind: 'weather'; minimum: number }>
   | Readonly<{ kind: 'part-from' | 'part'; number: number }>
   | Readonly<{ kind: 'cards'; zone: 'all' | 'draw' | 'discard' | 'excluded'; minimum: number }>

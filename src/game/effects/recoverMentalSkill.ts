@@ -30,12 +30,12 @@ export function activateRecoverMentalSkill(
     Math.fround(value + Math.fround(addValue)) * Math.fround(multiplier),
   );
   const base = Math.fround(int32(combined) * Math.fround(effectPower));
-  const additional = applyAdditionalBuff(state, 'stamina', Math.fround(base), card);
+  const additional = applyAdditionalBuff(state, 'mental', Math.fround(base), card);
   const boosted = applyAction52SkillBoostForCard(additional.state, card, int32(additional.value));
   if (effect.numberType !== 1) return boosted.state;
   const factor = Math.fround(boosted.value / Math.fround(100));
   const recovery = int32(Math.fround(factor * Math.fround(state.maximumMental)));
-  return changeResource(boosted.state, 'stamina', BigInt(recovery), 'skill', card, apply);
+  return changeResource(boosted.state, 'mental', BigInt(recovery), 'skill', card, apply);
 }
 
 function int32(value: number): number {

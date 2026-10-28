@@ -28,7 +28,7 @@ export function applyUseAbility(state: GameState, card: Card): GameState {
     next = applyEffect(next, { kind: 'protect-mental' }, card);
     next = applyEffect(
       next,
-      { kind: 'stamina', amount: -1000, moodBonus: { target: 3, perPoint: -5 } },
+      { kind: 'mental', amount: -1000, moodBonus: { target: 3, perPoint: -5 } },
       card,
     );
     next = applyEffect(next, { kind: 'voltage-set', amount: 655000001 }, card);

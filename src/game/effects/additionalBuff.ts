@@ -13,8 +13,8 @@ export function applyAdditionalBuff(
   const matches = (boost: ResourceBoost) =>
     boost.target === target &&
     (!boost.members || (card !== undefined && boost.members.includes(card.member)));
-  const voltageBuffs = target === 'excitement' ? matchingVoltageUpAdditionalBuffs(state, card) : [];
-  const mentalBuffs = target === 'stamina' ? matchingMentalRecoverAdditionalBuffs(state, card) : [];
+  const voltageBuffs = target === 'voltage' ? matchingVoltageUpAdditionalBuffs(state, card) : [];
+  const mentalBuffs = target === 'mental' ? matchingMentalRecoverAdditionalBuffs(state, card) : [];
   const percent = Math.max(
     -100,
     state.resourceBoosts.reduce(

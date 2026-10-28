@@ -15,11 +15,11 @@ export function skillValue(state: GameState, value: number, effect: Effect, card
   const raw = Math.fround(value + bonus);
   const base =
     effect.kind === 'boost' ||
-    effect.kind === 'stamina' ||
-    effect.kind === 'excitement' ||
+    effect.kind === 'mental' ||
+    effect.kind === 'voltage' ||
     effect.kind === 'heart-boost'
       ? Math.trunc(raw)
-      : effect.kind === 'bloom' || effect.kind === 'amplify' || effect.kind === 'energy'
+      : effect.kind === 'bloom' || effect.kind === 'amplify' || effect.kind === 'ap'
         ? raw
         : Math.ceil(raw);
   return applyStarGatherSkillBoost(base, skillBoostPercent(state, card));

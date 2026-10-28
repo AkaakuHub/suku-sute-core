@@ -64,7 +64,7 @@ function destinationFor(
     case 2:
       return 'love';
     case 3:
-      return 'stamina';
+      return 'mental';
     case 4:
       return 'mental-barrier';
     default:

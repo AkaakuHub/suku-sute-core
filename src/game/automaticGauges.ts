@@ -17,18 +17,18 @@ export function advanceAutomaticGauges(
   const stage = state.track.stage;
   const ap = advanceLiveApGauge(
     {
-      currentAp: Math.floor(state.energy),
-      maxAp: state.maxEnergy,
+      currentAp: Math.floor(state.currentAp),
+      maxAp: state.maxAp,
       timerSeconds: state.apTimerSeconds,
     },
     {
       deltaTimeSeconds: dt,
-      mentalDown: state.resting,
+      mentalDown: state.mentalDown,
       increaseIntervalSeconds: apIncreaseIntervalSeconds(state),
       boundaryToleranceSeconds: 0.000001,
     },
   ).state;
-  let next = changeResource(state, 'energy', BigInt(ap.currentAp - Math.floor(state.energy)));
+  let next = changeResource(state, 'ap', BigInt(ap.currentAp - Math.floor(state.currentAp)));
   next = {
     ...next,
     apTimerSeconds: ap.timerSeconds,
@@ -48,7 +48,7 @@ export function advanceAutomaticGauges(
           next.voltageTimerSeconds - stage.voltageIncreaseIntervalSeconds,
         ),
       },
-      'excitement',
+      'voltage',
       1n,
       'natural',
       undefined,
@@ -57,19 +57,19 @@ export function advanceAutomaticGauges(
   }
   if (next.bloom && (next.mentalProtected || next.sectionMentalProtected)) return next;
   let mentalTimerSeconds = Math.fround(Math.fround(next.mentalTimerSeconds) + Math.fround(dt));
-  const resting =
+  const mentalDown =
     !(
       next.mentalProtected ||
       next.sectionMentalProtected ||
       next.disableMentalDownEffects.length > 0
     ) &&
-    (next.resting || next.stamina <= 0);
-  if (resting) {
+    (next.mentalDown || next.currentMental <= 0);
+  if (mentalDown) {
     const recovery = calculateLiveMentalDownRecovery(next.maximumMental, durationSeconds(next));
-    const stamina = Math.min(
+    const currentMental = Math.min(
       next.maximumMental,
       Math.fround(
-        next.stamina +
+        next.currentMental +
           Math.fround(
             Math.fround(recovery.recoveryMental * Math.fround(dt)) / recovery.recoveryTimeSeconds,
           ),
@@ -78,26 +78,28 @@ export function advanceAutomaticGauges(
     const recovered = {
       ...next,
       mentalTimerSeconds,
-      stamina,
-      resting: stamina < recovery.recoveryMental,
+      currentMental,
+      mentalDown: currentMental < recovery.recoveryMental,
     };
     const result =
-      stamina !== next.stamina ? induceMentalHearts(recovered, Math.trunc(stamina)) : recovered;
-    return !state.resting ? registerMentalDownMission(result) : result;
+      currentMental !== next.currentMental
+        ? induceMentalHearts(recovered, Math.trunc(currentMental))
+        : recovered;
+    return !state.mentalDown ? registerMentalDownMission(result) : result;
   }
   const mentalInterval = mentalDecreaseInterval(next, stage.mentalDecreaseIntervalSeconds);
   if (mentalInterval <= 0) {
     if (!next.bloom) {
-      next = changeResource(next, 'stamina', -BigInt(Math.trunc(next.stamina)), 'natural');
+      next = changeResource(next, 'mental', -BigInt(Math.trunc(next.currentMental)), 'natural');
       if (
-        next.stamina <= 0 &&
+        next.currentMental <= 0 &&
         !(
           next.mentalProtected ||
           next.sectionMentalProtected ||
           next.disableMentalDownEffects.length > 0
         )
       ) {
-        next = { ...next, resting: true };
+        next = { ...next, mentalDown: true };
         mentalTimerSeconds = 0;
       }
     }
@@ -109,12 +111,12 @@ export function advanceAutomaticGauges(
   const result: GameState = {
     ...next,
     mentalTimerSeconds,
-    resting:
+    mentalDown:
       !(
         next.mentalProtected ||
         next.sectionMentalProtected ||
         next.disableMentalDownEffects.length > 0
-      ) && next.stamina <= 0,
+      ) && next.currentMental <= 0,
   };
-  return !state.resting && result.resting ? registerMentalDownMission(result) : result;
+  return !state.mentalDown && result.mentalDown ? registerMentalDownMission(result) : result;
 }

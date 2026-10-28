@@ -182,7 +182,7 @@ type EffectShape =
   | AddVoltageSkillEffect
   | ReshuffleSkillEffect
   | Readonly<{
-      kind: 'beat-hearts' | 'energy' | 'stamina' | 'excitement';
+      kind: 'beat-hearts' | 'ap' | 'mental' | 'voltage';
       amount: number;
       moodBonus?: MoodBonus;
     }>
@@ -269,7 +269,7 @@ type EffectShape =
   | Readonly<{ kind: 'bloom'; strength: number }>
   | SkillCooldownEffectInput
   | InduceSkillEffectInput
-  | Readonly<{ kind: 'energy-limit'; amount: number }>
+  | Readonly<{ kind: 'ap-limit'; amount: number }>
   | Readonly<{ kind: 'ap-speed'; percent: number; duration: 'stage' | 'section' }>
   | Readonly<{
       kind: 'ap-speed-change';
@@ -323,7 +323,7 @@ type EffectShape =
   | StopVoltageIncreaseEffect
   | Readonly<{
       kind: 'resource-boost';
-      target: 'excitement' | 'stamina' | 'attract';
+      target: 'voltage' | 'mental' | 'attract';
       percent: number;
       uses: number | null;
       condition: 'voltage20' | 'mental100' | 'always';

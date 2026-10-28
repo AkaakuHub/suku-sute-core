@@ -23,7 +23,7 @@ export function evaluateDrawSuccessInduce(
     case 2: {
       const factor = Math.fround(numToValue(branchValue) / Math.fround(100));
       const currentPercent = Math.fround(
-        Math.fround(Math.trunc(state.stamina)) / Math.fround(state.maximumMental),
+        Math.fround(Math.trunc(state.currentMental)) / Math.fround(state.maximumMental),
       );
       return currentPercent <= factor;
     }
@@ -31,7 +31,9 @@ export function evaluateDrawSuccessInduce(
       return Math.fround(moodValue(state)) <= numToValue(branchValue);
     }
     case 5: {
-      return voltageLevel(state.excitement, state.maximumVoltageLevel) <= numToValue(branchValue);
+      return (
+        voltageLevel(state.currentVoltage, state.maximumVoltageLevel) <= numToValue(branchValue)
+      );
     }
     case 6:
       return BigInt(state.track.sections.indexOf(sectionAt(state)) + 1) <= branchValue;

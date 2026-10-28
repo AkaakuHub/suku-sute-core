@@ -111,7 +111,7 @@ export type CardUse = Readonly<{
 export type Bloom = Readonly<{
   progress: bigint;
   strength: number;
-  rollback: Readonly<{ energy: number; stamina: number; excitement: number }>;
+  rollback: Readonly<{ currentAp: number; currentMental: number; currentVoltage: number }>;
 }>;
 export type PlayStats = Readonly<{
   cardsUsed: number;
@@ -217,8 +217,8 @@ export type GameState = Readonly<{
     pendingHandStatsDeactivationKeys?: readonly string[];
   }> | null;
   randomSeed: number;
-  energy: number;
-  maxEnergy: number;
+  currentAp: number;
+  maxAp: number;
   fixedParameterBase: Readonly<{ ap: number; voltage: number; mental: number }>;
   maximumMental: number;
   fixedParameterExtends: readonly FixedParameterExtend[];
@@ -268,8 +268,8 @@ export type GameState = Readonly<{
   costReductions: Readonly<Record<string, number>>;
   onceSkillCostChanges: Readonly<Record<string, number>>;
   storyAmplification: number;
-  stamina: number;
-  resting: boolean;
+  currentMental: number;
+  mentalDown: boolean;
   mentalProtected: boolean;
   disableMentalDownEffects: readonly DisableMentalDown[];
   nextDisableMentalDownId: number;
@@ -286,7 +286,7 @@ export type GameState = Readonly<{
   heartBoosts: readonly HeartBoostState[];
   mentalShields: readonly MentalShield[];
   mentalBarriers: readonly MentalBarrier[];
-  excitement: number;
+  currentVoltage: number;
   masteryVoltageProgress: number;
   maximumVoltageLevel: number;
   specialAppealTokens: readonly SpecialAppealToken[];

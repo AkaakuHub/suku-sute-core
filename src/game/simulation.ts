@@ -116,8 +116,8 @@ export function createGame(
     skillActivationCounts: {},
     activation: null,
     randomSeed: seed,
-    energy: 0,
-    maxEnergy: track.stage.maxEnergy,
+    currentAp: 0,
+    maxAp: track.stage.maxAp,
     ...createInitialEffectState(track),
     apTimeEffects: [],
     voltageConversions: [],
@@ -147,8 +147,8 @@ export function createGame(
     costReductions: {},
     onceSkillCostChanges: {},
     storyAmplification: 0,
-    stamina: 100,
-    resting: false,
+    currentMental: 100,
+    mentalDown: false,
     mentalProtected: false,
     disableMentalDownEffects: [],
     nextDisableMentalDownId: 1,
@@ -158,7 +158,7 @@ export function createGame(
     beatHeartValueBuffs: [],
     heartBoosts: [],
     mentalBarriers: [],
-    excitement: 0,
+    currentVoltage: 0,
     masteryVoltageProgress: 0,
     maximumVoltageLevel: 1000,
     specialUsed: [],
@@ -302,7 +302,7 @@ function advanceTick(state: GameState): GameState {
   const previousBeat = Math.floor((state.tick * state.track.bpm) / (60 * rules.ticksPerSecond));
   const beat = Math.floor((tick * state.track.bpm) / (60 * rules.ticksPerSecond));
   if (beat !== previousBeat && beat % 2 === 0) {
-    if (!next.resting) next = addHearts(next, beatHeartCount(next));
+    if (!next.mentalDown) next = addHearts(next, beatHeartCount(next));
     next = expireGaugeRegenerations(next, 'heart-event');
   }
   if (sectionAt(next) !== sectionAt(state)) next = advanceSectionChange(next, applyEffect);

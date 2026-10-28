@@ -7,7 +7,7 @@ import type { EffectApplier } from './induceSkillEffect.ts';
 
 export function applyResourceEffect(
   state: GameState,
-  resource: 'stamina' | 'excitement',
+  resource: 'mental' | 'voltage',
   card: Card | undefined,
   value: number,
   effectPower: number,
@@ -23,6 +23,6 @@ export function applyResourceEffect(
     'skill',
     card,
     apply,
-    resource === 'excitement',
+    resource === 'voltage',
   );
 }

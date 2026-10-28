@@ -1,7 +1,7 @@
 import { beginTokenGeneration, finishTokenGeneration } from './cards/tokens.ts';
 import type { Card, GameState } from './model.ts';
 import { applyEffect } from './effects.ts';
-import { spendEnergy } from './resources.ts';
+import { spendAp } from './resources.ts';
 import { flushDeckActions } from './cards/boardActions.ts';
 import { fillHand } from './cards/drawing.ts';
 import { resolveModeSkill } from './live/modes.ts';
@@ -33,9 +33,9 @@ export function canUseSpecial(state: GameState, cardId: string): boolean {
   return Boolean(
     card?.special &&
     (state.phase === 'playing' || state.phase === 'paused') &&
-    !state.resting &&
+    !state.mentalDown &&
     (token ? token.remainingCoolTime <= 0 : !state.specialUsed.includes(cardId)) &&
-    (state.bloom || state.energy >= specialCost(card)),
+    (state.bloom || state.currentAp >= specialCost(card)),
   );
 }
 
@@ -63,7 +63,7 @@ export function useSpecial(state: GameState, cardId: string): GameState {
   if (!card?.special) throw new Error('共鳴のカードがありません。');
   const previousSkillType = state.currentSkillType;
   let next = beginTokenGeneration(
-    { ...spendEnergy(state, specialCost(card)), currentSkillType: 1 },
+    { ...spendAp(state, specialCost(card)), currentSkillType: 1 },
     card.id,
   );
   next = {

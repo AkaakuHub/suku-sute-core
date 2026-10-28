@@ -107,14 +107,14 @@ export function convertVoltageIncrease(
         ],
       };
     }
-  } else if (conversion.destination === 'stamina') {
+  } else if (conversion.destination === 'mental') {
     const base = Math.trunc(raw);
     const buffed = card
-      ? applyAdditionalBuff(next, 'stamina', base, card)
+      ? applyAdditionalBuff(next, 'mental', base, card)
       : { state: next, value: base };
     next = changeResource(
       buffed.state,
-      'stamina',
+      'mental',
       BigInt(Math.trunc(buffed.value)),
       'skill',
       card,

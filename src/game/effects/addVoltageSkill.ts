@@ -32,12 +32,12 @@ export function activateAddVoltageSkill(
       Math.fround(effectPower),
   );
   const base = Math.fround(int32(combined));
-  const additional = applyAdditionalBuff(state, 'excitement', base, card);
+  const additional = applyAdditionalBuff(state, 'voltage', base, card);
   const boosted = applyAction52SkillBoostForCard(additional.state, card, int32(additional.value));
   if (effect.numberType !== 1) return registerMissionAction(boosted.state, 10, 0);
   return changeResource(
     boosted.state,
-    'excitement',
+    'voltage',
     BigInt(int32(boosted.value)),
     'skill',
     card,

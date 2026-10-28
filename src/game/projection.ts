@@ -56,9 +56,9 @@ export function canUseCard(state: GameState, index: number): boolean {
     Number.isInteger(index) &&
     index >= 0 &&
     index < state.hand.length &&
-    !state.resting &&
+    !state.mentalDown &&
     state.tick - state.lastActionTick >= cardCooldownTicks(state) &&
-    (state.bloom !== null || state.energy >= cardCost(state, cardAt(state, index)))
+    (state.bloom !== null || state.currentAp >= cardCost(state, cardAt(state, index)))
   );
 }
 

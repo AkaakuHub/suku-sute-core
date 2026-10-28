@@ -20,7 +20,7 @@ export function evaluateCondition(condition: GameCondition, context: ConditionCo
       return context.partNumber === condition.number;
     case 'heat':
       return context.heatLevel >= condition.minimum;
-    case 'stamina':
+    case 'mental':
       return context.staminaPercent >= condition.minimumPercent;
     case 'weather':
       return context.weather >= condition.minimum;

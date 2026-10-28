@@ -17,7 +17,7 @@ export function createRecoverSkillGaugeEffect(input: Input): Effect {
   if (!Number.isSafeInteger(targetMood) || targetMood < 0 || targetMood > 3)
     throw new Error('AP回復の空模様対象が正しくありません。');
   return {
-    kind: 'energy',
+    kind: 'ap',
     amount: Math.fround(int64ToFloat32(base?.value ?? 0n) / 10_000),
     ...(targetMood > 0
       ? {

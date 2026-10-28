@@ -115,7 +115,7 @@ function applyEffectInternal(
         (effect.condition.kind === 'mental-at-most' ||
           effect.condition.kind === 'voltage-level-at-most');
       const alwaysTrueBranch =
-        effect.condition.kind === 'heat' || effect.condition.kind === 'stamina';
+        effect.condition.kind === 'heat' || effect.condition.kind === 'mental';
       const effects = bothBloomBranches
         ? [...effect.whenTrue, ...effect.whenFalse]
         : alwaysTrueBranch || evaluateCondition(effect.condition, context)
@@ -137,7 +137,7 @@ function applyEffectInternal(
           : effect.condition === 'mellow100'
             ? moodValue(state) <= -100
             : effect.condition === 'mental0'
-              ? state.bloom !== null || Math.trunc(state.stamina) === 0
+              ? state.bloom !== null || Math.trunc(state.currentMental) === 0
               : effect.condition === 'deck80'
                 ? state.deck.length >= 80
                 : effect.condition === 'first-section'
@@ -225,12 +225,12 @@ function applyEffectInternal(
         skillUseDestinations: { ...state.skillUseDestinations, [card.id]: effect.destination },
       };
     }
-    case 'energy': {
+    case 'ap': {
       const base = Math.fround(value(effect.amount) * effectPower);
       const boosted = applyAction52SkillBoostForCard(state, card, base);
-      return changeResource(boosted.state, 'energy', BigInt(Math.trunc(boosted.value)));
+      return changeResource(boosted.state, 'ap', BigInt(Math.trunc(boosted.value)));
     }
-    case 'energy-limit':
+    case 'ap-limit':
       return changeFixedParameterBase(state, 'ap', effect.amount);
     case 'reset-special':
       return applySpecialReset(state, effect, card);
@@ -238,8 +238,8 @@ function applyEffectInternal(
       return activateMentalShield(state, effect, card, multiplier, addValue, effectPower);
     case 'protect-mental':
       return effect.duration === 'section'
-        ? { ...state, sectionMentalProtected: true, resting: false }
-        : { ...state, mentalProtected: true, resting: false };
+        ? { ...state, sectionMentalProtected: true, mentalDown: false }
+        : { ...state, mentalProtected: true, mentalDown: false };
     case 'beat-count': {
       const boosted = applyAction52SkillBoostForCard(state, card, value(effect.amount));
       return {
@@ -287,8 +287,8 @@ function applyEffectInternal(
         effectPower,
         applyEffect,
       );
-    case 'stamina':
-    case 'excitement':
+    case 'mental':
+    case 'voltage':
       return applyResourceEffect(
         state,
         effect.kind,
@@ -320,8 +320,8 @@ function applyEffectInternal(
       const eligible =
         effect.condition === 'always' ||
         (effect.condition === 'mental100'
-          ? state.stamina >= state.maximumMental
-          : voltageLevel(state.excitement, state.maximumVoltageLevel) >= 20);
+          ? state.currentMental >= state.maximumMental
+          : voltageLevel(state.currentVoltage, state.maximumVoltageLevel) >= 20);
       return eligible
         ? {
             ...state,

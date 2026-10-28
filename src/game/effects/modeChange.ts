@@ -95,8 +95,8 @@ export function drainModeChanges(state: GameState, apply: ApplyEffect): GameStat
           effect.kind === 'skill-hearts' ||
           effect.kind === 'skill-score-up' ||
           effect.kind === 'boost' ||
-          effect.kind === 'stamina' ||
-          effect.kind === 'excitement';
+          effect.kind === 'mental' ||
+          effect.kind === 'voltage';
         const product = BigInt.asIntN(64, reaction.buffNum * BigInt(count));
         const effectPower = scales
           ? toInt32(Math.fround(int64ToFloat32(product) / Math.fround(10_000)))

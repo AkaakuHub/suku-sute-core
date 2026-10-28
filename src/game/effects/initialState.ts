@@ -16,7 +16,7 @@ export function createInitialEffectState(
   | 'handUseHeartCollectionCounts'
 > {
   return {
-    fixedParameterBase: { ap: track.stage.maxEnergy, voltage: 1000, mental: 100 },
+    fixedParameterBase: { ap: track.stage.maxAp, voltage: 1000, mental: 100 },
     maximumMental: 100,
     fixedParameterExtends: [],
     nextFixedParameterExtendId: 1,

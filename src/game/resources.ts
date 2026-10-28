@@ -14,7 +14,7 @@ import { refreshBranchInducers } from './effects/branch.ts';
 
 export function changeResource(
   state: GameState,
-  resource: 'energy' | 'stamina' | 'excitement',
+  resource: 'ap' | 'mental' | 'voltage',
   amount: bigint,
   source: 'skill' | 'natural' = 'skill',
   card?: Card,
@@ -22,27 +22,27 @@ export function changeResource(
   induceVoltageUp = false,
   onSkillEffectAmount?: (state: GameState, amount: number) => GameState,
 ): GameState {
-  if (resource === 'excitement') amount = BigInt.asIntN(32, amount);
+  if (resource === 'voltage') amount = BigInt.asIntN(32, amount);
   const voltageInput = amount;
   let masteryVoltageUp = 0n;
-  if (resource === 'energy' && amount >= 0n) {
+  if (resource === 'ap' && amount >= 0n) {
     const absorption = absorbSkillEffect(state, 14, BigInt.asIntN(32, amount));
     if (absorption.absorbed) return absorption.state;
   }
-  if (resource === 'stamina' && amount >= 0n && source === 'skill') {
+  if (resource === 'mental' && amount >= 0n && source === 'skill') {
     const absorption = absorbSkillEffect(state, 5, BigInt.asUintN(32, amount));
     if (absorption.absorbed) return absorption.state;
   }
-  if (resource === 'excitement' && source === 'skill') {
+  if (resource === 'voltage' && source === 'skill') {
     const conversion = convertVoltageIncrease(state, amount, card, applyEffect);
     if (conversion.converted) return notifySkillEffectAmount(conversion.state, 0);
     state = conversion.state;
   }
-  if (resource === 'excitement' && amount >= 0n) {
+  if (resource === 'voltage' && amount >= 0n) {
     const absorption = absorbSkillEffect(state, 10, BigInt.asIntN(32, amount));
     if (absorption.absorbed) return notifySkillEffectAmount(absorption.state, 0);
   }
-  if (resource === 'excitement' && amount > 0n) {
+  if (resource === 'voltage' && amount > 0n) {
     const mastery = addMasteryVoltage(state, Math.fround(Number(amount)));
     state = mastery.state;
     if (mastery.gain > 0) {
@@ -56,15 +56,13 @@ export function changeResource(
     }
   }
   if (
-    state.gaugeInfinities.some(
-      (infinity) => infinity.gauge === resourceToGauge(resource) && !infinity.suspended,
-    ) &&
-    !(resource === 'stamina' && (state.resting || amount < 0n))
+    state.gaugeInfinities.some((infinity) => infinity.gauge === resource && !infinity.suspended) &&
+    !(resource === 'mental' && (state.mentalDown || amount < 0n))
   ) {
     if (!applyEffect || amount < 0n) return notifySkillEffectAmount(state, Number(voltageInput));
-    if (resource === 'stamina' && source === 'skill')
+    if (resource === 'mental' && source === 'skill')
       return induceSkillEffects(state, 'mental-recover', Number(amount), applyEffect);
-    if (resource === 'excitement') {
+    if (resource === 'voltage') {
       let next = state;
       if (induceVoltageUp)
         next = induceSkillEffects(next, 'voltage', Number(voltageInput), applyEffect);
@@ -74,13 +72,13 @@ export function changeResource(
     }
     return state;
   }
-  if (resource === 'stamina' && amount < 0n && source === 'skill' && !state.bloom) {
+  if (resource === 'mental' && amount < 0n && source === 'skill' && !state.bloom) {
     const absorbed = absorbSkillMentalDamage(state, amount);
     state = absorbed.state;
     amount = absorbed.amount;
     if (amount === 0n) return state;
   }
-  if (resource === 'stamina' && amount < 0n) {
+  if (resource === 'mental' && amount < 0n) {
     const shielded = breakMentalShields(state, Number(-amount));
     state = shielded.state;
     amount = -BigInt(Math.trunc(shielded.remainingDamage));
@@ -89,17 +87,15 @@ export function changeResource(
       state.gaugeInfinities.some(
         (infinity) => infinity.gauge === 'mental' && !infinity.suspended,
       ) &&
-      !state.resting
+      !state.mentalDown
     )
-      return state.bloom ? changeBloomResource(state, 'stamina', amount) : state;
+      return state.bloom ? changeBloomResource(state, 'mental', amount) : state;
   }
   if (state.bloom) {
     const changed = changeBloomResource(state, resource, amount);
     let withHandInduce =
-      resource === 'excitement'
-        ? notifyVoltageBaseLevelChange(state, changed, applyEffect)
-        : changed;
-    if (resource === 'excitement' && applyEffect) {
+      resource === 'voltage' ? notifyVoltageBaseLevelChange(state, changed, applyEffect) : changed;
+    if (resource === 'voltage' && applyEffect) {
       if (induceVoltageUp)
         withHandInduce = induceSkillEffects(
           withHandInduce,
@@ -116,28 +112,29 @@ export function changeResource(
         );
     }
     const withMissionEvent =
-      resource === 'excitement' && state.excitement > 0 && withHandInduce.excitement === 0
+      resource === 'voltage' && state.currentVoltage > 0 && withHandInduce.currentVoltage === 0
         ? registerVoltageZeroMission(withHandInduce)
         : withHandInduce;
     return notifySkillEffectAmount(withMissionEvent, Number(voltageInput));
   }
   const maximum =
-    resource === 'energy'
-      ? state.maxEnergy
-      : resource === 'excitement'
+    resource === 'ap'
+      ? state.maxAp
+      : resource === 'voltage'
         ? voltageThreshold(state.maximumVoltageLevel)
         : state.maximumMental;
-  const nextValue = Math.max(0, Math.min(maximum, state[resource] + Number(amount)));
-  let next: GameState = { ...state, [resource]: nextValue };
-  if (resource === 'excitement') next = notifyVoltageBaseLevelChange(state, next, applyEffect);
-  if (resource === 'excitement' && state.excitement > 0 && nextValue === 0)
+  const property = resourceProperties[resource];
+  const nextValue = Math.max(0, Math.min(maximum, state[property] + Number(amount)));
+  let next: GameState = { ...state, [property]: nextValue };
+  if (resource === 'voltage') next = notifyVoltageBaseLevelChange(state, next, applyEffect);
+  if (resource === 'voltage' && state.currentVoltage > 0 && nextValue === 0)
     next = registerVoltageZeroMission(next);
-  if (resource === 'stamina' && nextValue !== state.stamina)
+  if (resource === 'mental' && nextValue !== state.currentMental)
     next = induceMentalHearts(next, Math.trunc(nextValue));
   if (!applyEffect) return notifySkillEffectAmount(next, Number(voltageInput));
-  if (resource === 'stamina' && source === 'skill' && amount >= 0n)
+  if (resource === 'mental' && source === 'skill' && amount >= 0n)
     return induceSkillEffects(next, 'mental-recover', Number(amount), applyEffect);
-  if (resource === 'excitement') {
+  if (resource === 'voltage') {
     if (induceVoltageUp)
       next = induceSkillEffects(next, 'voltage', Number(voltageInput), applyEffect);
     if (masteryVoltageUp > 0n)
@@ -146,7 +143,7 @@ export function changeResource(
   return notifySkillEffectAmount(next, Number(voltageInput));
 
   function notifySkillEffectAmount(nextState: GameState, effectAmount: number): GameState {
-    return resource === 'excitement' && source === 'skill' && onSkillEffectAmount
+    return resource === 'voltage' && source === 'skill' && onSkillEffectAmount
       ? onSkillEffectAmount(nextState, effectAmount)
       : nextState;
   }
@@ -159,12 +156,16 @@ export function setVoltageValue(
 ): GameState {
   const target = Math.max(0, Math.trunc(Math.fround(amount)));
   if (state.bloom) {
-    return changeBloomGauge(state, Math.fround(target - state.excitement));
+    return changeBloomGauge(state, Math.fround(target - state.currentVoltage));
   }
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'voltage' && !infinity.suspended))
     return state;
-  const next = notifyVoltageBaseLevelChange(state, { ...state, excitement: target }, _applyEffect);
-  return state.excitement > 0 && target === 0 ? registerVoltageZeroMission(next) : next;
+  const next = notifyVoltageBaseLevelChange(
+    state,
+    { ...state, currentVoltage: target },
+    _applyEffect,
+  );
+  return state.currentVoltage > 0 && target === 0 ? registerVoltageZeroMission(next) : next;
 }
 
 export function addMasteryVoltage(
@@ -184,12 +185,12 @@ export function notifyVoltageBaseLevelChange(
   current: GameState,
   applyEffect?: EffectApplier,
 ): GameState {
-  if (!applyEffect || previous.excitement === current.excitement) return current;
+  if (!applyEffect || previous.currentVoltage === current.currentVoltage) return current;
   const branched = refreshBranchInducers(current, applyEffect);
   return notifyHandVoltageIncrease(
     branched,
-    voltageLevel(previous.excitement, previous.maximumVoltageLevel),
-    voltageLevel(branched.excitement, branched.maximumVoltageLevel),
+    voltageLevel(previous.currentVoltage, previous.maximumVoltageLevel),
+    voltageLevel(branched.currentVoltage, branched.maximumVoltageLevel),
     applyEffect,
   );
 }
@@ -197,26 +198,19 @@ export function notifyVoltageBaseLevelChange(
 export function decreaseMentalNaturally(state: GameState): GameState {
   const barrier = absorbNaturalMentalDecrease(state);
   if (barrier.absorbed) return barrier.state;
-  return changeResource(state, 'stamina', -1n, 'natural');
+  return changeResource(state, 'mental', -1n, 'natural');
 }
 
-function resourceToGauge(
-  resource: 'energy' | 'stamina' | 'excitement',
-): 'ap' | 'mental' | 'voltage' {
-  switch (resource) {
-    case 'energy':
-      return 'ap';
-    case 'stamina':
-      return 'mental';
-    case 'excitement':
-      return 'voltage';
-  }
-}
+const resourceProperties = {
+  ap: 'currentAp',
+  mental: 'currentMental',
+  voltage: 'currentVoltage',
+} as const;
 
-export function spendEnergy(state: GameState, amount: number): GameState {
+export function spendAp(state: GameState, amount: number): GameState {
   return changeResource(
-    state.energy >= state.maxEnergy ? { ...state, apTimerSeconds: 0 } : state,
-    'energy',
+    state.currentAp >= state.maxAp ? { ...state, apTimerSeconds: 0 } : state,
+    'ap',
     -BigInt(amount),
   );
 }
@@ -258,14 +252,14 @@ export function expireGaugeInfinities(
       next = next.bloom
         ? { ...next, mentalTimerSeconds: 0 }
         : induceMentalHearts(
-            { ...next, stamina: next.maximumMental, mentalTimerSeconds: 0 },
+            { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
             next.maximumMental,
           );
     }
     if (gauge === 'voltage') {
       const target = voltageThreshold(Math.min(10, next.maximumVoltageLevel));
       next = next.bloom
-        ? changeBloomGauge(next, Math.fround(target - next.excitement))
+        ? changeBloomGauge(next, Math.fround(target - next.currentVoltage))
         : setVoltageValue(next, target, applyEffect);
     }
   }
@@ -290,14 +284,14 @@ export function deactivateGaugeInfinities(
       next = next.bloom
         ? { ...next, mentalTimerSeconds: 0 }
         : induceMentalHearts(
-            { ...next, stamina: next.maximumMental, mentalTimerSeconds: 0 },
+            { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
             next.maximumMental,
           );
     }
     if (gauge === 'voltage') {
       const target = voltageThreshold(Math.min(10, next.maximumVoltageLevel));
       next = next.bloom
-        ? changeBloomGauge(next, Math.fround(target - next.excitement))
+        ? changeBloomGauge(next, Math.fround(target - next.currentVoltage))
         : setVoltageValue(next, target, applyEffect);
     }
   }

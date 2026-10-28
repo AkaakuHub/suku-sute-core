@@ -16,7 +16,7 @@ export type SkillScoreUp = Readonly<{
 }>;
 
 export type ResourceBoost = Readonly<{
-  target: 'excitement' | 'stamina' | 'attract';
+  target: 'voltage' | 'mental' | 'attract';
   members?: readonly MemberId[];
   percent: number;
   uses: number | null;

@@ -126,12 +126,12 @@ function pulseGauge(
   if (gauge === 'mental') {
     return state.bloom
       ? state
-      : changeResource(state, 'stamina', BigInt(value), 'skill', undefined, applyEffect);
+      : changeResource(state, 'mental', BigInt(value), 'skill', undefined, applyEffect);
   }
   if (!state.bloom)
     return changeResource(
       state,
-      'excitement',
+      'voltage',
       BigInt(value),
       'skill',
       state.cardPool.find((card) => card.id === sourceCardId),

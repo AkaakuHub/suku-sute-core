@@ -62,7 +62,7 @@ export function applyApSpeedChange(
   );
   if (rate > 0 && card) {
     if (effect.calculationType === 2) {
-      const legacyBoosted = skillValue(currentState, rate, { kind: 'energy', amount: rate }, card);
+      const legacyBoosted = skillValue(currentState, rate, { kind: 'ap', amount: rate }, card);
       const boosted = applyAction52SkillBoostForCard(currentState, card, legacyBoosted);
       currentState = boosted.state;
       if (boosted.value !== Number.POSITIVE_INFINITY) rate = int32(boosted.value);

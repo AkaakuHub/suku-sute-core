@@ -7,7 +7,7 @@ import {
   calculateLiveGenesisGaugeDelta,
 } from '../runtime/skills/genesisSkill.ts';
 
-const gaugeTypes = { energy: 3, stamina: 2, excitement: 1 } as const;
+const gaugeTypes = { ap: 3, mental: 2, voltage: 1 } as const;
 
 export function activateBloom(state: GameState, strength: number): GameState {
   if (state.bloom)
@@ -20,20 +20,24 @@ export function activateBloom(state: GameState, strength: number): GameState {
     bloom: {
       progress: BigInt(
         calculateLiveInitialGenesisGauge({
-          currentAp: Math.floor(state.energy),
-          currentMental: Math.floor(state.stamina),
-          currentVoltageLevel: voltageLevel(state.excitement, state.maximumVoltageLevel),
+          currentAp: Math.floor(state.currentAp),
+          currentMental: Math.floor(state.currentMental),
+          currentVoltageLevel: voltageLevel(state.currentVoltage, state.maximumVoltageLevel),
         }),
       ),
       strength,
-      rollback: { energy: state.energy, stamina: state.stamina, excitement: state.excitement },
+      rollback: {
+        currentAp: state.currentAp,
+        currentMental: state.currentMental,
+        currentVoltage: state.currentVoltage,
+      },
     },
   };
 }
 
 export function changeBloomResource(
   state: GameState,
-  resource: 'energy' | 'stamina' | 'excitement',
+  resource: 'ap' | 'mental' | 'voltage',
   amount: bigint,
 ): GameState {
   if (!state.bloom) throw new Error('開花が発動していません。');
@@ -79,16 +83,16 @@ export function finishBloom(state: GameState): GameState {
     bloom: null,
   };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'ap'))
-    next = { ...next, energy: next.maxEnergy };
+    next = { ...next, currentAp: next.maxAp };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'voltage'))
-    next = { ...next, excitement: voltageThreshold(next.maximumVoltageLevel) };
+    next = { ...next, currentVoltage: voltageThreshold(next.maximumVoltageLevel) };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'mental')) {
-    next = { ...next, stamina: next.maximumMental, mentalTimerSeconds: 0 };
+    next = { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 };
     next = induceMentalHearts(next, next.maximumMental);
   } else if (next.disableMentalDownEffects.length > 0) {
     next = induceMentalHearts(next, 0);
-  } else if (!next.resting || next.stamina > 0) {
-    next = induceMentalHearts(next, Math.trunc(next.stamina));
+  } else if (!next.mentalDown || next.currentMental > 0) {
+    next = induceMentalHearts(next, Math.trunc(next.currentMental));
   }
   return next;
 }

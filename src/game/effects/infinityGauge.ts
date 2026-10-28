@@ -35,16 +35,16 @@ export function activateInfinityGauge(
     return { ...next, bloom: { ...bloom, progress: progress < 0n ? 0n : progress } };
   }
   if (!firstActivation) return next;
-  if (effect.gauge === 'ap') return { ...next, energy: next.maxEnergy };
-  if (effect.gauge === 'mental' && !state.resting)
+  if (effect.gauge === 'ap') return { ...next, currentAp: next.maxAp };
+  if (effect.gauge === 'mental' && !state.mentalDown)
     return induceMentalHearts(
-      { ...next, stamina: next.maximumMental, mentalTimerSeconds: 0 },
+      { ...next, currentMental: next.maximumMental, mentalTimerSeconds: 0 },
       next.maximumMental,
     );
   if (effect.gauge === 'voltage') {
-    const excitement = voltageThreshold(next.maximumVoltageLevel);
-    next = { ...next, excitement };
-    const mastery = addMasteryVoltage(next, Math.fround(excitement - state.excitement));
+    const currentVoltage = voltageThreshold(next.maximumVoltageLevel);
+    next = { ...next, currentVoltage };
+    const mastery = addMasteryVoltage(next, Math.fround(currentVoltage - state.currentVoltage));
     next = mastery.state;
     let voltageUp = mastery.gain;
     if (voltageUp > 0) {

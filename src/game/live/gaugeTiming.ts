@@ -1,5 +1,5 @@
 export type StageGauges = Readonly<{
-  maxEnergy: number;
+  maxAp: number;
   apIncreaseIntervalSeconds: number;
   mentalDecreaseIntervalSeconds: number;
   voltageIncreaseIntervalSeconds: number;

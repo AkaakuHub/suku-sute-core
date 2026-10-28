@@ -47,11 +47,11 @@ export function missionActionEffect(
       ? 1
       : effect.kind === 'boost' || effect.kind === 'skill-score-up'
         ? 2
-        : effect.kind === 'stamina'
+        : effect.kind === 'mental'
           ? 5
-          : effect.kind === 'excitement'
+          : effect.kind === 'voltage'
             ? 10
-            : effect.kind === 'energy'
+            : effect.kind === 'ap'
               ? 14
               : effect.kind === 'shuffle'
                 ? 13
@@ -83,11 +83,11 @@ export function missionActionEffect(
             ? (state.boosts.at(-1)?.percent ?? 0)
             : 0
         : actionType === 5
-          ? Math.max(0, state.stamina - before.stamina)
+          ? Math.max(0, state.currentMental - before.currentMental)
           : actionType === 10
-            ? Math.max(0, state.excitement - before.excitement)
+            ? Math.max(0, state.currentVoltage - before.currentVoltage)
             : actionType === 14
-              ? Math.max(0, state.energy - before.energy)
+              ? Math.max(0, state.currentAp - before.currentAp)
               : actionType === 13 || actionType === 34
                 ? 1
                 : actionType === 28
