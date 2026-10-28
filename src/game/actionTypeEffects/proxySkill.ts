@@ -1,7 +1,7 @@
 import type { ProxySkillEffect } from '../proxySkillTypes.ts';
 import type { ActionTypeDetail } from '../cards/actionTypeDetail.ts';
 import type { Effect } from '../model.ts';
-import { int64ToFloat32, isInt64 } from '../../runtime/numeric.ts';
+import { isInt64 } from '../../runtime/numeric.ts';
 
 type Input = Readonly<{
   skillEffectId: bigint;
@@ -58,7 +58,7 @@ export function createProxySkillEffect(input: Input): Effect {
     induceTiming: induceTiming as ProxySkillEffect['induceTiming'],
     induceCondition: induceCondition as ProxySkillEffect['induceCondition'],
     inducePowerType: inducePowerType as ProxySkillEffect['inducePowerType'],
-    inducePowerParam: int64ToFloat32(value(input.details, detailTypes.inducePowerParam, 0n)),
+    inducePowerParam: value(input.details, detailTypes.inducePowerParam, 0n),
     targets,
     effects: input.effects,
   };

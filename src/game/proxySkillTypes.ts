@@ -7,7 +7,7 @@ type ProxySkillStateBase = LiveProxyAbsorbInfo<string> &
     induceTiming: 1 | 2 | 3;
     induceCondition: 1 | 2;
     inducePowerType: 1 | 2 | 3;
-    inducePowerParam: number;
+    inducePowerParam: bigint;
     inducedEffects: readonly Readonly<{ actionType: number; effect: Effect }>[];
   }>;
 
@@ -23,7 +23,7 @@ export type ProxySkillEffect = Readonly<{
   induceTiming: 1 | 2 | 3;
   induceCondition: 1 | 2;
   inducePowerType: 1 | 2 | 3;
-  inducePowerParam: number;
+  inducePowerParam: bigint;
   targets: readonly Readonly<{ actionType: number; targetAmount: number }>[];
   effects: readonly Readonly<{ actionType: number; effect: Effect }>[];
 }>;

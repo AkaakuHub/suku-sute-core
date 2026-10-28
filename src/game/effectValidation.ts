@@ -131,7 +131,7 @@ export function validateEffect(effect: Effect): void {
       !isInt64(effect.periodParam) ||
       (effect.periodType !== 3 && effect.periodParam < 1n) ||
       (effect.periodType === 3 && effect.induceTiming !== 1) ||
-      !Number.isFinite(effect.inducePowerParam) ||
+      !isInt64(effect.inducePowerParam) ||
       effect.targets.some(
         (target) =>
           !Number.isSafeInteger(target.actionType) || !Number.isSafeInteger(target.targetAmount),

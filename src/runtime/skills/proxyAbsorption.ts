@@ -1,5 +1,6 @@
 import type { LiveCardIdentifier } from '../cards/deckBoardState.ts';
 import { int64ToFloat32, int64ToInt32 } from '../numeric.ts';
+import type { LiveSkillEffectPower } from './skillEffectPower.ts';
 
 export type LiveProxyAbsorbEffectInfo = Readonly<{
   actionType: number;
@@ -40,6 +41,35 @@ export function liveProxyTargetReached(
   return effect.actionType === 48 && !isAbsoluteAdd && effect.targetAmount < 0n
     ? effect.totalAmount <= effect.targetAmount
     : effect.totalAmount >= effect.targetAmount;
+}
+
+export function liveProxyInducePower(
+  state: LiveProxyAbsorbInfo<LiveCardIdentifier>,
+  powerType: 1 | 2 | 3,
+  powerParam: bigint,
+  actionType: number,
+): LiveSkillEffectPower {
+  if (powerType === 3) {
+    return {
+      addValue: 0,
+      effectPower: 1,
+      multiplyFactor: state.effects.reduce((product, effect) => {
+        const total = int64ToFloat32(effect.totalAmount);
+        const target = int64ToFloat32(effect.targetAmount);
+        const ratio = total === 0 || target === 0 ? 0 : Math.fround(total / target);
+        return Math.fround(product * ratio);
+      }, 1),
+    };
+  }
+  const target =
+    powerType === 2 ? state.effects.find((effect) => effect.actionType === actionType) : undefined;
+  return target === undefined
+    ? { addValue: 0, multiplyFactor: 1, effectPower: 1 }
+    : {
+        addValue: int64ToFloat32(target.totalAmount),
+        multiplyFactor: Math.fround(int64ToFloat32(powerParam) / 10_000),
+        effectPower: 1,
+      };
 }
 
 export function absorbLiveProxySkillEffect<State extends LiveProxyAbsorbInfo<LiveCardIdentifier>>(

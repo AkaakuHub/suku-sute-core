@@ -3,6 +3,7 @@ import {
   absorbLiveProxySkillEffect,
   createLiveProxyAbsorbInfo,
   liveProxyTargetReached,
+  liveProxyInducePower,
 } from '../../src/runtime/skills/proxyAbsorption.ts';
 
 test('終了済みProxyを飛ばし、最初に一致した有効なProxyだけが吸収する', () => {
@@ -60,6 +61,35 @@ test('吸収フラグをビットで読み、対象種別と目標はint32で保
   expect(state.hasAbsorbLimit).toBe(false);
   expect(state.isAbsoluteAdd).toBe(false);
   expect(state.effects).toEqual([{ actionType: 20, targetAmount: -1n, totalAmount: 0n }]);
+});
+
+test('誘発倍率は0の項を掛け、空の吸収対象だけは初期倍率1を保つ', () => {
+  const state = {
+    ...proxy(1),
+    effects: [
+      { actionType: 20, totalAmount: 2n, targetAmount: 1n },
+      { actionType: 21, totalAmount: 0n, targetAmount: 1n },
+    ],
+  };
+  expect(liveProxyInducePower(state, 3, 0n, 20).multiplyFactor).toBe(0);
+  expect(liveProxyInducePower({ ...state, effects: [] }, 3, 0n, 20).multiplyFactor).toBe(1);
+});
+
+test('誘発の加算値と倍率のパラメーターはint64からFloat32へ変換する', () => {
+  const state = {
+    ...proxy(1),
+    effects: [{ actionType: 20, targetAmount: 1n, totalAmount: 16_777_217n }],
+  };
+  expect(liveProxyInducePower(state, 2, 16_777_217n, 20)).toEqual({
+    addValue: 16_777_216,
+    multiplyFactor: Math.fround(16_777_216 / 10_000),
+    effectPower: 1,
+  });
+  expect(liveProxyInducePower(state, 2, 16_777_217n, 21)).toEqual({
+    addValue: 0,
+    multiplyFactor: 1,
+    effectPower: 1,
+  });
 });
 
 function proxy(id: number, absorbLimit = 1n) {

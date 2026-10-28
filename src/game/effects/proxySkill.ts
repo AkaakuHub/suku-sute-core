@@ -2,6 +2,7 @@ import {
   absorbLiveProxySkillEffect,
   createLiveProxyAbsorbInfo,
   liveProxyTargetReached,
+  liveProxyInducePower,
 } from '../../runtime/skills/proxyAbsorption.ts';
 import {
   updateLiveCardSkillUseAtBoardState,
@@ -191,32 +192,15 @@ function finishProxySkillState(
   const card = state.cardPool.find((item) => item.cardInstanceId === absorption.cardInstanceId);
   if (!card) return removeProxySkillState(state, absorption);
   let next = updateProxySkillState(state, absorption, { ...absorption, isAbsorbEnd: true });
-  if (absorption.inducePowerType === 3) {
-    let multiplier = 1;
-    for (const effect of absorption.effects) {
-      const total = int64ToFloat32(effect.totalAmount);
-      const target = int64ToFloat32(effect.targetAmount);
-      if (total === 0 || target === 0) continue;
-      multiplier = Math.fround(multiplier * Math.fround(total / target));
-    }
-    next = absorption.inducedEffects.reduce(
-      (current, child) => applyProxyChild(current, child, card, multiplier, 0, apply),
-      next,
+  next = absorption.inducedEffects.reduce((current, child) => {
+    const power = liveProxyInducePower(
+      absorption,
+      absorption.inducePowerType,
+      absorption.inducePowerParam,
+      child.actionType,
     );
-  } else if (absorption.inducePowerType === 2) {
-    const power = Math.fround(Math.fround(absorption.inducePowerParam) / 10_000);
-    next = absorption.inducedEffects.reduce((current, child) => {
-      const match = absorption.effects.find((item) => item.actionType === child.actionType);
-      return match
-        ? applyProxyChild(current, child, card, power, int64ToFloat32(match.totalAmount), apply)
-        : applyProxyChild(current, child, card, 1, 0, apply);
-    }, next);
-  } else {
-    next = absorption.inducedEffects.reduce(
-      (current, child) => applyProxyChild(current, child, card, 1, 0, apply),
-      next,
-    );
-  }
+    return applyProxyChild(current, child, card, power.multiplyFactor, power.addValue, apply);
+  }, next);
   return removeProxySkillState(next, absorption);
 }
 
