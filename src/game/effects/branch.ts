@@ -23,7 +23,7 @@ export function activateBranchInducer(
         whenFalse: effect.whenFalse,
         active: null,
         deactivationKey: effect.deactivationKey ?? null,
-        sourceCardId: card?.id ?? null,
+        sourceCardId: card?.cardInstanceId ?? null,
       },
     ],
     nextBranchInducerId: state.nextBranchInducerId + 1,
@@ -46,7 +46,7 @@ export function refreshBranchInducers(state: GameState, apply: EffectApplier): G
     };
     if (branch.active !== null) next = deactivateInducedEffects(next, childKey);
     const card = branch.sourceCardId
-      ? next.cardPool.find((item) => item.id === branch.sourceCardId)
+      ? next.cardPool.find((item) => item.cardInstanceId === branch.sourceCardId)
       : undefined;
     const effects = active ? branch.whenTrue : branch.whenFalse;
     for (const effect of effects) {

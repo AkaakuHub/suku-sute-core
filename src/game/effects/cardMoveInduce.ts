@@ -13,7 +13,7 @@ export function activateCardMoveInduce(
   card: Card | undefined,
 ): GameState {
   if (!card) throw new Error('カード移動誘発の発動元カードがありません。');
-  const sourceEffectId = `${card.id}:${effect.sourceEffectId}`;
+  const sourceEffectId = `${card.cardInstanceId}:${effect.sourceEffectId}`;
   if (state.cardMoveInducers.some((inducer) => inducer.sourceEffectId === sourceEffectId))
     return state;
   return {
@@ -21,7 +21,7 @@ export function activateCardMoveInduce(
     cardMoveInducers: [
       ...state.cardMoveInducers,
       {
-        sourceCardId: card.id,
+        sourceCardId: card.cardInstanceId,
         sourceEffectId,
         targetEffectId: effect.targetEffectId,
         timing: effect.timing,
@@ -67,7 +67,7 @@ export function induceCardMoves(
     if (limit !== 0 && limit <= activatedCount) continue;
     if (requireCount !== 0 && useCount % requireCount !== 0) continue;
     if (inducer.targetEffectId === null || inducer.effects.length === 0) continue;
-    const card = next.cardPool.find((item) => item.id === inducer.sourceCardId);
+    const card = next.cardPool.find((item) => item.cardInstanceId === inducer.sourceCardId);
     if (!card) throw new Error('カード移動誘発の発動元カードがありません。');
     next = updateInducer(next, sourceEffectId, {
       ...inducer,

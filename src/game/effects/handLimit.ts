@@ -54,7 +54,10 @@ export function applyHandLimit(
       ? {
           activation: {
             ...activation,
-            handCountChanges: { ...activation.handCountChanges, [card.id]: appliedAmount },
+            handCountChanges: {
+              ...activation.handCountChanges,
+              [card.cardInstanceId]: appliedAmount,
+            },
           },
         }
       : {}),

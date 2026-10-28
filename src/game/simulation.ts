@@ -79,15 +79,15 @@ export function createGame(
     track,
     deck: [...resolvedDeck],
     cardPool: [...resolvedDeck],
-    hand: [lead.id],
+    hand: [lead.cardInstanceId],
     activeHandPermanentCardIds: [],
     handCardStats: {},
     skillCostChanges: [],
     parameterValueFactors: [],
     parameterValueChangeCounts: {},
     activeModeParameterChanges: [],
-    deckBoard: createCardDeckBoard(resolvedDeck, [lead.id]),
-    handEffectCardIds: [lead.id],
+    deckBoard: createCardDeckBoard(resolvedDeck, [lead.cardInstanceId]),
+    handEffectCardIds: [lead.cardInstanceId],
     tokenDeckSplit: null,
     ingameMission: null,
     afterDeckReloadEvents: 0,
@@ -203,7 +203,9 @@ export function createGame(
     ap: { currentAp: 0, maxAp: track.stage.maxAp, timerSeconds: 0 },
     voltage: { timerSeconds: 0, currentVoltage: 0n },
   };
-  return fillHand(initializeHandCardStats(initializeParameterValueFactors(initial), [lead.id]));
+  return fillHand(
+    initializeHandCardStats(initializeParameterValueFactors(initial), [lead.cardInstanceId]),
+  );
 }
 export function advanceTo(state: GameState, seconds: number): GameState {
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('ゲーム時刻が正しくありません。');

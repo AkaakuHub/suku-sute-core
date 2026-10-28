@@ -26,7 +26,7 @@ export function activateComboInduce(
   if (effect.members.length > 11) throw new Error('ComboInduceUI member count exceeds 11.');
   if (!card) return state;
   const inducer: ComboInducer = {
-    sourceCardId: card.id,
+    sourceCardId: card.cardInstanceId,
     members: effect.members.map((member) => ({ member, ap: null })),
     apPower: effect.apPower,
     repeatAction: effect.repeatAction,
@@ -78,7 +78,7 @@ export function advanceComboInducer(
       const effectPower = Math.fround(
         Math.fround(int64ToFloat32(product) / Math.fround(10_000)) + 1,
       );
-      const card = state.cardPool.find((item) => item.id === inducer.sourceCardId);
+      const card = state.cardPool.find((item) => item.cardInstanceId === inducer.sourceCardId);
       for (const effect of inducer.effects) {
         next = completeDeckOutChecks(
           applyEffect(next, effect, card, inducer.multiplier, inducer.addValue, effectPower),

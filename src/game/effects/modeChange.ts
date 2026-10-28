@@ -30,16 +30,18 @@ export function drainModeChanges(state: GameState, apply: ApplyEffect): GameStat
     const modeId = changed.id;
     const modeCards = next.deck.filter(
       (card) =>
-        card.modeParameterChanges?.modeId === modeId && next.handEffectCardIds.includes(card.id),
+        card.modeParameterChanges?.modeId === modeId &&
+        next.handEffectCardIds.includes(card.cardInstanceId),
     );
     const modeAbilityCards = next.deck.filter(
       (card) =>
-        card.modeAbilityChanges?.modeId === modeId && next.handEffectCardIds.includes(card.id),
+        card.modeAbilityChanges?.modeId === modeId &&
+        next.handEffectCardIds.includes(card.cardInstanceId),
     );
     for (const card of modeAbilityCards) next = deactivateModeAbilityEffects(next, card);
     for (const card of modeCards) {
       const active = next.activeModeParameterChanges.find(
-        (item) => item.cardId === card.id && item.modeId === modeId,
+        (item) => item.cardId === card.cardInstanceId && item.modeId === modeId,
       );
       if (!active || !card.modeParameterChanges) continue;
       const effects = active.isOn ? card.modeParameterChanges.on : card.modeParameterChanges.off;
@@ -47,7 +49,7 @@ export function drainModeChanges(state: GameState, apply: ApplyEffect): GameStat
       next = {
         ...next,
         activeModeParameterChanges: next.activeModeParameterChanges.filter(
-          (item) => item.cardId !== card.id || item.modeId !== modeId,
+          (item) => item.cardId !== card.cardInstanceId || item.modeId !== modeId,
         ),
       };
     }
@@ -58,7 +60,7 @@ export function drainModeChanges(state: GameState, apply: ApplyEffect): GameStat
         ...next,
         activeModeParameterChanges: [
           ...next.activeModeParameterChanges,
-          { cardId: card.id, modeId, isOn: changed.on },
+          { cardId: card.cardInstanceId, modeId, isOn: changed.on },
         ],
       };
     }
@@ -84,7 +86,7 @@ export function drainModeChanges(state: GameState, apply: ApplyEffect): GameStat
       const source =
         reaction.sourceId === null
           ? undefined
-          : next.cardPool.find((card) => card.id === reaction.sourceId);
+          : next.cardPool.find((card) => card.cardInstanceId === reaction.sourceId);
       for (let slot = 0; slot < reaction.thresholds.length; slot++) {
         const threshold = reaction.thresholds[slot];
         if (threshold === undefined || BigInt(count) % threshold !== 0n) continue;
@@ -151,7 +153,7 @@ export function addModeReaction(
     modeReactions: [
       ...state.modeReactions,
       {
-        sourceId: card?.id ?? null,
+        sourceId: card?.cardInstanceId ?? null,
         modeId: effect.modeId,
         thresholds: effect.thresholds,
         effects: effect.effects,

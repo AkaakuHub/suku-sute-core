@@ -28,8 +28,8 @@ export function boostTokenRequests(
   const source =
     sourceId === null
       ? undefined
-      : (state.cardPool.find((card) => card.id === sourceId) ??
-        state.specialAppealTokens.find((token) => token.card.id === sourceId)?.card);
+      : (state.cardPool.find((card) => card.cardInstanceId === sourceId) ??
+        state.specialAppealTokens.find((token) => token.card.cardInstanceId === sourceId)?.card);
   if (sourceId !== null && !source) throw new Error('追加カードを生成するカードがありません。');
   const used = new Set<number>();
   const counts = requests.map((request) => {

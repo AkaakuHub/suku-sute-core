@@ -6,7 +6,7 @@ export function validateDeck(
   if (
     deck.length < 3 ||
     deck.length > rules.maxDeckSize ||
-    new Set(deck.map((card) => card.id)).size !== deck.length
+    new Set(deck.map((card) => card.cardInstanceId)).size !== deck.length
   ) {
     throw new Error('編成の枚数またはカードの識別子が正しくありません。');
   }
@@ -16,7 +16,7 @@ export function validateDeck(
 }
 export function validateCard(card: Card): void {
   if (
-    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(card.id) ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(card.cardInstanceId) ||
     card.cardDatasId.length === 0 ||
     (!card.tokenCard && !card.name.trim()) ||
     (card.costume !== null && !costumeIds.includes(card.costume)) ||

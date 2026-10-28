@@ -27,7 +27,7 @@ export function durationSeconds(state: GameState): number {
 
 export function cardAt(state: GameState, index: number): Card {
   const id = state.hand[index];
-  const card = state.deck.find((item) => item.id === id);
+  const card = state.deck.find((item) => item.cardInstanceId === id);
   if (!card) throw new Error('手札にカードがありません。');
   return resolveModeSkill(card, state.modes);
 }

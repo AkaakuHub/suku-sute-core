@@ -123,7 +123,7 @@ function addTokenCards(
           templateReference.effect.seriesIds,
         );
       if (!template) throw new Error('追加カードの定義がありません。');
-      return { ...template, id: `${template.id}-${generatedId}` };
+      return { ...template, cardInstanceId: `${template.cardInstanceId}-${generatedId}` };
     },
   );
   for (const card of generated) validateCard(card);
@@ -137,7 +137,7 @@ function addTokenCards(
         ...split,
         subDeckCardInstanceIds: [
           ...split.subDeckCardInstanceIds,
-          ...generated.filter(splitMatches).map((card) => card.id),
+          ...generated.filter(splitMatches).map((card) => card.cardInstanceId),
         ],
       }
     : null;
@@ -151,7 +151,7 @@ function addTokenCards(
         cards: [
           ...state.deckBoard.cards,
           ...generated.map((card) => ({
-            cardInstanceId: card.id,
+            cardInstanceId: card.cardInstanceId,
             cardDatasId: card.cardDatasId,
             boardState: 1 as const,
             skillUseAtBoardState: 3 as const,
@@ -177,7 +177,7 @@ function createActionTokenCard(
       ? null
       : abilityVariant(effect.ability.variant);
   return {
-    id,
+    cardInstanceId: id,
     cardDatasId: String(effect.resourceId),
     name: '',
     costume: null,

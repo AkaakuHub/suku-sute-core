@@ -10,7 +10,7 @@ export function flushDeckActions(state: GameState): GameState {
     const action = next.deckActions.shuffles[0];
     if (!action) throw new Error('引き直し処理がありません。');
     const id = action.sourceId;
-    const source = id === null ? null : next.cardPool.find((card) => card.id === id);
+    const source = id === null ? null : next.cardPool.find((card) => card.cardInstanceId === id);
     if (source === undefined) throw new Error('引き直しを発動したカードがありません。');
     const shuffled = shuffleHand(
       {

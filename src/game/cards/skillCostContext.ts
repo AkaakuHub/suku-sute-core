@@ -5,10 +5,10 @@ import type { Card, GameState } from '../model.ts';
 export function skillCostContext(state: GameState, source: Card): LiveChangeSkillCostContext {
   return {
     ...conditionContext(state),
-    useCount: state.cardUseCounts[source.id] ?? 0,
-    handCardStats: state.handCardStats[source.id] ?? null,
+    useCount: state.cardUseCounts[source.cardInstanceId] ?? 0,
+    handCardStats: state.handCardStats[source.cardInstanceId] ?? null,
     handCards: state.hand.map((id) => {
-      const card = state.deck.find((candidate) => candidate.id === id);
+      const card = state.deck.find((candidate) => candidate.cardInstanceId === id);
       if (!card) throw new Error('手札のカードがありません。');
       return card;
     }),

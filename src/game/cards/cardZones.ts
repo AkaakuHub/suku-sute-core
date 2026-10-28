@@ -13,9 +13,9 @@ import { deactivateInducedEffects } from '../effects/effectInduce.ts';
 export function finishCardActivation(state: GameState): GameState {
   const activation = state.activation;
   if (!activation) throw new Error('カードの使用処理がありません。');
-  const source = state.deck.find((card) => card.id === activation.sourceId);
+  const source = state.deck.find((card) => card.cardInstanceId === activation.sourceId);
   if (!source) throw new Error('使用したカードがありません。');
-  const children = activation.usedCards.filter((id) => id !== source.id);
+  const children = activation.usedCards.filter((id) => id !== source.cardInstanceId);
   const handStatsCompleted = (activation.pendingHandStatsDeactivationKeys ?? []).reduce(
     (current, key) => deactivateInducedEffects(current, key),
     removeHandCardEffects(state, activation.usedCards),
@@ -29,7 +29,7 @@ export function finishCardActivation(state: GameState): GameState {
       next = excludeCards(next, [id]);
   }
   next = flushDeckActions(next);
-  const handCountChange = activation.handCountChanges[source.id] ?? 0;
+  const handCountChange = activation.handCountChanges[source.cardInstanceId] ?? 0;
   const handReady: GameState = {
     ...next,
     usedCard: source,
@@ -51,16 +51,19 @@ export function finishCardActivation(state: GameState): GameState {
   } else {
     next = fillHand(handReady);
   }
-  next = { ...next, deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, source.id) };
-  if (cardSkillUseState(next, source.id).boardState === liveBoardState.exclusion)
-    next = excludeCards(next, [source.id]);
+  next = {
+    ...next,
+    deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, source.cardInstanceId),
+  };
+  if (cardSkillUseState(next, source.cardInstanceId).boardState === liveBoardState.exclusion)
+    next = excludeCards(next, [source.cardInstanceId]);
   return { ...next, activation: null };
 }
 
 function excludeCards(state: GameState, ids: readonly string[]): GameState {
   return {
     ...state,
-    deck: state.deck.filter((card) => !ids.includes(card.id)),
+    deck: state.deck.filter((card) => !ids.includes(card.cardInstanceId)),
     handCardStats: Object.fromEntries(
       Object.entries(state.handCardStats).filter(([id]) => !ids.includes(id)),
     ),

@@ -51,7 +51,7 @@ export function activateSpecialAppealToken(
 
     const card: Card = {
       ...cardForLevel.card,
-      id: String(tokenCardSet.resourceId),
+      cardInstanceId: String(tokenCardSet.resourceId),
       cardDatasId: String(tokenCardSet.resourceId),
     };
     additions.push({

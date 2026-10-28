@@ -7,7 +7,7 @@ export function incrementSkillEffectActivationCount(
 ): GameState {
   const skillEffectId = effect.skillEffectId;
   if (skillEffectId === undefined) return state;
-  const key = `${card?.id ?? ''}:${skillEffectId}`;
+  const key = `${card?.cardInstanceId ?? ''}:${skillEffectId}`;
   const count = state.skillEffectActivationCounts[key] ?? 0;
   return {
     ...state,

@@ -51,7 +51,10 @@ export function notifyHandCardBeforeUse(
   return activateHandInducers(
     state,
     apply,
-    (trigger, source) => trigger.kind === 'same-card' && source.id === used.id && skillType === 2,
+    (trigger, source) =>
+      trigger.kind === 'same-card' &&
+      source.cardInstanceId === used.cardInstanceId &&
+      skillType === 2,
   );
 }
 
@@ -64,12 +67,12 @@ export function notifyHandHeartCollect(
   const activationCounts = { ...state.handUseActivationCounts };
   const collectionCounts = { ...state.handUseHeartCollectionCounts };
   for (const id of state.handEffectCardIds) {
-    const card = state.cardPool.find((item) => item.id === id);
+    const card = state.cardPool.find((item) => item.cardInstanceId === id);
     if (!card) throw new Error('手札効果のカードがありません。');
     for (const inducer of card.handInducers ?? []) {
       const trigger = inducer.trigger;
       if (!inducer.effects.length || trigger.kind !== 'heart-quantity-count') continue;
-      const key = handInducerStateKey(card.id, inducer.sourceEffectId);
+      const key = handInducerStateKey(card.cardInstanceId, inducer.sourceEffectId);
       const count = int32((collectionCounts[key] ?? 0) + int32(collectedCount));
       collectionCounts[key] = count;
       const activationCount = int32(activationCounts[key] ?? 0);
@@ -127,11 +130,11 @@ function activateHandInducers(
   let next = state;
   const activationCounts = { ...state.handUseActivationCounts };
   for (const id of state.handEffectCardIds) {
-    const card = state.cardPool.find((item) => item.id === id);
+    const card = state.cardPool.find((item) => item.cardInstanceId === id);
     if (!card) throw new Error('手札効果のカードがありません。');
     for (const inducer of card.handInducers ?? []) {
       if (!inducer.effects.length || !matches(inducer.trigger, card)) continue;
-      const key = handInducerStateKey(card.id, inducer.sourceEffectId);
+      const key = handInducerStateKey(card.cardInstanceId, inducer.sourceEffectId);
       const activationCount = int32(activationCounts[key] ?? 0);
       if (
         inducer.limit !== undefined &&

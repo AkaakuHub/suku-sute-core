@@ -21,8 +21,8 @@ function matches(card: Card, target: SearchTarget): boolean {
 
 function candidates(state: GameState, ids: readonly string[], target: SearchTarget): string[] {
   return state.deck
-    .filter((card) => ids.includes(card.id) && matches(card, target))
-    .map((card) => card.id);
+    .filter((card) => ids.includes(card.cardInstanceId) && matches(card, target))
+    .map((card) => card.cardInstanceId);
 }
 
 export function consumeSearch(

@@ -21,7 +21,7 @@ export function activateMentalHeartInduce(
   const suppressDuration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const inducer: MentalHeartInducer = {
     id: state.nextMentalHeartInducerId,
-    sourceCardId: card?.id ?? null,
+    sourceCardId: card?.cardInstanceId ?? null,
     precomputedNum,
     heartLifetimeSeconds:
       effect.heartDuration.kind === 'milliseconds'
@@ -54,8 +54,8 @@ export function induceMentalHearts(state: GameState, currentMental: number): Gam
     const rounded = Math.fround(Math.ceil(Math.fround(scaled * 10)) / 10);
     const initialCount = floatToInt32(rounded);
     const card = inducer.sourceCardId
-      ? (next.deck.find((item) => item.id === inducer.sourceCardId) ??
-        next.cardPool.find((item) => item.id === inducer.sourceCardId))
+      ? (next.deck.find((item) => item.cardInstanceId === inducer.sourceCardId) ??
+        next.cardPool.find((item) => item.cardInstanceId === inducer.sourceCardId))
       : undefined;
     const additional = applyAdditionalBuff(next, 'attract', initialCount, card);
     const action1 = floatToInt32(additional.value);

@@ -22,7 +22,10 @@ export function handCapacity(state: GameState): number {
   if (state.handMaxCardEffects.length > 0) return Math.min(8, state.deck.length);
   const penalty = state.deck.reduce(
     (sum, card) =>
-      sum + (state.handEffectCardIds.includes(card.id) ? (card.passive?.handLimitDelta ?? 0) : 0),
+      sum +
+      (state.handEffectCardIds.includes(card.cardInstanceId)
+        ? (card.passive?.handLimitDelta ?? 0)
+        : 0),
     0,
   );
   return Math.max(3, Math.min(8, state.handLimit + penalty));
@@ -75,7 +78,7 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
 
   while (next.hand.length < count) {
     const probability = (id: string) => {
-      const card = next.deck.find((item) => item.id === id);
+      const card = next.deck.find((item) => item.cardInstanceId === id);
       if (!card) throw new Error('山札のカードがありません。');
       return drawWeight(card, next);
     };
@@ -84,7 +87,9 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
       deckBoard: prepareLiveDeckDraw(next.deckBoard, currentDeckCardIds(next), probability),
     };
     const deckIds = new Set(boardCardIds(next, liveBoardState.deck));
-    const available = next.deck.filter((card) => deckIds.has(card.id)).map((card) => card.id);
+    const available = next.deck
+      .filter((card) => deckIds.has(card.cardInstanceId))
+      .map((card) => card.cardInstanceId);
     const random = createRangeRandom(next.randomSeed);
     const randomIndex = (maximumExclusive: number) => Math.floor(random.range(0, maximumExclusive));
     const searched = consumeSearch(next);
@@ -108,7 +113,7 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
       handHeartCollectCounts: { ...next.handHeartCollectCounts, [drawn]: 0 },
     };
     next = initializeHandCardStats(next, [drawn]);
-    const card = next.deck.find((item) => item.id === drawn);
+    const card = next.deck.find((item) => item.cardInstanceId === drawn);
     if (!card) throw new Error('引いたカードがありません。');
     drawnCards.push(card);
   }
@@ -118,7 +123,10 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
       next = applyAbilityEffects(next, card, card.ability893Effects ?? [], applyEffect);
     next = {
       ...next,
-      handEffectCardIds: [...next.handEffectCardIds.filter((id) => id !== card.id), card.id],
+      handEffectCardIds: [
+        ...next.handEffectCardIds.filter((id) => id !== card.cardInstanceId),
+        card.cardInstanceId,
+      ],
     };
     next = activateHandPermanentEffects(next, card);
     next = activateModeAbilityEffects(next, card, applyEffect);
@@ -127,8 +135,8 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
   if (trimOverflow && next.hand.length > maximum) {
     const ordered = [...next.hand].sort(
       (left, right) =>
-        Number(Boolean(next.deck.find((card) => card.id === right)?.passive)) -
-        Number(Boolean(next.deck.find((card) => card.id === left)?.passive)),
+        Number(Boolean(next.deck.find((card) => card.cardInstanceId === right)?.passive)) -
+        Number(Boolean(next.deck.find((card) => card.cardInstanceId === left)?.passive)),
     );
     next = {
       ...removeHandCardEffects(next, ordered.slice(maximum)),

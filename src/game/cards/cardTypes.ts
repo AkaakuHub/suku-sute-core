@@ -222,7 +222,6 @@ export type ActionType41Record = Readonly<{
 }>;
 
 export type Card = Readonly<{
-  id: string;
   name: string;
   costume: CostumeId | null;
   performer: PerformerId | null;
@@ -363,4 +362,4 @@ export type Card = Readonly<{
 }> &
   LiveSkillCardIdentity &
   Pick<LiveCardSkillLevel, 'consumeAp'> &
-  Pick<LiveDeckBoardCard<string>, 'cardDatasId'>;
+  Pick<LiveDeckBoardCard<string>, 'cardInstanceId' | 'cardDatasId'>;

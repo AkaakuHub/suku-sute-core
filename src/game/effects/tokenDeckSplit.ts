@@ -34,7 +34,7 @@ export function activateTokenDeckSplit(
     throw new Error('表示パート数が0です。');
   const seriesIds = effect.seriesIds?.map((id) => Number(BigInt.asIntN(32, id))) ?? null;
   const selected = new Set(
-    state.deck.filter((card) => isSeriesCard(card, seriesIds)).map((card) => card.id),
+    state.deck.filter((card) => isSeriesCard(card, seriesIds)).map((card) => card.cardInstanceId),
   );
   const handCount = state.hand.length;
   const main: TokenDeckHand = {
@@ -119,7 +119,7 @@ export function switchTokenDeck(state: GameState, applyEffect: EffectApplier): G
   next = { ...next, handCardStats };
   next = { ...next, handEffectCardIds: [...incoming.hand] };
   for (const id of incoming.hand) {
-    const card = next.deck.find((item) => item.id === id);
+    const card = next.deck.find((item) => item.cardInstanceId === id);
     if (card) next = activateHandPermanentEffects(next, card);
   }
   const switched = { ...next, tokenDeckSplit: { ...updated, [incomingName]: zones(next) } };

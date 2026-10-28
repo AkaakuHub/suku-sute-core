@@ -12,7 +12,7 @@ export function activateDrawSuccessInduce(
   apply: EffectApplier,
 ): GameState {
   if (!card) return state;
-  const handCardStats = state.handCardStats[card.id];
+  const handCardStats = state.handCardStats[card.cardInstanceId];
   if (!handCardStats) return state;
   const condition = isLiveDrawSuccessConditionSatisfied(
     effect,
@@ -24,7 +24,7 @@ export function activateDrawSuccessInduce(
   const branchType = int32(effect.branchType);
   const disabledType =
     effect.disabledType === undefined ? (branchType === 3 ? 1 : 0) : int32(effect.disabledType);
-  const deactivationKey = `${card.id}:${effect.sourceEffectId}`;
+  const deactivationKey = `${card.cardInstanceId}:${effect.sourceEffectId}`;
   const applied = selected.reduce(
     (next, child) =>
       apply(next, disabledType === 1 ? child : withDeactivationKey(child, deactivationKey), card),

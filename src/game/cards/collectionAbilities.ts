@@ -8,7 +8,7 @@ export function advanceHandCollectionAbilities(
   const activationCounts = { ...state.handCollectionActivationCounts };
   const activated: Card[] = [];
   for (const id of state.hand) {
-    const card = state.deck.find((item) => item.id === id);
+    const card = state.deck.find((item) => item.cardInstanceId === id);
     if (!card) throw new Error('手札のカードがありません。');
     const collectionEffects = card.collectionEffects;
     if (!canActivateHandCollectionAbility(state, card)) continue;
@@ -34,7 +34,7 @@ export function advanceHandCollectionAbilities(
       handCollectionActivationCounts: activationCounts,
       relayUsed: [
         ...state.relayUsed,
-        ...activated.filter((card) => !card.collectionEffects).map((card) => card.id),
+        ...activated.filter((card) => !card.collectionEffects).map((card) => card.cardInstanceId),
       ],
     },
     activated,
@@ -52,12 +52,12 @@ export function canActivateHandCollectionAbility(
         card.collectionAbility !== undefined ||
         card.token === 'story' ||
         card.token === 'bookmark') &&
-      !state.relayUsed.includes(card.id)
+      !state.relayUsed.includes(card.cardInstanceId)
     );
   return (
     effects.effects.length > 0 &&
     (effects.limit === undefined ||
       effects.limit === 0 ||
-      (state.handCollectionActivationCounts[card.id] ?? 0) < effects.limit)
+      (state.handCollectionActivationCounts[card.cardInstanceId] ?? 0) < effects.limit)
   );
 }

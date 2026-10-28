@@ -22,7 +22,7 @@ export function addSkillCostChange(
       : { state, value: base };
   const amount = base < 0 ? int32(-int32(boosted.value)) : base;
   const change: SkillCostChange = {
-    sourceId: card.id,
+    sourceId: card.cardInstanceId,
     amount,
     minimum: effect.minimum,
     maximum: effect.maximum,
@@ -56,7 +56,7 @@ export function deactivateSkillCostChanges(state: GameState, deactivationKey: st
 
 export function skillCostDelta(state: GameState, card: Card): number {
   return state.skillCostChanges
-    .filter((change) => change.sourceId === card.id)
+    .filter((change) => change.sourceId === card.cardInstanceId)
     .reduce((total, change) => {
       const value = liveChangeSkillCostConditionValue(change, skillCostContext(state, card));
       return total + calculateLiveChangeSkillCostValue(change, value);

@@ -45,7 +45,7 @@ export function activateInducedSkillEffect(
         remainingSections:
           permanent || effect.duration.kind !== 'sections' ? null : effect.duration.value,
         deactivationKey: effect.deactivationKey ?? null,
-        sourceCardId: card?.id ?? null,
+        sourceCardId: card?.cardInstanceId ?? null,
       },
     ],
     nextInducedSkillEffectId: state.nextInducedSkillEffectId + 1,
@@ -64,7 +64,7 @@ export function induceSkillEffects(
   for (const induced of matching) {
     const sourceCard = induced.sourceCardId
       ? [state.cardPool, state.deck, state.tokenCatalog]
-          .map((cards) => cards.find((item) => item.id === induced.sourceCardId))
+          .map((cards) => cards.find((item) => item.cardInstanceId === induced.sourceCardId))
           .find((item) => item !== undefined)
       : undefined;
     const diff = next.deck.length - induced.deckCardMax;

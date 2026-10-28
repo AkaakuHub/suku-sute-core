@@ -11,7 +11,7 @@ export function applyParameterValueChange(
   if (!effect.sourceEffectId) throw new Error('詳細値変更の識別子がありません。');
   const useCount = reset
     ? 0
-    : (state.parameterValueChangeCounts[card.id]?.[effect.sourceEffectId] ?? 0);
+    : (state.parameterValueChangeCounts[card.cardInstanceId]?.[effect.sourceEffectId] ?? 0);
   let factor: number;
   switch (effect.calculation) {
     case 'add':
@@ -46,22 +46,23 @@ export function applyParameterValueChange(
     }
   }
   const targetKey = parameterKey(effect.targetDetailId);
-  const counts = state.parameterValueChangeCounts[card.id] ?? {};
+  const counts = state.parameterValueChangeCounts[card.cardInstanceId] ?? {};
   return {
     ...state,
     parameterValueChangeCounts: {
       ...state.parameterValueChangeCounts,
-      [card.id]: {
+      [card.cardInstanceId]: {
         ...counts,
         [effect.sourceEffectId]: reset ? 0 : useCount + 1,
       },
     },
     parameterValueFactors: [
       ...state.parameterValueFactors.filter(
-        (item) => item.cardId !== card.id || parameterKey(item.targetDetailId) !== targetKey,
+        (item) =>
+          item.cardId !== card.cardInstanceId || parameterKey(item.targetDetailId) !== targetKey,
       ),
       {
-        cardId: card.id,
+        cardId: card.cardInstanceId,
         sourceEffectId: effect.sourceEffectId,
         targetDetailId: effect.targetDetailId,
         factor,
@@ -106,7 +107,8 @@ export function deactivateParameterValueChanges(
   return {
     ...state,
     parameterValueFactors: state.parameterValueFactors.filter(
-      (factor) => factor.cardId !== card.id || !targets.has(parameterKey(factor.targetDetailId)),
+      (factor) =>
+        factor.cardId !== card.cardInstanceId || !targets.has(parameterKey(factor.targetDetailId)),
     ),
   };
 }
@@ -154,7 +156,8 @@ function resolveParameterDetailValue(
   const factor = card
     ? state.parameterValueFactors.find(
         (item) =>
-          item.cardId === card.id && parameterKey(item.targetDetailId) === parameterKey(detail.id),
+          item.cardId === card.cardInstanceId &&
+          parameterKey(item.targetDetailId) === parameterKey(detail.id),
       )?.factor
     : undefined;
   if (factor === undefined) return Number(detail.value) / detail.unitsPerValue;
@@ -186,7 +189,8 @@ function resolveParameterDetailInteger(
   const factor = card
     ? state.parameterValueFactors.find(
         (item) =>
-          item.cardId === card.id && parameterKey(item.targetDetailId) === parameterKey(detail.id),
+          item.cardId === card.cardInstanceId &&
+          parameterKey(item.targetDetailId) === parameterKey(detail.id),
       )?.factor
     : undefined;
   if (factor === undefined) return detail.value;

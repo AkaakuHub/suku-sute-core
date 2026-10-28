@@ -13,9 +13,9 @@ export function createCardDeckBoard(
 ): LiveDeckBoardState<string> {
   return {
     cards: cards.map((card) => ({
-      cardInstanceId: card.id,
+      cardInstanceId: card.cardInstanceId,
       cardDatasId: card.cardDatasId,
-      boardState: hand.includes(card.id) ? liveBoardState.hand : liveBoardState.deck,
+      boardState: hand.includes(card.cardInstanceId) ? liveBoardState.hand : liveBoardState.deck,
       skillUseAtBoardState: liveBoardState.graveyard,
     })),
     nextCardInstanceId: 1,
@@ -27,8 +27,9 @@ export function createCardDeckBoard(
 export function currentDeckCardIds(state: GameState): readonly string[] {
   const split = state.tokenDeckSplit;
   return state.deck.flatMap((card) =>
-    split === null || split.subDeckCardInstanceIds.includes(card.id) === (split.active === 'sub')
-      ? [card.id]
+    split === null ||
+    split.subDeckCardInstanceIds.includes(card.cardInstanceId) === (split.active === 'sub')
+      ? [card.cardInstanceId]
       : [],
   );
 }

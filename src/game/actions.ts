@@ -164,7 +164,7 @@ function useCard(state: GameState, index: number): GameState {
   const activated = {
     ...paid,
     activation: {
-      sourceId: source.id,
+      sourceId: source.cardInstanceId,
       usedCards: [],
       allHand: source.effects.some((effect) => effect.kind === 'use-hand'),
       skipSourceRefill: false,
@@ -189,11 +189,11 @@ function activateCard(
     ...state,
     currentSkillType: 2,
     onceSkillCostChanges: Object.fromEntries(
-      Object.entries(state.onceSkillCostChanges).filter(([id]) => id !== card.id),
+      Object.entries(state.onceSkillCostChanges).filter(([id]) => id !== card.cardInstanceId),
     ),
     activation: {
       ...state.activation,
-      usedCards: [...state.activation.usedCards, card.id],
+      usedCards: [...state.activation.usedCards, card.cardInstanceId],
     },
     lastActionTick: state.tick,
     lastPerformer: card.performer,
@@ -202,9 +202,14 @@ function activateCard(
     drawContext: 'skill',
     skillActivationCounts: {
       ...state.skillActivationCounts,
-      [card.id]: Number(BigInt.asIntN(32, BigInt((state.skillActivationCounts[card.id] ?? 0) + 1))),
+      [card.cardInstanceId]: Number(
+        BigInt.asIntN(32, BigInt((state.skillActivationCounts[card.cardInstanceId] ?? 0) + 1)),
+      ),
     },
-    cardUseCounts: { ...state.cardUseCounts, [card.id]: (state.cardUseCounts[card.id] ?? 0) + 1 },
+    cardUseCounts: {
+      ...state.cardUseCounts,
+      [card.cardInstanceId]: (state.cardUseCounts[card.cardInstanceId] ?? 0) + 1,
+    },
     lastCardName: card.name,
     stats: { ...state.stats, cardsUsed: state.stats.cardsUsed + 1 },
     cardUses: [
@@ -213,7 +218,7 @@ function activateCard(
         key: state.stats.cardsUsed + 1,
         card,
         tick: state.tick,
-        handIndex: initialHand.indexOf(card.id),
+        handIndex: initialHand.indexOf(card.cardInstanceId),
         handCount: initialHand.length,
         consumeAp: usedSkillCost,
       },
@@ -222,7 +227,7 @@ function activateCard(
   next = notifyHandCardBeforeUse(next, card, 2, applyEffect);
   next = beginTokenGeneration(
     retireCard(applyBeforeUseAbility(next, card), card, allHand),
-    card.id,
+    card.cardInstanceId,
   );
   next = notifyComboSkillPoint(next, card, usedSkillCost);
   const effectIdentities = card.effects.map((effect, index) => ({
@@ -245,29 +250,38 @@ function activateCard(
     next = { ...next, modes: { ...next.modes, held: true } };
     const children = [...next.hand];
     for (const id of children) {
-      const child = next.deck.find((item) => item.id === id);
+      const child = next.deck.find((item) => item.cardInstanceId === id);
       if (child) next = activateCard(next, resolveModeSkill(child, next.modes), initialHand, true);
     }
     next = drainModeChanges({ ...next, modes: { ...next.modes, held: false } }, applyEffect);
   }
-  const tokenGeneration = finishTokenGeneration(next, card.id);
+  const tokenGeneration = finishTokenGeneration(next, card.cardInstanceId);
   next = tokenGeneration.state;
   next = registerMissionMember(notifyHandSkillUse(next, card, applyEffect), card.charactersId);
   const ability = resolveModeAbility(card, next.modes);
   next = applyAbilityEffects(next, card, ability.ability893Effects ?? [], applyEffect);
   next = applyAbilityEffects(next, card, ability.ability894Effects ?? [], applyEffect);
-  next = advanceProxySkillUses(applyUseAbility(next, card), card.id, usedSkillCost, applyEffect);
+  next = advanceProxySkillUses(
+    applyUseAbility(next, card),
+    card.cardInstanceId,
+    usedSkillCost,
+    applyEffect,
+  );
   next = induceAdditionalHearts(next, card, usedSkillCost, applyEffect);
   return { ...next, currentSkillType: previousSkillType };
 }
 
 function retireCard(state: GameState, card: Card, allHand: boolean): GameState {
   return {
-    ...moveCardsToBoard(state, [card.id], allHand ? liveBoardState.extra2 : liveBoardState.extra),
-    hand: state.hand.filter((id) => id !== card.id),
-    relayUsed: state.relayUsed.filter((id) => id !== card.id),
+    ...moveCardsToBoard(
+      state,
+      [card.cardInstanceId],
+      allHand ? liveBoardState.extra2 : liveBoardState.extra,
+    ),
+    hand: state.hand.filter((id) => id !== card.cardInstanceId),
+    relayUsed: state.relayUsed.filter((id) => id !== card.cardInstanceId),
     handHeartCollectCounts: Object.fromEntries(
-      Object.entries(state.handHeartCollectCounts).filter(([id]) => id !== card.id),
+      Object.entries(state.handHeartCollectCounts).filter(([id]) => id !== card.cardInstanceId),
     ),
   };
 }

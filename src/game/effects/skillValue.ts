@@ -29,7 +29,7 @@ function skillBoostPercent(state: GameState, card?: Card): number {
   const handBoost = state.deck.reduce(
     (sum, item) =>
       sum +
-      (state.handEffectCardIds.includes(item.id) &&
+      (state.handEffectCardIds.includes(item.cardInstanceId) &&
       (item.token === 'bookmark' || item.token === 'story') &&
       state.deck.length >= 80
         ? Math.fround(1001 + Math.max(0, moodValue(state)) * 5.005)
@@ -47,7 +47,7 @@ function skillBoostPercent(state: GameState, card?: Card): number {
     ? state.deck.reduce((sum, item) => {
         const boost = item.passive?.skillBoost;
         if (
-          !state.handEffectCardIds.includes(item.id) ||
+          !state.handEffectCardIds.includes(item.cardInstanceId) ||
           !boost?.members.includes(card.charactersId)
         )
           return sum;

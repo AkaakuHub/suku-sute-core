@@ -8,7 +8,7 @@ export function activateUseInduce(
   apply: EffectApplier,
 ): GameState {
   if (effect.targetEffectId === null || effect.effects.length === 0) return state;
-  const key = `${card?.id ?? ''}:${effect.targetEffectId}`;
+  const key = `${card?.cardInstanceId ?? ''}:${effect.targetEffectId}`;
   const activationCount = int32(state.skillEffectActivationCounts[key] ?? 0);
   const limit = int32(effect.limit);
   if (limit !== 0 && activationCount >= limit) return state;
@@ -25,7 +25,9 @@ export function activateUseCountInduce(
   card: Card | undefined,
   apply: EffectApplier,
 ): GameState {
-  const skillUseCount = int32((card ? (state.skillActivationCounts[card.id] ?? 1) : 1) - 1);
+  const skillUseCount = int32(
+    (card ? (state.skillActivationCounts[card.cardInstanceId] ?? 1) : 1) - 1,
+  );
   const requireCount = int32(effect.requireCount);
   if (requireCount !== 0 && skillUseCount % requireCount !== 0) return state;
   return activateUseInduce(

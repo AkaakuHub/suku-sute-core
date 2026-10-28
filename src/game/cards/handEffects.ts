@@ -10,8 +10,9 @@ import { handInducerStateKey } from './handInducer.ts';
 
 export function activateHandPermanentEffects(state: GameState, card: Card): GameState {
   const effects = card.handPermanentEffects;
-  if (!effects?.length || state.activeHandPermanentCardIds.includes(card.id)) return state;
-  const deactivationKey = `hand-permanent:${card.id}`;
+  if (!effects?.length || state.activeHandPermanentCardIds.includes(card.cardInstanceId))
+    return state;
+  const deactivationKey = `hand-permanent:${card.cardInstanceId}`;
   let next = state;
   for (const effect of effects) {
     next =
@@ -31,14 +32,14 @@ export function activateHandPermanentEffects(state: GameState, card: Card): Game
   }
   return {
     ...next,
-    activeHandPermanentCardIds: [...state.activeHandPermanentCardIds, card.id],
+    activeHandPermanentCardIds: [...state.activeHandPermanentCardIds, card.cardInstanceId],
   };
 }
 
 export function disposeHandEffects(state: GameState, ids: readonly string[]): GameState {
   let next = state;
   for (const id of ids) {
-    const card = state.deck.find((item) => item.id === id);
+    const card = state.deck.find((item) => item.cardInstanceId === id);
     if (card?.modeAbilityChanges) next = deactivateModeAbilityEffects(next, card);
     if (!card) continue;
     const resetInducers = (card.handInducers ?? []).filter(
@@ -49,7 +50,9 @@ export function disposeHandEffects(state: GameState, ids: readonly string[]): Ga
         next = applyParameterValueChange(next, card, effect, true);
     }
     const resetKeys = new Set(
-      resetInducers.map((inducer) => handInducerStateKey(card.id, inducer.sourceEffectId)),
+      resetInducers.map((inducer) =>
+        handInducerStateKey(card.cardInstanceId, inducer.sourceEffectId),
+      ),
     );
     next = {
       ...next,
@@ -60,7 +63,7 @@ export function disposeHandEffects(state: GameState, ids: readonly string[]): Ga
   }
   for (const active of state.activeModeParameterChanges) {
     if (!ids.includes(active.cardId)) continue;
-    const card = state.cardPool.find((item) => item.id === active.cardId);
+    const card = state.cardPool.find((item) => item.cardInstanceId === active.cardId);
     if (!card?.modeParameterChanges) continue;
     const effects = active.isOn ? card.modeParameterChanges.on : card.modeParameterChanges.off;
     next = deactivateParameterValueChanges(next, card, effects);
@@ -70,7 +73,7 @@ export function disposeHandEffects(state: GameState, ids: readonly string[]): Ga
   );
   const removedHandInducerKeys = new Set(
     ids.flatMap((id) => {
-      const card = state.cardPool.find((item) => item.id === id);
+      const card = state.cardPool.find((item) => item.cardInstanceId === id);
       return (card?.handInducers ?? []).map((inducer) =>
         handInducerStateKey(id, inducer.sourceEffectId),
       );
@@ -78,7 +81,7 @@ export function disposeHandEffects(state: GameState, ids: readonly string[]): Ga
   );
   for (const id of state.activeHandPermanentCardIds) {
     if (!ids.includes(id)) continue;
-    const card = state.cardPool.find((item) => item.id === id);
+    const card = state.cardPool.find((item) => item.cardInstanceId === id);
     const effects = card?.handPermanentEffects;
     if (!card || !effects) continue;
     next = deactivateParameterValueChanges(
@@ -86,7 +89,7 @@ export function disposeHandEffects(state: GameState, ids: readonly string[]): Ga
       card,
       effects.filter((effect) => effect.kind === 'parameter-value-change'),
     );
-    const deactivationKey = `hand-permanent:${card.id}`;
+    const deactivationKey = `hand-permanent:${card.cardInstanceId}`;
     next = deactivateInducedEffects(next, deactivationKey);
     next = {
       ...next,
@@ -104,7 +107,8 @@ export function disposeHandEffects(state: GameState, ids: readonly string[]): Ga
       Object.entries(state.handCollectionActivationCounts).filter(([id]) => {
         if (!ids.includes(id)) return true;
         return (
-          state.deck.find((card) => card.id === id)?.collectionEffects?.limitMemory === 'retain'
+          state.deck.find((card) => card.cardInstanceId === id)?.collectionEffects?.limitMemory ===
+          'retain'
         );
       }),
     ),

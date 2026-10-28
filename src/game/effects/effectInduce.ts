@@ -44,7 +44,7 @@ export function activateEffectInduce(
   card: Card | undefined,
 ): GameState {
   if (!card) throw new Error('効果誘発の発動元カードがありません。');
-  const sourceEffectId = `${card.id}:${effect.sourceEffectId}`;
+  const sourceEffectId = `${card.cardInstanceId}:${effect.sourceEffectId}`;
   if (state.effectInducers.some((inducer) => inducer.sourceEffectId === sourceEffectId))
     return state;
   return {
@@ -52,7 +52,7 @@ export function activateEffectInduce(
     effectInducers: [
       ...state.effectInducers,
       {
-        sourceCardId: card.id,
+        sourceCardId: card.cardInstanceId,
         sourceEffectId,
         target: effect.target,
         threshold: {
@@ -91,7 +91,7 @@ export function refreshEffectInducers(state: GameState, apply: EffectApplier): G
       next = deactivateMentalBarriers(next, deactivationKey);
       continue;
     }
-    const card = next.cardPool.find((item) => item.id === inducer.sourceCardId);
+    const card = next.cardPool.find((item) => item.cardInstanceId === inducer.sourceCardId);
     if (!card) throw new Error('効果誘発の発動元カードがありません。');
     for (const effect of inducer.effects) {
       next = completeDeckOutChecks(

@@ -134,7 +134,7 @@ function pulseGauge(
       'voltage',
       BigInt(value),
       'skill',
-      state.cardPool.find((card) => card.id === sourceCardId),
+      state.cardPool.find((card) => card.cardInstanceId === sourceCardId),
       applyEffect,
       true,
     );

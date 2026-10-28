@@ -22,7 +22,7 @@ export function registerProxySkill(
   if (effect.periodType === 3 ? effect.induceTiming !== 1 : effect.periodParam < 1n) return state;
   const common = {
     id: state.nextProxyAbsorptionId,
-    sourceId: card.id,
+    sourceId: card.cardInstanceId,
     hasAbsorbLimit: (effect.absorbLimit & 1) === 1,
     isAbsoluteAdd: (effect.absorbLimit & 2) === 2,
     isAbsorbEnd: false,
@@ -53,7 +53,8 @@ export function registerProxySkill(
     ...state,
     proxyAbsorptions: [...state.proxyAbsorptions, absorption],
     nextProxyAbsorptionId: state.nextProxyAbsorptionId + 1,
-    deckBoard: setCardSkillUseAtBoardState(state, card.id, liveBoardState.proxy).deckBoard,
+    deckBoard: setCardSkillUseAtBoardState(state, card.cardInstanceId, liveBoardState.proxy)
+      .deckBoard,
   };
 }
 
@@ -210,7 +211,7 @@ function finishProxyAbsorption(
   );
   if (checkTargets && !allTargetsReached)
     return releaseFailedProxyAbsorption(state, absorption, apply);
-  const card = state.cardPool.find((item) => item.id === absorption.sourceId);
+  const card = state.cardPool.find((item) => item.cardInstanceId === absorption.sourceId);
   if (!card) return removeProxyAbsorption(state, absorption);
   let next = updateProxyAbsorption(state, absorption, { ...absorption, isAbsorbEnd: true });
   if (absorption.inducePowerType === 3) {

@@ -9,11 +9,11 @@ export function activateModeAbilityEffects(
   apply: EffectApplier,
 ): GameState {
   const changes = card.modeAbilityChanges;
-  if (!changes || !state.handEffectCardIds.includes(card.id)) return state;
+  if (!changes || !state.handEffectCardIds.includes(card.cardInstanceId)) return state;
   const isOn = state.modes.entries.find((mode) => mode.id === changes.modeId)?.on ?? false;
   const variant = isOn ? changes.on : changes.off;
   if (!variant.modeEffects.length) return state;
-  const deactivationKey = `mode-ability:${card.id}`;
+  const deactivationKey = `mode-ability:${card.cardInstanceId}`;
   let next = state;
   for (const effect of variant.modeEffects)
     next = completeDeckOutChecks(
@@ -24,5 +24,5 @@ export function activateModeAbilityEffects(
 }
 
 export function deactivateModeAbilityEffects(state: GameState, card: Card): GameState {
-  return deactivateInducedEffects(state, `mode-ability:${card.id}`);
+  return deactivateInducedEffects(state, `mode-ability:${card.cardInstanceId}`);
 }

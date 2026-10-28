@@ -8,9 +8,9 @@ import { handCardCountEffect } from '../actionTypeEffects/handCardCount.ts';
 export function applyDrawAbility(state: GameState, card: Card): GameState {
   const drawn = (card.drawEffects ?? []).reduce(
     (next, effect) => applyEffect(next, effect, card),
-    beginTokenGeneration(state, card.id),
+    beginTokenGeneration(state, card.cardInstanceId),
   );
-  return finishTokenGeneration(applyNamedDrawAbility(drawn, card), card.id).state;
+  return finishTokenGeneration(applyNamedDrawAbility(drawn, card), card.cardInstanceId).state;
 }
 
 function applyNamedDrawAbility(state: GameState, card: Card): GameState {
@@ -23,8 +23,8 @@ function applyNamedDrawAbility(state: GameState, card: Card): GameState {
       ...state,
       costReductions: Object.fromEntries(
         state.deck.map((item) => [
-          item.id,
-          (state.costReductions[item.id] ?? 0) +
+          item.cardInstanceId,
+          (state.costReductions[item.cardInstanceId] ?? 0) +
             (camera
               ? 2 + (item.charactersId === 1031 ? 4 : 0)
               : item.charactersId === 1031 || item.charactersId === 1032
@@ -74,7 +74,8 @@ function applyNamedDrawAbility(state: GameState, card: Card): GameState {
       costReductions: state.deck.reduce(
         (costs, item) => {
           if (item.unitIds.includes(1) || (item.token && item.token !== 'shadow'))
-            costs[item.id] = (costs[item.id] ?? 0) + amount * (item.token === 'bookmark' ? 2 : 1);
+            costs[item.cardInstanceId] =
+              (costs[item.cardInstanceId] ?? 0) + amount * (item.token === 'bookmark' ? 2 : 1);
           return costs;
         },
         { ...state.costReductions },

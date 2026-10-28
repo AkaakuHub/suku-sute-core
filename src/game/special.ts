@@ -29,8 +29,8 @@ export function isGenesisSpecial(card: Card): boolean {
 }
 
 export function canUseSpecial(state: GameState, cardId: string): boolean {
-  const card = specialCards(state).find((item) => item.id === cardId);
-  const token = state.specialAppealTokens.find((item) => item.card.id === cardId);
+  const card = specialCards(state).find((item) => item.cardInstanceId === cardId);
+  const token = state.specialAppealTokens.find((item) => item.card.cardInstanceId === cardId);
   return Boolean(
     card?.special &&
     (state.phase === 'playing' || state.phase === 'paused') &&
@@ -48,17 +48,18 @@ export function canUseSpecial(state: GameState, cardId: string): boolean {
 }
 
 export function hasAvailableSpecial(state: GameState): boolean {
-  return specialCards(state).some((card) => canUseSpecial(state, card.id));
+  return specialCards(state).some((card) => canUseSpecial(state, card.cardInstanceId));
 }
 
 export function specialButtonCard(state: GameState): Card | undefined {
   const cards = specialCards(state);
   return (
-    cards.find((card) => canUseSpecial(state, card.id)) ??
+    cards.find((card) => canUseSpecial(state, card.cardInstanceId)) ??
     cards.find(
       (card) =>
-        state.specialAppealTokens.some((token) => token.card.id === card.id) ||
-        !state.specialUsed.includes(card.id),
+        state.specialAppealTokens.some(
+          (token) => token.card.cardInstanceId === card.cardInstanceId,
+        ) || !state.specialUsed.includes(card.cardInstanceId),
     ) ??
     cards[0]
   );
@@ -66,23 +67,25 @@ export function specialButtonCard(state: GameState): Card | undefined {
 
 export function useSpecial(state: GameState, cardId: string): GameState {
   if (state.phase !== 'playing' || !canUseSpecial(state, cardId)) return state;
-  const card = specialCards(state).find((item) => item.id === cardId);
-  const token = state.specialAppealTokens.find((item) => item.card.id === cardId);
+  const card = specialCards(state).find((item) => item.cardInstanceId === cardId);
+  const token = state.specialAppealTokens.find((item) => item.card.cardInstanceId === cardId);
   if (!card?.special) throw new Error('共鳴のカードがありません。');
   const previousSkillType = state.currentSkillType;
   let next = beginTokenGeneration(
     { ...spendAp(state, specialCost(card)), currentSkillType: 1 },
-    card.id,
+    card.cardInstanceId,
   );
   next = {
     ...next,
     skillActivationCounts: {
       ...next.skillActivationCounts,
-      [card.id]: Number(BigInt.asIntN(32, BigInt((next.skillActivationCounts[card.id] ?? 0) + 1))),
+      [card.cardInstanceId]: Number(
+        BigInt.asIntN(32, BigInt((next.skillActivationCounts[card.cardInstanceId] ?? 0) + 1)),
+      ),
     },
   };
   for (const effect of card.special.effects) next = applyEffect(next, effect, card);
-  next = finishTokenGeneration(next, card.id).state;
+  next = finishTokenGeneration(next, card.cardInstanceId).state;
   next = notifyHandSkillUse(next, card, applyEffect);
   if (token) next = startSpecialAppealTokenCooldown(next, token);
   const completed = flushDeckActions({

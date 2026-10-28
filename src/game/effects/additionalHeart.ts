@@ -28,7 +28,7 @@ export function activateAdditionalHeartInduce(
   const indefinite = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const inducer: AdditionalHeartInducer = {
     id: state.nextAdditionalHeartInducerId,
-    sourceCardId: card.id,
+    sourceCardId: card.cardInstanceId,
     condition: effect.condition,
     apPower: effect.apPower,
     heartEffect: effect.heartEffect,
@@ -63,7 +63,7 @@ export function induceAdditionalHearts(
     if (!inducer || !matchesAdditionalHeartCondition(inducer.condition, usedCard)) continue;
     const product = BigInt.asIntN(64, inducer.apPower * BigInt(Math.trunc(skillCost)));
     const effectPower = Math.fround(Math.fround(int64ToFloat32(product) / Math.fround(10_000)) + 1);
-    const sourceCard = next.cardPool.find((item) => item.id === inducer.sourceCardId);
+    const sourceCard = next.cardPool.find((item) => item.cardInstanceId === inducer.sourceCardId);
     if (!sourceCard) continue;
     next = completeDeckOutChecks(
       apply(

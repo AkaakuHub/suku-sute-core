@@ -14,9 +14,9 @@ export function applyDeckSkillCostChange(
   const deckIds = new Set(boardCardIds(state, liveBoardState.deck));
   const candidates =
     effect.targetRange === 2
-      ? state.hand.flatMap((id) => state.deck.filter((card) => card.id === id))
+      ? state.hand.flatMap((id) => state.deck.filter((card) => card.cardInstanceId === id))
       : effect.targetRange === 3
-        ? state.deck.filter((card) => deckIds.has(card.id))
+        ? state.deck.filter((card) => deckIds.has(card.cardInstanceId))
         : state.deck;
   const targets = candidates.filter((card) => {
     switch (effect.target) {
@@ -51,7 +51,7 @@ export function applyDeckSkillCostChange(
     onceSkillCostChanges: targets.reduce(
       (changes, card) => ({
         ...changes,
-        [card.id]: (changes[card.id] ?? 0) + amount,
+        [card.cardInstanceId]: (changes[card.cardInstanceId] ?? 0) + amount,
       }),
       next.onceSkillCostChanges,
     ),

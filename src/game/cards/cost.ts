@@ -12,15 +12,15 @@ export function cardCost(state: GameState, card: Card, activeAllHandSkill = fals
   if (!useHand || useHand.kind !== 'use-hand' || activeAllHandSkill)
     return finalizeLiveSkillCost(
       card.consumeAp,
-      -(state.costReductions[card.id] ?? 0) +
+      -(state.costReductions[card.cardInstanceId] ?? 0) +
         skillCostDelta(state, card) +
-        (state.onceSkillCostChanges[card.id] ?? 0),
+        (state.onceSkillCostChanges[card.cardInstanceId] ?? 0),
     );
   const cards = state.hand.map((id) => {
-    const rawOther = state.deck.find((item) => item.id === id);
+    const rawOther = state.deck.find((item) => item.cardInstanceId === id);
     if (!rawOther) throw new Error('手札のカードがありません。');
     const other = resolveModeSkill(rawOther, state.modes);
-    return other.id === card.id
+    return other.cardInstanceId === card.cardInstanceId
       ? { kind: 'source' as const, baseCost: card.consumeAp }
       : { kind: 'other' as const, skillCost: cardCost(state, other, true) };
   });
@@ -34,9 +34,9 @@ export function cardCost(state: GameState, card: Card, activeAllHandSkill = fals
     (total) =>
       total -
       reduction -
-      (state.costReductions[card.id] ?? 0) +
+      (state.costReductions[card.cardInstanceId] ?? 0) +
       skillCostDelta(state, card) +
-      (state.onceSkillCostChanges[card.id] ?? 0),
+      (state.onceSkillCostChanges[card.cardInstanceId] ?? 0),
   );
 }
 
@@ -52,7 +52,10 @@ export function applyCostReduction(
           effect.target.kind === 'unit'
             ? card.unitIds.includes(effect.target.unit)
             : card.token === effect.target.token;
-        return [card.id, (state.costReductions[card.id] ?? 0) + (matches ? effect.amount : 0)];
+        return [
+          card.cardInstanceId,
+          (state.costReductions[card.cardInstanceId] ?? 0) + (matches ? effect.amount : 0),
+        ];
       }),
     ),
   };

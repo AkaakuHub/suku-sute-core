@@ -7,7 +7,7 @@ export function applyBeforeUseAbility(state: GameState, card: Card): GameState {
     (current, effect) => applyEffect(current, effect, card),
     state,
   );
-  const count = state.cardUseCounts[card.id] ?? 0;
+  const count = state.cardUseCounts[card.cardInstanceId] ?? 0;
   if (card.beforeUseAbility === 'story-boost') {
     const size = state.deck.length;
     const percent =

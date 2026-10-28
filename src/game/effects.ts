@@ -176,9 +176,15 @@ function applyEffectInternal(
     case 'beat-hearts':
       return createHeartsFromEffect(state, value(effect.amount), card, true);
     case 'tokens':
-      return requestTokens(state, effect.token, effect.count, card?.id ?? null, effect.seriesIds);
+      return requestTokens(
+        state,
+        effect.token,
+        effect.count,
+        card?.cardInstanceId ?? null,
+        effect.seriesIds,
+      );
     case 'token-card':
-      return applyTokenCardEffect(state, effect, card?.id ?? null);
+      return applyTokenCardEffect(state, effect, card?.cardInstanceId ?? null);
     case 'token-boost':
       return activateTokenBoost(state, effect, card, multiplier, addValue);
     case 'token-deck-split':
@@ -190,7 +196,7 @@ function applyEffectInternal(
     case 'heart-limit':
       return applyHeartLimitEffect(state, value(effect.amount), card, effectPower);
     case 'shuffle':
-      return enqueueHandShuffle(state, effect, card?.id ?? null);
+      return enqueueHandShuffle(state, effect, card?.cardInstanceId ?? null);
     case 'search-unit':
     case 'search-token':
     case 'search': {
@@ -219,7 +225,11 @@ function applyEffectInternal(
       return state;
     case 'card-move':
       return card
-        ? setCardSkillUseAtBoardState(state, card.id, liveBoardState[effect.destination])
+        ? setCardSkillUseAtBoardState(
+            state,
+            card.cardInstanceId,
+            liveBoardState[effect.destination],
+          )
         : state;
     case 'ap':
       return applyApRecovery(state, effect, card, {

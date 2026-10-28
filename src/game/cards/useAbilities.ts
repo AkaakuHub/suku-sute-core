@@ -12,14 +12,14 @@ export function applyAbilityEffects(
   effects: readonly import('../model').Effect[],
   apply: EffectApplier,
 ): GameState {
-  let next = beginTokenGeneration(state, card.id);
+  let next = beginTokenGeneration(state, card.cardInstanceId);
   for (const effect of effects) next = apply(next, effect, card);
-  return finishTokenGeneration(next, card.id).state;
+  return finishTokenGeneration(next, card.cardInstanceId).state;
 }
 
 export function applyUseAbility(state: GameState, card: Card): GameState {
   let next = state;
-  const count = state.cardUseCounts[card.id] ?? 0;
+  const count = state.cardUseCounts[card.cardInstanceId] ?? 0;
   if (card.useAbility === 'class' && count === 3)
     next = applyEffect(
       next,
@@ -41,7 +41,7 @@ export function applyUseAbility(state: GameState, card: Card): GameState {
     (card.useAbility === 'shadow' && count >= 14)
   ) {
     if (!next.activation) throw new Error('カードの使用処理がありません。');
-    next = setCardSkillUseAtBoardState(next, card.id, liveBoardState.exclusion);
+    next = setCardSkillUseAtBoardState(next, card.cardInstanceId, liveBoardState.exclusion);
   }
   return next;
 }

@@ -26,7 +26,7 @@ export function createHeartsFromEffect(
   const percent = state.deck.reduce(
     (sum, item) =>
       sum +
-      (state.handEffectCardIds.includes(item.id) && item.passive
+      (state.handEffectCardIds.includes(item.cardInstanceId) && item.passive
         ? skillValue(state, item.passive.heartsPercent ?? 0, {
             kind: 'amplify',
             percent: item.passive.heartsPercent ?? 0,

@@ -45,7 +45,7 @@ export function applyGaugeRegeneration(
     effect.intervalType,
     effect.intervalMilliseconds,
     effect.duration,
-    card?.id ?? null,
+    card?.cardInstanceId ?? null,
     applyEffect,
     effect.calculationType,
     effect.invocationType,

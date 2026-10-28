@@ -13,7 +13,7 @@ export function activateReshuffleSkill(
       recoverDiscard: effect.recoveryType === 1n,
       destination: effect.stashType === 1n ? 'draw' : 'discard',
     },
-    card?.id ?? null,
+    card?.cardInstanceId ?? null,
     true,
   );
 }
