@@ -1,3 +1,5 @@
+import { rescaleLiveGaugeTimer } from '../../runtime/live/gaugeTiming.ts';
+import { observeLiveApIncreaseSpeedEffect } from '../../runtime/skills/apIncreaseSpeedObservation.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { calculateLiveSkillMoodCorrection } from '../../runtime/live/skillMood.ts';
 import { moodValue } from '../projection.ts';
@@ -51,7 +53,6 @@ export function applyApSpeedChange(
         );
   let calculation: 'add' | 'multiply';
   let value: number;
-  let absorbedAmount: number;
   let currentState = state;
   let rate = Math.fround(
     Math.fround(multiplier) *
@@ -72,21 +73,26 @@ export function applyApSpeedChange(
   }
   if (effect.calculationType === 2) {
     value = Math.fround(Math.fround(10_000 - rate) / 10_000);
-    absorbedAmount = Math.trunc((1 - value) * 100);
     calculation = 'multiply';
   } else {
     value = Math.fround(
       Math.fround(Math.fround(correction + int64ToFloat32(effect.num)) + Math.fround(addValue)) *
         Math.fround(multiplier),
     );
-    const currentInterval = apIncreaseIntervalSeconds(state);
-    absorbedAmount = Math.trunc((-value / currentInterval) * 100);
     calculation = 'add';
   }
   if ((calculation === 'multiply' && value === 1) || (calculation === 'add' && value === 0))
     return currentState;
+  const observation = observeLiveApIncreaseSpeedEffect(
+    calculation === 'multiply'
+      ? { kind: 'multiply', factor: value }
+      : { kind: 'add', milliseconds: value },
+    apIncreaseIntervalValue(state),
+  );
   const absorption =
-    absorbedAmount > 0 ? absorbSkillEffect(currentState, 21, BigInt(absorbedAmount)) : null;
+    observation.absorptionAmount === null
+      ? null
+      : absorbSkillEffect(currentState, 21, BigInt(observation.absorptionAmount));
   if (absorption?.absorbed) return absorption.state;
   const suppressDuration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const entry: GameState['apTimeEffects'][number] = {
@@ -160,10 +166,7 @@ function updateApTimeEffects(
     ...candidate,
     ap: {
       ...candidate.ap,
-      timerSeconds:
-        before > 0 && after > 0
-          ? Math.fround(Math.fround(after / before) * state.ap.timerSeconds)
-          : state.ap.timerSeconds,
+      timerSeconds: rescaleLiveGaugeTimer(state.ap.timerSeconds, before, after),
     },
   };
 }

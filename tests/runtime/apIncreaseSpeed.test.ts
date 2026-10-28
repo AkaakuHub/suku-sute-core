@@ -1,3 +1,4 @@
+import { observeLiveApIncreaseSpeedEffect } from '../../src/runtime/skills/apIncreaseSpeedObservation.ts';
 import { expect, test } from 'vite-plus/test';
 import {
   activateLiveApIncreaseSpeed,
@@ -24,7 +25,7 @@ test('倍率型は短縮率へSkillBoostを適用してAP intervalを変更す�
   );
 
   expect(boostedValues).toEqual([1_400]);
-  expect(activated.effectAmount).toBe(1);
+  expect(activated.effectAmount).toBe(21);
   const calculation = activated.state[0]?.calculation;
   expect(calculation?.kind).toBe('multiply');
   if (calculation?.kind !== 'multiply') {
@@ -56,7 +57,7 @@ test('加算型はruntimeどおりSkillBoostを消費するが登録値には適
     kind: 'add',
     milliseconds: -360,
   });
-  expect(activated.effectAmount).toBe(1);
+  expect(activated.effectAmount).toBe(36);
   expect(resolveLiveApIncreaseIntervalSeconds(1, activated.state)).toBeCloseTo(0.64);
   expect(
     advanceLiveApIncreaseSpeedState(activated.state, {
@@ -113,3 +114,21 @@ function effect(
 function detail(id: string, detailType: string, effectValue: number) {
   return { id, detailType, targetMood: 0, effectValue, params: [] };
 }
+
+test('Float32で0.7倍を100換算して切り上げると吸収量は31になる', () => {
+  expect(
+    observeLiveApIncreaseSpeedEffect({ kind: 'multiply', factor: Math.fround(0.7) }, 1),
+  ).toEqual({ effectAmount: 31, absorptionAmount: 31 });
+  expect(
+    observeLiveApIncreaseSpeedEffect({ kind: 'add', milliseconds: -25 }, 1.2).absorptionAmount,
+  ).toBe(3);
+});
+
+test('AP速度低下は負のFloat32通知値を保ちProxyへ送らない', () => {
+  const observation = observeLiveApIncreaseSpeedEffect(
+    { kind: 'multiply', factor: Math.fround(1.001) },
+    1,
+  );
+  expect(observation.absorptionAmount).toBeNull();
+  expect(observation.effectAmount).toBe(Math.fround(Math.fround(1 - Math.fround(1.001)) * 100));
+});

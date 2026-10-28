@@ -1,3 +1,4 @@
+import { observeLiveApIncreaseSpeedEffect } from '../runtime/skills/apIncreaseSpeedObservation.ts';
 import { createRangeRandom } from './random.ts';
 import { limitValue } from './scoring.ts';
 import { recordScoreHistory } from './scoreHistory.ts';
@@ -68,6 +69,10 @@ export function missionActionEffect(
                           : null;
   if (actionType === null) return state;
   const handCountAction = state.deckActions.queue[before.deckActions.queue.length];
+  const apSpeedEffect =
+    state.apTimeEffects.length > before.apTimeEffects.length
+      ? state.apTimeEffects.at(-1)
+      : undefined;
   const amount =
     actionType === 1
       ? effect.kind === 'hearts'
@@ -98,20 +103,13 @@ export function missionActionEffect(
                       ? Math.fround(handCountAction.param1)
                       : 0
                     : effect.kind === 'ap-speed-change'
-                      ? state.apTimeEffects.length > before.apTimeEffects.length
-                        ? state.apTimeEffects.at(-1)?.calculation === 'multiply'
-                          ? Math.fround(
-                              Math.fround(1 - (state.apTimeEffects.at(-1)?.value ?? 1)) *
-                                Math.fround(10_000),
-                            )
-                          : Math.fround(
-                              Math.fround(
-                                -(
-                                  (state.apTimeEffects.at(-1)?.value ?? 0) /
-                                  apIncreaseIntervalValue(before)
-                                ),
-                              ) * Math.fround(10_000),
-                            )
+                      ? apSpeedEffect
+                        ? observeLiveApIncreaseSpeedEffect(
+                            apSpeedEffect.calculation === 'multiply'
+                              ? { kind: 'multiply', factor: apSpeedEffect.value }
+                              : { kind: 'add', milliseconds: apSpeedEffect.value },
+                            apIncreaseIntervalValue(before),
+                          ).effectAmount
                         : 0
                       : effect.kind === 'heart-limit-change'
                         ? heartLimitValueWithoutLimit(state) - heartLimitValueWithoutLimit(before)

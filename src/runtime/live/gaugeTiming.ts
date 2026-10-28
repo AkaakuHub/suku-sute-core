@@ -98,3 +98,15 @@ function validateNonnegativeNumber(value: number, label: string): void {
     throw new Error(`${label} is invalid`);
   }
 }
+
+export function rescaleLiveGaugeTimer(
+  timerSeconds: number,
+  beforeIntervalSeconds: number,
+  afterIntervalSeconds: number,
+): number {
+  return beforeIntervalSeconds > 0 && afterIntervalSeconds > 0
+    ? Math.fround(
+        Math.fround(afterIntervalSeconds / beforeIntervalSeconds) * Math.fround(timerSeconds),
+      )
+    : timerSeconds;
+}

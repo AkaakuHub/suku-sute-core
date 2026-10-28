@@ -1,3 +1,4 @@
+import { observeLiveApIncreaseSpeedEffect } from './apIncreaseSpeedObservation.ts';
 import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import { roundLiveGaugeIntervalSeconds } from '../live/gaugeTiming.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
@@ -44,6 +45,7 @@ export function activateLiveApIncreaseSpeed(
 ): Readonly<{
   state: LiveApIncreaseSpeedState;
   effectAmount: number;
+  absorptionAmount: number | null;
 }> {
   if (
     effect.actionType !== 21 ||
@@ -92,9 +94,12 @@ export function activateLiveApIncreaseSpeed(
     boostedSpeedIncrease,
     input.power,
   );
-  const effectAmount = resolveEffectAmount(calculation, input.currentIncreaseIntervalSeconds);
+  const observation = observeLiveApIncreaseSpeedEffect(
+    calculation,
+    input.currentIncreaseIntervalSeconds,
+  );
   return {
-    effectAmount,
+    ...observation,
     state: [
       ...state,
       {
@@ -170,19 +175,6 @@ function resolveCalculation(
     default:
       throw new Error('Live AP increase speed calculation type differs');
   }
-}
-
-function resolveEffectAmount(
-  calculation: LiveApIncreaseSpeedEffect['calculation'],
-  currentIncreaseIntervalSeconds: number,
-): number {
-  return calculation.kind === 'add'
-    ? Math.ceil(
-        Math.fround(
-          -calculation.milliseconds / Math.fround(currentIncreaseIntervalSeconds * 1_000),
-        ),
-      )
-    : Math.ceil(Math.fround(1 - calculation.factor));
 }
 
 function requireValue(
