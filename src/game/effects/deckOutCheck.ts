@@ -1,4 +1,4 @@
-import { resetHandCardCount } from '../cards/drawing.ts';
+import { addHandCardCount, resetHandCardCount } from '../cards/drawing.ts';
 import { checkLiveDeckOut } from '../../runtime/cards/deckActionQueue.ts';
 import type { GameState } from '../model.ts';
 import type { EffectApplier } from './induceSkillEffect.ts';
@@ -8,6 +8,7 @@ export function completeDeckOutChecks(state: GameState, applyEffect?: EffectAppl
     state,
     (current) => notifyDeckReload(current, applyEffect),
     resetHandCardCount,
+    { addHandCardCount },
   );
 }
 

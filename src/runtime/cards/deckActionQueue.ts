@@ -4,13 +4,14 @@ import type { LiveCardIdentity } from './cardIdentity.ts';
 import type { LiveCardIdentifier, LiveDeckBoardState } from './deckBoardState.ts';
 import type { LiveTokenCardDeckState } from './tokenCardDeck.ts';
 import { markLiveCardReshuffleActivated } from './cardSkillActivatedFlags.ts';
+import { addLiveHandCardTargetCount } from './handCardTarget.ts';
 import {
   resetLivePendingHandCardCount,
   type LiveHandCardCountResetHandler,
 } from './handCardCountReset.ts';
 
 export type LiveDeckAction = Readonly<
-  | { type: 1; param1: number }
+  | { type: 0 | 1; param1: number }
   | ({ type: 3 } & LiveReshuffleDeckAction<LiveCardIdentifier | null>)
   | { type: 2 | 5 | 6 | 8 }
   | {
@@ -45,6 +46,7 @@ export function enqueueLiveCardSearchReset<
 }
 
 export type LiveDeckActionHandlers<State> = Readonly<{
+  addHandCardCount?: (state: State, amount: number) => State;
   reshuffle?: Readonly<{
     activeHandCardInstanceIds: (state: State) => readonly LiveCardIdentifier[];
     draw: (state: State, action: LiveReshuffleDeckAction<LiveCardIdentifier | null>) => State;
@@ -75,6 +77,7 @@ export function checkLiveDeckOut<State extends DeckActionState>(
   state: State,
   afterDeckReload: (state: State) => State,
   resetHand: LiveHandCardCountResetHandler<State>,
+  handlers: LiveDeckActionHandlers<State> = {},
 ): State {
   return flushLiveDeckActions(
     {
@@ -82,7 +85,7 @@ export function checkLiveDeckOut<State extends DeckActionState>(
       deckActions: { ...state.deckActions, queue: [...state.deckActions.queue, { type: 6 }] },
     },
     resetHand,
-    { afterDeckReload },
+    { ...handlers, afterDeckReload },
   );
 }
 
@@ -99,6 +102,7 @@ export function flushLiveDeckActions<State extends DeckActionState>(
     if (
       !action ||
       action.type === 7 ||
+      (action.type === 0 && !next.tokenCardDeck.isAllHandSkill && !handlers.addHandCardCount) ||
       (action.type === 3 && !handlers.reshuffle) ||
       (action.type === 6 && !handlers.afterDeckReload)
     )
@@ -111,7 +115,18 @@ export function flushLiveDeckActions<State extends DeckActionState>(
         currentAction: action,
       },
     };
-    if (action.type === 1) {
+    if (action.type === 0) {
+      if (next.tokenCardDeck.isAllHandSkill)
+        next = {
+          ...next,
+          tokenCardDeck: addLiveHandCardTargetCount(next.tokenCardDeck, action.param1),
+        };
+      else {
+        const addHandCardCount = handlers.addHandCardCount;
+        if (!addHandCardCount) throw new Error('Live hand count addition handler is absent');
+        next = addHandCardCount(next, action.param1);
+      }
+    } else if (action.type === 1) {
       next = {
         ...next,
         tokenCardDeck: {

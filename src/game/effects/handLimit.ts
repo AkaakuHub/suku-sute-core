@@ -1,5 +1,5 @@
 import { notifyLiveHandCardCountReset } from '../../runtime/cards/handCardCountReset.ts';
-import { addLiveHandCardTargetCount } from '../../runtime/cards/handCardTarget.ts';
+import { notifyLiveHandCardCountAdd } from '../../runtime/cards/handCardCountAdd.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { skillValue } from './skillValue.ts';
 import { isProxyTargetReached } from './proxySkill.ts';
@@ -32,6 +32,10 @@ export function applyHandLimit(
   const absorption =
     effect.calculationType === 1 && amount >= 0 ? absorbHandLimit(currentState, amount) : null;
   const appliedAmount = effect.calculationType !== 1 || absorption?.absorbed ? 0 : amount;
+  const notified =
+    effect.calculationType === 1 && !absorption?.absorbed
+      ? notifyLiveHandCardCountAdd(currentState, amount)
+      : currentState;
   const handLimitEffects =
     effect.calculationType === 1 && appliedAmount === 0
       ? currentState.handLimitEffects
@@ -52,11 +56,7 @@ export function applyHandLimit(
           },
         ];
   return {
-    ...currentState,
-    tokenCardDeck:
-      appliedAmount === 0
-        ? currentState.tokenCardDeck
-        : addLiveHandCardTargetCount(currentState.tokenCardDeck, appliedAmount),
+    ...notified,
     handLimitEffects,
     deckBoard: card
       ? markLiveCardHandCountActivated(currentState.deckBoard, card.cardInstanceId, appliedAmount)

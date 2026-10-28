@@ -4,6 +4,10 @@ import { flushLiveDeckActions } from '../../src/runtime/cards/deckActionQueue.ts
 import { notifyLiveHandCardCountReset } from '../../src/runtime/cards/handCardCountReset.ts';
 import type { LiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
 import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
+import { addLiveHandCardCount } from '../../src/runtime/cards/handCardCountAdd.ts';
+import { createLiveDeckHandsState } from '../../src/runtime/cards/liveHand.ts';
+import { createLiveDeckDrawContextState } from '../../src/runtime/cards/cardDraw.ts';
+import type { LiveHandCardCountState } from '../../src/runtime/skills/handCardCount.ts';
 import { expect, test } from 'vite-plus/test';
 import type { LiveHandCardCountEffect } from '../../src/runtime/cards/deckActionTypes.ts';
 import {
@@ -15,15 +19,49 @@ import {
   liveHandCardCount,
 } from '../../src/runtime/skills/handCardCount.ts';
 
+function activateAndFlushCount(
+  state: LiveHandCardCountState,
+  tokenCardDeck: LiveTokenCardDeckState,
+  cardInstanceId: number,
+  effect: LiveHandCardCountEffect,
+  amount: number,
+) {
+  const pending = activateLiveHandCardCountEffect(
+    state,
+    tokenCardDeck,
+    createLiveDeckActionQueueState(),
+    cardInstanceId,
+    effect,
+    amount,
+  );
+  const runtime = flushLiveDeckActions(
+    {
+      tokenCardDeck: pending.tokenCardDeck,
+      deckActions: pending.deckActions,
+      deckBoard: createLiveDeckBoardState(
+        Array.from({ length: 10 }, (_, index) => index + 1),
+        [1, 2, 3, 4, 5],
+      ),
+      liveHands: createLiveDeckHandsState([1, 2, 3, 4, 5]),
+      deckDrawContext: createLiveDeckDrawContextState(),
+    },
+    (current) => current,
+    {
+      addHandCardCount: (current, delta) => addLiveHandCardCount(current, delta, (ready) => ready),
+    },
+  );
+  return { ...pending, tokenCardDeck: runtime.tokenCardDeck, deckActions: runtime.deckActions };
+}
+
 test('複数効果を加算してruntimeの手札範囲3〜8へ制限する', () => {
-  const increased = activateLiveHandCardCountEffect(
+  const increased = activateAndFlushCount(
     createLiveHandCardCountState(),
     createLiveTokenCardDeckState(5),
     1,
     effect('increase', { kind: 'full-end' }),
     5,
   );
-  const decreased = activateLiveHandCardCountEffect(
+  const decreased = activateAndFlushCount(
     increased.state,
     increased.tokenCardDeck,
     1,
@@ -36,7 +74,7 @@ test('複数効果を加算してruntimeの手札範囲3〜8へ制限する', ()
 });
 
 test('期間終了時に対象効果だけを除いて手札枚数を復元する', () => {
-  const state = activateLiveHandCardCountEffect(
+  const state = activateAndFlushCount(
     createLiveHandCardCountState(),
     createLiveTokenCardDeckState(5),
     1,
@@ -69,7 +107,7 @@ function effect(
 
 test('変更量0の加算効果は期限解除の通知を登録しない', () => {
   const initial = createLiveHandCardCountState();
-  const active = activateLiveHandCardCountEffect(
+  const active = activateAndFlushCount(
     initial,
     createLiveTokenCardDeckState(5),
     1,
@@ -90,7 +128,7 @@ test('初期枚数から再計算せず、現在の目標へ効果を加える',
     ...createLiveTokenCardDeckState(5),
     handTargetCounts: { current: 2, main: 5, sub: 5 },
   };
-  const active = activateLiveHandCardCountEffect(
+  const active = activateAndFlushCount(
     createLiveHandCardCountState(),
     deck,
     1,
@@ -101,14 +139,14 @@ test('初期枚数から再計算せず、現在の目標へ効果を加える',
 });
 
 test('同じ効果IDを持つ別カードを解除しない', () => {
-  const first = activateLiveHandCardCountEffect(
+  const first = activateAndFlushCount(
     createLiveHandCardCountState(),
     createLiveTokenCardDeckState(5),
     1,
     effect('count', { kind: 'full-end' }),
     -1,
   );
-  const second = activateLiveHandCardCountEffect(
+  const second = activateAndFlushCount(
     first.state,
     first.tokenCardDeck,
     2,
@@ -122,7 +160,7 @@ test('同じ効果IDを持つ別カードを解除しない', () => {
 });
 
 test('手札最大化中の枚数変更は保存した目標も更新し、解除後にその目標へ戻す', () => {
-  const initial = activateLiveHandCardCountEffect(
+  const initial = activateAndFlushCount(
     createLiveHandCardCountState(),
     createLiveTokenCardDeckState(5),
     1,
@@ -133,14 +171,14 @@ test('手札最大化中の枚数変更は保存した目標も更新し、解�
     kind: 'full-end',
   });
   expect(maximum.tokenCardDeck.handTargetCounts.current).toBe(8);
-  const decreased = activateLiveHandCardCountEffect(
+  const decreased = activateAndFlushCount(
     maximum.state,
     maximum.tokenCardDeck,
     3,
     effect('decrease', { kind: 'full-end' }),
     -2,
   );
-  expect(decreased.tokenCardDeck.handTargetCounts.current).toBe(6);
+  expect(decreased.tokenCardDeck.handTargetCounts.current).toBe(8);
   expect(decreased.tokenCardDeck.handMaxCardSkillInfo?.targetHandCount).toBe(7);
   const reset = deactivateLiveHandCardCountEffect(
     decreased.state,

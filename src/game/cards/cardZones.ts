@@ -1,8 +1,5 @@
 import { completeLiveHandCardDraw } from '../../runtime/cards/liveHand.ts';
-import {
-  liveCardSkillActivatedFlags,
-  liveCardSkipsHandCardDraw,
-} from '../../runtime/cards/cardSkillActivatedFlags.ts';
+import { liveCardSkipsHandCardDraw } from '../../runtime/cards/cardSkillActivatedFlags.ts';
 import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import { setLiveCurrentHandCards } from '../../runtime/cards/liveHand.ts';
 import {
@@ -27,7 +24,6 @@ import {
   flushHandCardCountActions,
   fillHandToCountRetainingOverflow,
   handCapacity,
-  removeRandomHandCards,
   shuffleHand,
 } from './drawing.ts';
 import { deactivateInducedEffects } from '../effects/effectInduce.ts';
@@ -39,7 +35,6 @@ export function finishCardActivation(state: GameState): GameState {
   if (!source) throw new Error('使用したカードがありません。');
   if (activation.hasUseAllHandSkill) return finishAllHandActivation(state, source);
   let next = completeUsedCards(state, source.cardInstanceId);
-  const flags = liveCardSkillActivatedFlags(next.deckBoard, source.cardInstanceId);
   const handReady: GameState = {
     ...next,
 
@@ -53,20 +48,6 @@ export function finishCardActivation(state: GameState): GameState {
     next = completeLiveHandCardDraw(handReady, activation.handCardButtonId, null, (current, id) =>
       removeHandCardEffects(current, [id]),
     );
-    if (
-      !flags.skillReshuffleActivated &&
-      flags.skillChangeHandCardCountActivated &&
-      !flags.skillChangeHandCardCountIsPositive
-    ) {
-      const target = Math.min(
-        handCapacity(handReady),
-        liveCurrentDeckCardCount(handReady.tokenCardDeck, handReady.deckBoard),
-      );
-      next = removeRandomHandCards(
-        next,
-        Math.max(0, liveCurrentHandCardInstanceIds(next).length - target),
-      );
-    }
   } else {
     next = completeLiveHandCardDraw(
       handReady,

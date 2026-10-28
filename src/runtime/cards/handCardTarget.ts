@@ -6,19 +6,23 @@ export function addLiveHandCardTargetCount<Id extends LiveCardIdentifier>(
   amount: number,
 ): LiveTokenCardDeckState<Id> {
   validateAmount(amount);
-  const maximumActive = state.maxHandSkillActiveCount > 0;
   return {
     ...state,
     handTargetCounts: {
       ...state.handTargetCounts,
-      current:
-        ((maximumActive && !state.isAllHandSkill ? 8 : state.handTargetCounts.current) + amount) |
-        0,
+      current: (state.handTargetCounts.current + amount) | 0,
     },
-    handMaxCardSkillInfo: maximumActive
-      ? addSavedTarget(state, amount)
-      : state.handMaxCardSkillInfo,
   };
+}
+
+export function addLiveSavedHandCardTargetCount<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  amount: number,
+): LiveTokenCardDeckState<Id> {
+  validateAmount(amount);
+  return state.maxHandSkillActiveCount > 0
+    ? { ...state, handMaxCardSkillInfo: addSavedTarget(state, amount) }
+    : state;
 }
 
 export function resetLiveHandCardTargetCount<Id extends LiveCardIdentifier>(
@@ -27,7 +31,10 @@ export function resetLiveHandCardTargetCount<Id extends LiveCardIdentifier>(
 ): LiveTokenCardDeckState<Id> {
   validateAmount(amount);
   if (amount === 0) return state;
-  const changed = addLiveHandCardTargetCount(state, amount);
+  const changed = addLiveHandCardTargetCount(
+    addLiveSavedHandCardTargetCount(state, amount),
+    amount,
+  );
   return state.maxHandSkillActiveCount > 0
     ? { ...changed, handTargetCounts: { ...changed.handTargetCounts, current: 8 } }
     : changed;

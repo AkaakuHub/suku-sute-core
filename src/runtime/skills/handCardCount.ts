@@ -1,13 +1,11 @@
 import type { LiveHandCardCountEffect } from '../cards/deckActionTypes.ts';
 import type { LiveCardIdentifier } from '../cards/deckBoardState.ts';
 import type { LiveTokenCardDeckState } from '../cards/tokenCardDeck.ts';
+import type { LiveDeckActionQueueState } from '../cards/deckActionQueue.ts';
+import { notifyLiveHandCardCountAdd } from '../cards/handCardCountAdd.ts';
 import { ceilToInt32 } from '../numeric.ts';
 import type { LiveSkillEffectPower } from './skillEffectPower.ts';
-import {
-  activateLiveHandCardMax,
-  addLiveHandCardTargetCount,
-  deactivateLiveHandCardMax,
-} from '../cards/handCardTarget.ts';
+import { activateLiveHandCardMax, deactivateLiveHandCardMax } from '../cards/handCardTarget.ts';
 import {
   advanceLiveSkillEffectDuration,
   type LiveSkillEffectDuration,
@@ -57,16 +55,19 @@ export function createLiveHandCardCountState<
 export function activateLiveHandCardCountEffect<Id extends LiveCardIdentifier>(
   state: LiveHandCardCountState<Id>,
   tokenCardDeck: LiveTokenCardDeckState<Id>,
+  deckActions: LiveDeckActionQueueState,
   cardInstanceId: Id,
   effect: LiveHandCardCountEffect,
   amount: number,
-): HandCountTransition<Id> {
+): HandCountTransition<Id> & Readonly<{ deckActions: LiveDeckActionQueueState }> {
+  const notified = notifyLiveHandCardCountAdd({ tokenCardDeck, deckActions }, amount);
   return {
     state:
       amount === 0
         ? state
         : { effects: [...state.effects, { ...effect, cardInstanceId, kind: 'count', amount }] },
-    tokenCardDeck: addLiveHandCardTargetCount(tokenCardDeck, amount),
+    tokenCardDeck: notified.tokenCardDeck,
+    deckActions: notified.deckActions,
     resetNotifications: [],
   };
 }

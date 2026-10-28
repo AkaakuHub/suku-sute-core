@@ -1,4 +1,5 @@
 import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
+import { addLiveHandCardCount } from '../../runtime/cards/handCardCountAdd.ts';
 import {
   addLiveHandCard,
   removeLiveCurrentHandCard,
@@ -55,7 +56,33 @@ export function fillHandToCount(state: GameState, count: number): GameState {
 }
 
 export function flushHandCardCountActions(state: GameState): GameState {
-  return flushLiveDeckActions(state, resetHandCardCount);
+  return flushLiveDeckActions(state, resetHandCardCount, { addHandCardCount });
+}
+
+export function addHandCardCount(state: GameState, amount: number): GameState {
+  return addLiveHandCardCount(state, amount, setHandCardCount);
+}
+
+export function setHandCardCount(state: GameState, count: number): GameState {
+  let next = drawUntil(state, count, false).state;
+  while (next.liveHands[next.tokenCardDeck.currentDeck].handCount > count) {
+    const hand = next.liveHands[next.tokenCardDeck.currentDeck];
+    const random = createRangeRandom(next.randomSeed);
+    const index = Math.floor(random.range(0, hand.handCount));
+    const id = hand.handCards[index];
+    if (id === undefined || id === null) throw new Error('手札のカードがありません。');
+    next = removeHandCardEffects(
+      { ...removeLiveCurrentHandCard(next, index, true), randomSeed: random.seed },
+      [id],
+    );
+    next = {
+      ...next,
+      handHeartCollectCounts: Object.fromEntries(
+        Object.entries(next.handHeartCollectCounts).filter(([cardId]) => cardId !== id),
+      ),
+    };
+  }
+  return next;
 }
 
 export function resetHandCardCount(state: GameState, adjustment: number): GameState {

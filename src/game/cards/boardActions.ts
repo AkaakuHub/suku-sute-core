@@ -4,10 +4,11 @@ import { enqueueLiveReshuffle, flushLiveDeckActions } from '../../runtime/cards/
 import { applyEffect } from '../effects.ts';
 import { notifyDeckReload } from '../effects/deckOutCheck.ts';
 import type { GameState, HandShuffle } from '../model.ts';
-import { fillHandToCount, resetHandCardCount, shuffleHand } from './drawing.ts';
+import { addHandCardCount, fillHandToCount, resetHandCardCount, shuffleHand } from './drawing.ts';
 
 export function flushDeckActions(state: GameState): GameState {
   return flushLiveDeckActions(state, resetHandCardCount, {
+    addHandCardCount,
     afterDeckReload: (current) => notifyDeckReload(current, applyEffect),
     reshuffle: {
       activeHandCardInstanceIds: (current) => [
