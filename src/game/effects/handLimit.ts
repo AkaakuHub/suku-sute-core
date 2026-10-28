@@ -1,3 +1,4 @@
+import { addLiveHandCardTargetCount } from '../../runtime/cards/tokenCardDeck.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { skillValue } from './skillValue.ts';
 import { isProxyTargetReached } from './proxySkill.ts';
@@ -34,7 +35,7 @@ export function applyHandLimit(
           ...currentState.handLimitEffects,
           {
             amount: appliedAmount,
-            expirationAmount: -amount,
+            expirationAmount: -amount | 0,
             deactivationKey: effect.deactivationKey ?? null,
             remainingSeconds:
               effect.invocationType !== undefined || effect.displayTimeType !== 1
@@ -48,7 +49,7 @@ export function applyHandLimit(
         ];
   return {
     ...currentState,
-    handLimit: currentState.handLimit + appliedAmount,
+    tokenCardDeck: addLiveHandCardTargetCount(currentState.tokenCardDeck, appliedAmount),
     handLimitEffects,
     ...(activation && card && appliedAmount !== 0
       ? {
@@ -95,7 +96,7 @@ export function deactivateHandLimitEffects(
   if (retainedEffects.length === state.handLimitEffects.length) return { state, handAdjustment: 0 };
   const expiredAmount = state.handLimitEffects
     .filter((effect) => effect.deactivationKey === deactivationKey)
-    .reduce((sum, effect) => sum + effect.expirationAmount, 0);
+    .reduce((sum, effect) => (sum + effect.expirationAmount) | 0, 0);
   return restoreHandLimitEffects(state, retainedEffects, expiredAmount);
 }
 
@@ -111,7 +112,7 @@ function expireHandLimitEffects(
   const handLimitEffects = state.handLimitEffects.flatMap((effect) => {
     const next = advance(effect);
     if (next) return [next];
-    expiredAmount += effect.expirationAmount;
+    expiredAmount = (expiredAmount + effect.expirationAmount) | 0;
     return [];
   });
   return restoreHandLimitEffects(state, handLimitEffects, expiredAmount);
@@ -124,9 +125,16 @@ function restoreHandLimitEffects(
 ): HandLimitExpiry {
   if (expiredAmount === 0) return { state: { ...state, handLimitEffects }, handAdjustment: 0 };
   const resetAmount = expiredAmount;
-  const minimumCorrection = state.handLimit > 3 ? 0 : state.handLimit - 3;
+  const minimumCorrection =
+    state.tokenCardDeck.handTargetCounts.current > 3
+      ? 0
+      : state.tokenCardDeck.handTargetCounts.current - 3;
   return {
-    state: { ...state, handLimit: state.handLimit + resetAmount, handLimitEffects },
+    state: {
+      ...state,
+      tokenCardDeck: addLiveHandCardTargetCount(state.tokenCardDeck, resetAmount),
+      handLimitEffects,
+    },
     handAdjustment: Math.max(0, minimumCorrection + resetAmount),
   };
 }

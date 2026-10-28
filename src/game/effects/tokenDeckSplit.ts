@@ -4,7 +4,7 @@ import {
   liveCurrentDeckCardCount,
   liveTokenCardMatchesSeries,
   mergeLiveTokenCardDeck,
-  reconcileLiveTokenCardDeckHandTarget,
+  liveSwitchDeckHandCardCount,
   splitLiveTokenCardDeck,
   switchLiveTokenCardDeck,
 } from '../../runtime/cards/tokenCardDeck.ts';
@@ -17,7 +17,6 @@ import { activateModeAbilityEffects } from '../cards/modeAbility.ts';
 import {
   fillHandToCount,
   fillHandToCountRetainingOverflow,
-  handCapacity,
   removeRandomHandCards,
 } from '../cards/drawing.ts';
 import type { GameState } from '../model.ts';
@@ -66,7 +65,6 @@ export function activateTokenDeckSplit(
     next.deckBoard,
     next.deck,
     seriesIds,
-    Math.min(handCapacity(next), next.deck.length),
   );
   next = {
     ...next,
@@ -115,7 +113,7 @@ export function activateTokenDeckSplit(
 }
 
 function reconcileHand(state: GameState): GameState {
-  const target = state.tokenCardDeck.handTargetCounts.current;
+  const target = liveSwitchDeckHandCardCount(state.tokenCardDeck, state.deckBoard);
   const next =
     state.hand.length > target ? removeRandomHandCards(state, state.hand.length - target) : state;
   return fillHandToCountRetainingOverflow(next, target);
@@ -150,10 +148,7 @@ export function switchTokenDeck(state: GameState, applyEffect: EffectApplier): G
     next = activateHandPermanentEffects(next, card);
     next = activateModeAbilityEffects(next, card, applyEffect);
   }
-  next = reconcileHand({
-    ...next,
-    tokenCardDeck: reconcileLiveTokenCardDeckHandTarget(next.tokenCardDeck, next.deckBoard),
-  });
+  next = reconcileHand(next);
   return completeDeckOutChecks(
     { ...next, tokenDeckSplit: { ...updated, [incomingName]: zones(next) } },
     applyEffect,
@@ -165,10 +160,7 @@ function mergeTokenDeck(state: GameState, applyEffect: EffectApplier): GameState
   if (!split) return state;
   const mainState =
     state.tokenCardDeck.currentDeck === 'main'
-      ? reconcileHand({
-          ...state,
-          tokenCardDeck: reconcileLiveTokenCardDeckHandTarget(state.tokenCardDeck, state.deckBoard),
-        })
+      ? reconcileHand(state)
       : switchTokenDeck(state, applyEffect);
   const activeSplit = mainState.tokenDeckSplit;
   if (!activeSplit) throw new Error('統合する手札情報がありません。');

@@ -25,7 +25,6 @@ test('複数の分割系列を保持し、そのいずれかに属する生成�
     createLiveDeckBoardState([1, 2, 3, 4], []),
     cards,
     [2, 3],
-    4,
   );
   expect(split.state.subDeckCardInstanceIds).toEqual([2, 3, 4]);
   expect(split.state.tokenCardSeriesIds).toEqual([2, 3]);
@@ -41,7 +40,6 @@ test('nullの系列指定でも空のsubを分割でき、生成カードはmain
     createLiveDeckBoardState([1], []),
     cards.slice(0, 1),
     null,
-    1,
   );
   expect(split.state.subDeckCardInstanceIds).toEqual([]);
   expect(
@@ -60,7 +58,6 @@ test('除外したカードは分割対象と現在デッキ枚数に含めず�
     initial,
     cards.slice(0, 3),
     [2],
-    3,
   );
   expect(split.state.subDeckCardInstanceIds).toEqual([2]);
   expect(liveCurrentDeckCardCount(split.state, split.deckBoard)).toBe(2);

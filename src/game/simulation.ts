@@ -96,7 +96,6 @@ export function createGame(
     tokenCatalog: resolvedTokenCatalog,
     tokenGroups: [],
     tokenBoosts: [],
-    handLimit: rules.handSize,
     proxyAbsorptions: [],
     nextProxyAbsorptionId: 1,
     handLimitEffects: [],

@@ -93,7 +93,8 @@ export function missionActionEffect(
                 : actionType === 28
                   ? state.deck.length - before.deck.length
                   : effect.kind === 'hand-limit'
-                    ? state.handLimit - before.handLimit
+                    ? state.tokenCardDeck.handTargetCounts.current -
+                      before.tokenCardDeck.handTargetCounts.current
                     : effect.kind === 'ap-speed-change'
                       ? state.apTimeEffects.length > before.apTimeEffects.length
                         ? state.apTimeEffects.at(-1)?.calculation === 'multiply'

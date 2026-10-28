@@ -28,7 +28,7 @@ export function handCapacity(state: GameState): number {
         : 0),
     0,
   );
-  return Math.max(3, Math.min(8, state.handLimit + penalty));
+  return Math.max(3, Math.min(8, state.tokenCardDeck.handTargetCounts.current + penalty));
 }
 
 export function fillHand(state: GameState): GameState {

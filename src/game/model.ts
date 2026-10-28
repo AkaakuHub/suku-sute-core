@@ -157,7 +157,6 @@ export type GameState = Readonly<{
     requests: readonly TokenRequest[];
   }>[];
   tokenBoosts: readonly TokenBoost[];
-  handLimit: number;
   proxyAbsorptions: readonly ProxyAbsorption[];
   nextProxyAbsorptionId: number;
   handLimitEffects: readonly Readonly<{

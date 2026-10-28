@@ -37,12 +37,26 @@ export function createLiveTokenCardDeckState<Id extends LiveCardIdentifier = num
   };
 }
 
+export function addLiveHandCardTargetCount<Id extends LiveCardIdentifier>(
+  state: LiveTokenCardDeckState<Id>,
+  amount: number,
+): LiveTokenCardDeckState<Id> {
+  validateHandTargetCount(state.handTargetCounts.current);
+  validateHandTargetCount(amount);
+  return {
+    ...state,
+    handTargetCounts: {
+      ...state.handTargetCounts,
+      current: (state.handTargetCounts.current + amount) | 0,
+    },
+  };
+}
+
 export function splitLiveTokenCardDeck<Id extends LiveCardIdentifier>(
   state: LiveTokenCardDeckState<Id>,
   deckBoard: LiveDeckBoardState<Id>,
   cards: readonly LiveTokenCardDeckIdentity<Id>[],
   tokenCardSeriesIds: readonly number[] | null,
-  handTargetCount: number,
 ): Readonly<{
   state: LiveTokenCardDeckState<Id>;
   deckBoard: LiveDeckBoardState<Id>;
@@ -52,7 +66,6 @@ export function splitLiveTokenCardDeck<Id extends LiveCardIdentifier>(
   if (tokenCardSeriesIds?.some((id) => !Number.isSafeInteger(id))) {
     throw new Error('Live sub deck token CardSeries.Id is invalid');
   }
-  validateHandTargetCount(handTargetCount);
   if (state.subDeckCardInstanceIds !== null) return { state, deckBoard };
   const mainIds = new Set(liveDeckCardInstanceIds(state, deckBoard, 'main'));
   const subDeckCardInstanceIds = cards.flatMap((card) =>
@@ -67,7 +80,6 @@ export function splitLiveTokenCardDeck<Id extends LiveCardIdentifier>(
       currentDeck: 'main',
       subDeckCardInstanceIds,
       tokenCardSeriesIds,
-      handTargetCounts: { ...state.handTargetCounts, current: handTargetCount },
     },
     deckBoard: {
       ...deckBoard,
@@ -94,10 +106,10 @@ export function switchLiveTokenCardDeck<Id extends LiveCardIdentifier>(
   };
 }
 
-export function reconcileLiveTokenCardDeckHandTarget<Id extends LiveCardIdentifier>(
+export function liveSwitchDeckHandCardCount<Id extends LiveCardIdentifier>(
   state: LiveTokenCardDeckState<Id>,
   deckBoard: LiveDeckBoardState<Id>,
-): LiveTokenCardDeckState<Id> {
+): number {
   validateState(state, deckBoard);
   const currentHandCount = liveCurrentDeckBoardCardInstanceIds(
     state,
@@ -105,23 +117,13 @@ export function reconcileLiveTokenCardDeckHandTarget<Id extends LiveCardIdentifi
     liveBoardState.hand,
   ).length;
   const previousTargetCount = state.handTargetCounts[state.currentDeck];
-  const requestedTargetCount = Math.min(
-    Math.max(
-      state.handTargetCounts.current +
-        Math.max(currentHandCount - Math.max(previousTargetCount, 3), 0),
-      3,
-    ),
-    8,
+  const excess = (currentHandCount - Math.max(previousTargetCount, 3)) | 0;
+  const requestedCount = (state.handTargetCounts.current + Math.max(excess, 0)) | 0;
+  if (currentHandCount === requestedCount) return currentHandCount;
+  return Math.min(
+    Math.min(Math.max(requestedCount, 3), 8),
+    liveCurrentDeckCardCount(state, deckBoard),
   );
-  const nextDeckCardCount = liveDeckCardInstanceIds(state, deckBoard, state.currentDeck).length;
-  const nextTargetCount = Math.min(requestedTargetCount, nextDeckCardCount);
-  return {
-    ...state,
-    handTargetCounts: {
-      ...state.handTargetCounts,
-      current: nextTargetCount,
-    },
-  };
 }
 
 export function mergeLiveTokenCardDeck<Id extends LiveCardIdentifier>(
@@ -320,7 +322,7 @@ function validateState<Id extends LiveCardIdentifier>(
 }
 
 function validateHandTargetCount(handTargetCount: number): void {
-  if (!Number.isSafeInteger(handTargetCount) || handTargetCount < 0 || handTargetCount > 8) {
+  if (!Number.isInteger(handTargetCount) || (handTargetCount | 0) !== handTargetCount) {
     throw new Error('Live sub deck hand target count is invalid');
   }
 }
