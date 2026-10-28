@@ -1,5 +1,5 @@
 import { completeLiveHandCardDraw } from '../../runtime/cards/liveHand.ts';
-import { liveCardSkipsHandCardDraw } from '../../runtime/cards/cardSkillActivatedFlags.ts';
+import { liveCardDrawOperation } from '../../runtime/cards/cardSkillActivatedFlags.ts';
 import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import { setLiveCurrentHandCards } from '../../runtime/cards/liveHand.ts';
 import {
@@ -44,11 +44,12 @@ export function finishCardActivation(state: GameState): GameState {
       usedSkill: null,
     },
   };
-  if (liveCardSkipsHandCardDraw(handReady, source.cardInstanceId)) {
+  const operation = liveCardDrawOperation(next, source.cardInstanceId);
+  if (operation === 'remove') {
     next = completeLiveHandCardDraw(handReady, activation.handCardButtonId, null, (current, id) =>
       removeHandCardEffects(current, [id]),
     );
-  } else {
+  } else if (operation === 'draw') {
     next = completeLiveHandCardDraw(
       handReady,
       activation.handCardButtonId,

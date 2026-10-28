@@ -2,7 +2,7 @@ import { expect, test } from 'vite-plus/test';
 import {
   clearLiveCardSkillActivatedFlags,
   liveCardSkillActivatedFlags,
-  liveCardSkipsHandCardDraw,
+  liveCardDrawOperation,
   markLiveCardHandCountActivated,
   markLiveCardReshuffleActivated,
 } from '../../../src/runtime/cards/cardSkillActivatedFlags.ts';
@@ -35,10 +35,10 @@ test('引き直しの予約を消しても発動元カードのフラグは保�
     effect: { recoveryType: 'no-recovery', stashType: 'graveyard' },
   });
   const state = { ...queued, deckActions: createLiveDeckActionQueueState() };
-  expect(liveCardSkipsHandCardDraw(state, 1)).toBe(true);
-  expect(liveCardSkipsHandCardDraw(state, 2)).toBe(false);
+  expect(liveCardDrawOperation(state, 1)).toBe('skip');
+  expect(liveCardDrawOperation(state, 2)).toBe('draw');
   const cleared = { ...state, deckBoard: clearLiveCardSkillActivatedFlags(state.deckBoard, 1) };
-  expect(liveCardSkipsHandCardDraw(cleared, 1)).toBe(false);
+  expect(liveCardDrawOperation(cleared, 1)).toBe('draw');
 });
 
 test('最後の非ゼロ変更量の符号をカード単位で保持し、ゼロでは上書きしない', () => {
@@ -46,21 +46,21 @@ test('最後の非ゼロ変更量の符号をカード単位で保持し、ゼ�
   const positive = markLiveCardHandCountActivated(state.deckBoard, 1, 2);
   const negative = markLiveCardHandCountActivated(positive, 1, -1);
   expect(markLiveCardHandCountActivated(negative, 1, 0)).toBe(negative);
-  expect(liveCardSkipsHandCardDraw({ ...state, deckBoard: negative }, 1)).toBe(true);
-  expect(liveCardSkipsHandCardDraw({ ...state, deckBoard: negative }, 2)).toBe(false);
+  expect(liveCardDrawOperation({ ...state, deckBoard: negative }, 1)).toBe('remove');
+  expect(liveCardDrawOperation({ ...state, deckBoard: negative }, 2)).toBe('draw');
+  expect(
+    liveCardDrawOperation({ ...state, deckBoard: markLiveCardReshuffleActivated(negative, 1) }, 1),
+  ).toBe('skip');
   const restored = markLiveCardHandCountActivated(negative, 1, 1);
-  expect(liveCardSkipsHandCardDraw({ ...state, deckBoard: restored }, 1)).toBe(false);
+  expect(liveCardDrawOperation({ ...state, deckBoard: restored }, 1)).toBe('draw');
 });
 
 test('使用中のカードを含むraw手札枚数で補充を判定する', () => {
   const state = runtime(5, 4);
   expect(
-    liveCardSkipsHandCardDraw(
-      { ...state, deckBoard: moveLiveHandCardToExtra(state.deckBoard, 1) },
-      1,
-    ),
-  ).toBe(true);
-  expect(liveCardSkipsHandCardDraw(runtime(3, 1), 1)).toBe(false);
+    liveCardDrawOperation({ ...state, deckBoard: moveLiveHandCardToExtra(state.deckBoard, 1) }, 1),
+  ).toBe('remove');
+  expect(liveCardDrawOperation(runtime(3, 1), 1)).toBe('draw');
 });
 
 test('次の使用開始では3つのフラグをすべて解除する', () => {
@@ -78,5 +78,5 @@ test('次の使用開始では3つのフラグをすべて解除する', () => {
     },
   );
   expect(() => clearLiveCardSkillActivatedFlags(state.deckBoard, 99)).toThrow();
-  expect(() => liveCardSkipsHandCardDraw({ ...state, liveHands: null }, 1)).toThrow();
+  expect(() => liveCardDrawOperation({ ...state, liveHands: null }, 1)).toThrow();
 });

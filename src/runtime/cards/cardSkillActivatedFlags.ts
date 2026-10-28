@@ -55,22 +55,21 @@ export function markLiveCardHandCountActivated<Id extends LiveCardIdentifier>(
   });
 }
 
-export function liveCardSkipsHandCardDraw<Id extends LiveCardIdentifier>(
+export function liveCardDrawOperation<Id extends LiveCardIdentifier>(
   state: Readonly<{
     deckBoard: LiveDeckBoardState<Id>;
     liveHands: LiveDeckHandsState<Id> | null;
     tokenCardDeck: LiveTokenCardDeckState<Id>;
   }>,
   cardInstanceId: Id,
-): boolean {
+): 'skip' | 'remove' | 'draw' {
   const flags = liveCardSkillActivatedFlags(state.deckBoard, cardInstanceId);
+  if (flags.skillReshuffleActivated) return 'skip';
+  if (flags.skillChangeHandCardCountActivated && !flags.skillChangeHandCardCountIsPositive)
+    return 'remove';
   if (state.liveHands === null) throw new Error('Live hand is unresolved during skill draw');
   const count = state.liveHands[state.tokenCardDeck.currentDeck].handCount;
-  return (
-    flags.skillReshuffleActivated ||
-    (flags.skillChangeHandCardCountActivated && !flags.skillChangeHandCardCountIsPositive) ||
-    (count > state.tokenCardDeck.handTargetCounts.current && count > 3)
-  );
+  return count > state.tokenCardDeck.handTargetCounts.current && count > 3 ? 'remove' : 'draw';
 }
 
 function updateFlags<Id extends LiveCardIdentifier>(
