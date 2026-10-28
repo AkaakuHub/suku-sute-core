@@ -1,3 +1,4 @@
+import { createLiveDeckDrawContextState } from '../../runtime/cards/cardDraw.ts';
 import { flushLiveDeckActions } from '../../runtime/cards/deckActionQueue.ts';
 import { liveResetHandCardCount } from '../../runtime/cards/handCardCountReset.ts';
 import { selectLiveDeckDrawCandidate } from '../../runtime/cards/cardDraw.ts';
@@ -47,9 +48,7 @@ export function flushHandCardCountActions(state: GameState): GameState {
 export function resetHandCardCount(state: GameState, adjustment: number): GameState {
   const next: GameState = {
     ...state,
-    drawContext: 'idle',
-    usedCard: null,
-    lastUsedSkillIcon: null,
+    deckDrawContext: createLiveDeckDrawContextState(3),
   };
   return adjustment > 0
     ? fillHandToCountRetainingOverflow(
@@ -129,10 +128,10 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
     if (!card) throw new Error('引いたカードがありません。');
     drawnCards.push(card);
   }
-  if (state.drawContext === 'sub-deck-start') return { ...next, drawContext: 'idle' };
+  if (state.deckDrawContext.currentDrawType === 2) return next;
   for (const card of drawnCards) {
-    if (state.drawContext !== 'initial') next = applyDrawAbility(next, card);
-    if (state.drawContext !== 'initial')
+    if (state.deckDrawContext.currentDrawType !== 0) next = applyDrawAbility(next, card);
+    if (state.deckDrawContext.currentDrawType !== 0)
       next = applyAbilityEffects(next, card, card.ability893Effects ?? [], applyEffect);
     next = {
       ...next,
@@ -157,7 +156,7 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
       deckBoard: moveCardsToBoard(next, ordered.slice(maximum), liveBoardState.graveyard).deckBoard,
     };
   }
-  return { ...next, drawContext: 'idle' };
+  return next;
 }
 
 export function shuffleHand(state: GameState, options: HandShuffle): GameState {
@@ -168,5 +167,5 @@ export function shuffleHand(state: GameState, options: HandShuffle): GameState {
     state.hand,
     options.destination === 'draw' ? liveBoardState.deck : liveBoardState.graveyard,
   );
-  return { ...next, hand: [], relayUsed: [], handHeartCollectCounts: {}, drawContext: 'shuffle' };
+  return { ...next, hand: [], relayUsed: [], handHeartCollectCounts: {} };
 }

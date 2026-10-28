@@ -8,7 +8,7 @@ import type {
 import type { Effect } from '../modelTypes.ts';
 import { resolveActionEffect } from './resolveActionEffect.ts';
 import { createDrawSuccessInduceEffect } from '../actionTypeEffects/drawSuccessInduce.ts';
-import { createOnDrawInduceRule } from '../actionTypeEffects/onDrawInduce.ts';
+import { createOnDrawInduceEffect } from '../actionTypeEffects/onDrawInduce.ts';
 import { createHandInducer } from '../actionTypeEffects/handInduce.ts';
 import { resolveHandPermanentEffects } from '../actionTypeEffects/handPermanent.ts';
 import { isInt64 } from '../../runtime/numeric.ts';
@@ -23,7 +23,7 @@ export function resolveActionEffects(
   let handPermanentEffects = [...(resolved.handPermanentEffects ?? [])];
   let ability893Effects = [...(resolved.ability893Effects ?? [])];
   let drawEffects = [...(resolved.drawEffects ?? [])];
-  let drawRules = [...(resolved.drawRules ?? [])];
+  let onDrawInduceEffects = [...(resolved.onDrawInduceEffects ?? [])];
   let handInducers = [...(resolved.handInducers ?? [])];
   let modeIds = [...(resolved.modeIds ?? [])];
   let modeParameterChanges = resolved.modeParameterChanges;
@@ -80,7 +80,7 @@ export function resolveActionEffects(
       continue;
     }
     if (actionEffect.actionType === 902) {
-      drawRules.push(createOnDrawInduceRule(actionEffect));
+      onDrawInduceEffects.push(createOnDrawInduceEffect(actionEffect));
       continue;
     }
     if (actionEffect.actionType === 903) {
@@ -110,7 +110,7 @@ export function resolveActionEffects(
     ...(handPermanentEffects.length > 0 ? { handPermanentEffects } : {}),
     ...(ability893Effects.length > 0 ? { ability893Effects } : {}),
     ...(drawEffects.length > 0 ? { drawEffects } : {}),
-    ...(drawRules.length > 0 ? { drawRules } : {}),
+    ...(onDrawInduceEffects.length > 0 ? { onDrawInduceEffects } : {}),
     ...(handInducers.length > 0 ? { handInducers } : {}),
   };
 }

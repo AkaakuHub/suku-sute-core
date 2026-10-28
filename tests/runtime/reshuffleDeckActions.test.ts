@@ -28,7 +28,7 @@ function setup() {
 }
 const action = {
   cardInstanceId: 1,
-  skillMainEffect: 13,
+  usedSkill: { skillType: 2 as const, skillMainEffect: 13 },
   countDeckOut: true,
   effect: { recoveryType: 'recovery', stashType: 'deck' },
 } as const;
@@ -149,6 +149,7 @@ test('全手札使用の引き直し指定は後続7の補充回数を復元し�
     cardInstanceId: 1,
     charactersId: 1031,
     unitIds: [],
+    skillMainEffect: 42,
   });
   const ready = flushLiveDeckActions(queued, unexpectedReset, {
     reshuffle: {

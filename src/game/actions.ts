@@ -193,9 +193,12 @@ function activateCard(
     },
     lastActionTick: state.tick,
     lastPerformer: card.performer,
-    usedCard: card,
-    lastUsedSkillIcon: card.skillIcon ?? null,
-    drawContext: 'skill',
+
+    deckDrawContext: {
+      currentDrawType: 1 as const,
+      usedCard: card,
+      usedSkill: { skillType: 2 as const, skillMainEffect: card.skillMainEffect ?? null },
+    },
     skillActivationCounts: {
       ...state.skillActivationCounts,
       [card.cardInstanceId]: Number(

@@ -1,7 +1,7 @@
+import type { LiveDeckDrawContextState } from '../runtime/cards/cardDraw.ts';
 import type { LiveTokenCardDeckState } from '../runtime/cards/tokenCardDeck.ts';
 import type { LiveCardSkillLevel } from '../runtime/skills/skillTypes.ts';
 import type { LiveDeckActionQueueState } from '../runtime/cards/deckActionQueue.ts';
-import type { LiveCardIdentity } from '../runtime/cards/cardIdentity.ts';
 import type { LiveDeckBoardState } from '../runtime/cards/deckBoardState.ts';
 import type { LiveHandCardStats } from '../runtime/cards/handCardStats.ts';
 import type { LiveVoltageGaugeState } from '../runtime/live/voltageGauge.ts';
@@ -178,10 +178,8 @@ export type GameState = Readonly<{
   nextHeartLimitAdditionalBuffId: number;
   moodValueAdditionalBuffs: readonly MoodValueAdditionalBuff[];
   nextMoodValueAdditionalBuffId: number;
-  drawContext: 'initial' | 'skill' | 'shuffle' | 'idle' | 'sub-deck-start';
+  deckDrawContext: LiveDeckDrawContextState;
   deckActions: LiveDeckActionQueueState;
-  usedCard: LiveCardIdentity | null;
-  lastUsedSkillIcon: number | null;
   cardUseCounts: Readonly<Record<string, number>>;
   skillActivationCounts: Readonly<Record<string, number>>;
   handCardStats: Readonly<Record<string, LiveHandCardStats>>;

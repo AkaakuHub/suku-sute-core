@@ -2,7 +2,7 @@ import type { LiveTokenCardDeckIdentity } from '../../runtime/cards/tokenCardDec
 import type { LiveDeckBoardCard } from '../../runtime/cards/deckBoardState.ts';
 import type { LiveCardSkillLevel } from '../../runtime/skills/skillTypes.ts';
 import type { LiveSkillCardIdentity } from '../../runtime/cards/cardIdentity.ts';
-import type { DrawProbabilityRule } from './drawProbability.ts';
+import type { LiveSkillEffect } from '../../runtime/skills/skillTypes.ts';
 import type { LiveCardAppealParameters } from '../../runtime/live/clientScoreInput.ts';
 import type { PerformerId, MemberId, CostumeId, TokenId } from '../model.ts';
 import type { Effect } from '../modelTypes.ts';
@@ -329,7 +329,7 @@ export type Card = Readonly<{
   allHandCost?: Readonly<{
     reductions: readonly Readonly<{ minimumCards: number; amount: number }>[];
   }>;
-  drawRules?: readonly DrawProbabilityRule[];
+  onDrawInduceEffects?: readonly LiveSkillEffect[];
   skillIcon?: number;
   passive?: Readonly<{
     heartsPercent?: number;

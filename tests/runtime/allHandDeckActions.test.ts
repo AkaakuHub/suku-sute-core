@@ -11,7 +11,7 @@ import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardD
 import { flushLiveDeckActions } from '../../src/runtime/cards/deckActionQueue.ts';
 import { notifyLiveHandCardCountReset } from '../../src/runtime/cards/handCardCountReset.ts';
 
-const source = { cardInstanceId: 1, charactersId: 1001, unitIds: [101] };
+const source = { cardInstanceId: 1, charactersId: 1001, unitIds: [101], skillMainEffect: 42 };
 
 function setup() {
   return {

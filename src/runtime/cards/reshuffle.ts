@@ -1,3 +1,4 @@
+import type { LiveSkillIdentity } from './cardIdentity.ts';
 import type { LiveTokenCardDeckState } from './tokenCardDeck.ts';
 import type { LiveReshuffleEffect } from './deckActionTypes.ts';
 import {
@@ -10,7 +11,7 @@ import {
 export type LiveReshuffleDeckAction<Id extends LiveCardIdentifier | null = number> = Readonly<{
   effect: Pick<LiveReshuffleEffect, 'recoveryType' | 'stashType'>;
   cardInstanceId: Id;
-  skillMainEffect: number | null;
+  usedSkill: LiveSkillIdentity | null;
   countDeckOut: boolean;
 }>;
 

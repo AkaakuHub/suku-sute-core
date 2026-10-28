@@ -1,5 +1,5 @@
 import type { LiveCardIdentifier } from './deckBoardState.ts';
-import type { LiveCardIdentity } from './cardIdentity.ts';
+import type { LiveCardIdentity, LiveSkillIdentity } from './cardIdentity.ts';
 import type { LiveSkillEffect } from '../skills/skillTypes.ts';
 
 export type LiveDrawCandidate<Id extends LiveCardIdentifier = number> = Readonly<{
@@ -7,13 +7,24 @@ export type LiveDrawCandidate<Id extends LiveCardIdentifier = number> = Readonly
   drawProbability: number;
 }>;
 
-export type LiveOnDrawInduceContext = Readonly<{
+export type LiveDeckDrawContextState = Readonly<{
   currentDrawType: 0 | 1 | 2 | 3;
-  currentSection: number;
-  feverSection: number;
-  usedCard: LiveCardIdentity | null;
-  usedSkillMainEffect: number | null;
+  usedCard: (LiveCardIdentity & { skillMainEffect: number | null }) | null;
+  usedSkill: LiveSkillIdentity | null;
 }>;
+
+export type LiveOnDrawInduceContext = Readonly<
+  LiveDeckDrawContextState & {
+    currentSection: number;
+    feverSection: number;
+  }
+>;
+
+export function createLiveDeckDrawContextState(
+  currentDrawType: 0 | 2 | 3 = 0,
+): LiveDeckDrawContextState {
+  return { currentDrawType, usedCard: null, usedSkill: null };
+}
 
 export function applyLiveOnDrawInduceAbility(
   drawProbability: number,
@@ -24,11 +35,16 @@ export function applyLiveOnDrawInduceAbility(
   validateOnDrawContext(context);
   let result = drawProbability;
   for (const effect of effects) {
+    if (result === 0) break;
     if (effect.actionType !== 902) continue;
-    const values = resolveOnDrawInduceValues(effect);
+    const values = resolveLiveOnDrawInduceValues(effect);
     const conditionMatches =
-      onDrawConditionMatches(values.conditionType, values.conditionValue, context) ===
-      (values.conditionNotFlag !== 2);
+      values.conditionType === 2 &&
+      context.currentDrawType === 1 &&
+      context.usedSkill?.skillType === 1
+        ? context.usedSkill.skillMainEffect === values.conditionValue
+        : onDrawConditionMatches(values.conditionType, values.conditionValue, context) ===
+          (values.conditionNotFlag !== 2);
     const factor = conditionMatches
       ? drawProbabilityFactor(values.probabilityType, values.probabilityValue)
       : 10_000;
@@ -85,7 +101,7 @@ export function selectLiveDeckDrawCandidate<
   return requireCandidate(candidates[requireRandomIndex(candidates.length, randomRange)]);
 }
 
-type OnDrawInduceValues = Readonly<{
+export type LiveOnDrawInduceValues = Readonly<{
   probabilityType: number;
   probabilityValue: number;
   conditionType: number;
@@ -93,11 +109,11 @@ type OnDrawInduceValues = Readonly<{
   conditionValue: number;
 }>;
 
-function resolveOnDrawInduceValues(effect: LiveSkillEffect): OnDrawInduceValues {
+export function resolveLiveOnDrawInduceValues(effect: LiveSkillEffect): LiveOnDrawInduceValues {
   if (effect.details.length !== 5) {
     throw new Error('Live OnDrawInduce detail count differs');
   }
-  const values = new Map<keyof OnDrawInduceValues, number>();
+  const values = new Map<keyof LiveOnDrawInduceValues, number>();
   for (const detail of effect.details) {
     const field = onDrawDetailField(detail.detailType);
     if (
@@ -120,7 +136,7 @@ function resolveOnDrawInduceValues(effect: LiveSkillEffect): OnDrawInduceValues 
   };
 }
 
-function onDrawDetailField(detailType: string): keyof OnDrawInduceValues | null {
+function onDrawDetailField(detailType: string): keyof LiveOnDrawInduceValues | null {
   switch (detailType) {
     case 'ON_DRAW_INDUCE_PROBABILITY_TYPE':
       return 'probabilityType';
@@ -138,8 +154,8 @@ function onDrawDetailField(detailType: string): keyof OnDrawInduceValues | null 
 }
 
 function requireEffectValue(
-  values: ReadonlyMap<keyof OnDrawInduceValues, number>,
-  field: keyof OnDrawInduceValues,
+  values: ReadonlyMap<keyof LiveOnDrawInduceValues, number>,
+  field: keyof LiveOnDrawInduceValues,
 ): number {
   const value = values.get(field);
   if (value === undefined) {
@@ -157,15 +173,16 @@ function onDrawConditionMatches(
     case 1:
       return context.currentDrawType === 1 && context.usedCard?.charactersId === conditionValue;
     case 2:
-      return context.currentDrawType === 1 && context.usedSkillMainEffect === conditionValue;
+      return context.currentDrawType === 1 && context.usedCard?.skillMainEffect === conditionValue;
     case 3:
       if (conditionValue === 99) {
-        return context.currentSection !== context.feverSection;
+        return context.currentSection === context.feverSection;
       }
       if (context.currentSection === context.feverSection) return false;
       return (
-        conditionValue - 1 !==
-        context.currentSection - (context.currentSection > context.feverSection ? 1 : 0)
+        conditionValue - 1 ===
+        context.currentSection -
+          (context.feverSection >= 0 && context.currentSection > context.feverSection ? 1 : 0)
       );
     case 4:
       return context.currentDrawType === 0;
@@ -200,13 +217,12 @@ function validateOnDrawContext(context: LiveOnDrawInduceContext): void {
     ['fever section', context.feverSection],
   ] as const) {
     requireSafeInteger(value, label);
-    if (value < 0) throw new Error(`Live ${label} is negative`);
+    if (value < (label === 'fever section' ? -1 : 0)) throw new Error(`Live ${label} is negative`);
   }
   if (context.usedCard !== null) {
     requireSafeInteger(context.usedCard.charactersId, 'used character');
     if (
-      context.usedCard.charactersId <= 0 ||
-      context.usedCard.unitIds.length === 0 ||
+      context.usedCard.charactersId < 0 ||
       new Set(context.usedCard.unitIds).size !== context.usedCard.unitIds.length
     ) {
       throw new Error('Live used card identity is invalid');
@@ -216,16 +232,24 @@ function validateOnDrawContext(context: LiveOnDrawInduceContext): void {
       if (unitId <= 0) throw new Error('Live used unit is invalid');
     }
   }
-  if (context.usedSkillMainEffect !== null) {
-    requireSafeInteger(context.usedSkillMainEffect, 'used skill main effect');
-    if (context.usedSkillMainEffect < 0) {
-      throw new Error('Live used skill main effect is negative');
+  if (context.usedCard?.skillMainEffect !== null && context.usedCard !== null) {
+    requireSafeInteger(context.usedCard.skillMainEffect, 'used card main effect');
+    if (context.usedCard.skillMainEffect < 0)
+      throw new Error('Live used card main effect is negative');
+  }
+  if (context.usedSkill !== null) {
+    if (![1, 2, 3].includes(context.usedSkill.skillType))
+      throw new Error('Live used skill type is invalid');
+    if (context.usedSkill.skillMainEffect !== null) {
+      requireSafeInteger(context.usedSkill.skillMainEffect, 'used skill main effect');
+      if (context.usedSkill.skillMainEffect < 0)
+        throw new Error('Live used skill main effect is negative');
     }
   }
   if (
     context.currentDrawType === 1
       ? context.usedCard === null
-      : context.usedCard !== null || context.usedSkillMainEffect !== null
+      : context.usedCard !== null || context.usedSkill !== null
   ) {
     throw new Error('Live draw context differs from draw type');
   }

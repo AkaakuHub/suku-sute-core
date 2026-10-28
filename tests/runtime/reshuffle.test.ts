@@ -18,7 +18,7 @@ for (const stashType of ['deck', 'graveyard'] as const) {
     state = setLiveCardSkillUseAtBoardState(state, 1004, liveBoardState.proxy);
     const next = applyLiveAllHandSkillReshuffle(state, createLiveTokenCardDeckState(5), ids, {
       cardInstanceId: 1002,
-      skillMainEffect: 13,
+      usedSkill: { skillType: 2 as const, skillMainEffect: 13 },
       countDeckOut: true,
       effect: { recoveryType: 'recovery', stashType },
     });

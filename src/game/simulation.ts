@@ -1,3 +1,4 @@
+import { createLiveDeckDrawContextState } from '../runtime/cards/cardDraw.ts';
 import { createLiveTokenCardDeckState } from '../runtime/cards/tokenCardDeck.ts';
 import { createLiveDeckActionQueueState } from '../runtime/cards/deckActionQueue.ts';
 import { createCardDeckBoard } from './cards/deckBoard.ts';
@@ -106,10 +107,9 @@ export function createGame(
     nextHeartLimitAdditionalBuffId: 1,
     moodValueAdditionalBuffs: [],
     nextMoodValueAdditionalBuffId: 1,
-    drawContext: 'initial',
+    deckDrawContext: createLiveDeckDrawContextState(0),
     deckActions: createLiveDeckActionQueueState(),
-    usedCard: null,
-    lastUsedSkillIcon: null,
+
     cardUseCounts: {},
     skillActivationCounts: {},
     activation: null,

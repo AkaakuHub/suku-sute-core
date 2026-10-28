@@ -1,3 +1,4 @@
+import { createLiveDeckDrawContextState } from '../../runtime/cards/cardDraw.ts';
 import { resetLivePendingHandCardCount } from '../../runtime/cards/handCardCountReset.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import {
@@ -83,9 +84,7 @@ export function activateTokenDeckSplit(
     hand: [],
     tokenCardDeck: { ...next.tokenCardDeck, currentDeck: 'sub' },
     handEffectCardIds: [],
-    drawContext: 'sub-deck-start',
-    usedCard: null,
-    lastUsedSkillIcon: null,
+    deckDrawContext: createLiveDeckDrawContextState(2),
   };
   subState = fillHandToCountRetainingOverflow(
     subState,
@@ -107,9 +106,8 @@ export function activateTokenDeckSplit(
     handHeartCollectCounts: subState.handHeartCollectCounts,
     relayUsed: subState.relayUsed,
     handCardStats,
-    drawContext: 'idle',
-    usedCard: null,
-    lastUsedSkillIcon: null,
+    deckDrawContext: createLiveDeckDrawContextState(3),
+
     tokenDeckSplit: { ...split, main: activeMain, sub: zones(subState) },
   };
   return completeDeckOutChecks(completed, applyEffect);

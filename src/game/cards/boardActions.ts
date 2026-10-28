@@ -1,3 +1,4 @@
+import { createLiveDeckDrawContextState } from '../../runtime/cards/cardDraw.ts';
 import { enqueueLiveReshuffle, flushLiveDeckActions } from '../../runtime/cards/deckActionQueue.ts';
 import { applyEffect } from '../effects.ts';
 import { notifyDeckReload } from '../effects/deckOutCheck.ts';
@@ -25,9 +26,13 @@ export function flushDeckActions(state: GameState): GameState {
         return fillHandToCount(
           {
             ...shuffled,
-            drawContext: source ? 'skill' : 'shuffle',
-            usedCard: source,
-            lastUsedSkillIcon: source?.skillIcon ?? null,
+            deckDrawContext: source
+              ? {
+                  currentDrawType: 1 as const,
+                  usedCard: source,
+                  usedSkill: action.usedSkill,
+                }
+              : createLiveDeckDrawContextState(3),
           },
           current.hand.length,
         );
@@ -45,6 +50,9 @@ export function enqueueHandShuffle(
   const source =
     sourceId === null ? null : state.cardPool.find((card) => card.cardInstanceId === sourceId);
   if (source === undefined) throw new Error('引き直しを発動したカードがありません。');
+  const skillType = state.currentSkillType;
+  if (skillType !== null && skillType !== 1 && skillType !== 2 && skillType !== 3)
+    throw new Error('使用中のスキル種別が正しくありません。');
   const activation = state.activation;
   return enqueueLiveReshuffle(
     {
@@ -60,7 +68,10 @@ export function enqueueHandShuffle(
     },
     {
       cardInstanceId: sourceId,
-      skillMainEffect: source?.skillMainEffect ?? null,
+      usedSkill:
+        source && skillType !== null
+          ? { skillType, skillMainEffect: source.skillMainEffect }
+          : null,
       countDeckOut: true,
       effect: {
         recoveryType: options.recoverDiscard ? 'recovery' : 'no-recovery',

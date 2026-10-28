@@ -9,3 +9,8 @@ export type LiveSkillCardIdentity = Readonly<
     styleType: number | null;
   }
 >;
+
+export type LiveSkillIdentity = Readonly<{
+  skillType: 1 | 2 | 3;
+  skillMainEffect: number | null;
+}>;

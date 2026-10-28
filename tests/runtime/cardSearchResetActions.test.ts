@@ -44,7 +44,12 @@ function expectSearchesCleared(state: ReturnType<typeof setup>): void {
 test('全手札の補充中は検索を保持し、7→8→5の順で終了後に全検索を消す', () => {
   const started = beginLiveAllHandSkill(setup());
   const queued = enqueueLiveCardSearchReset(
-    enqueueLiveAllHandDraw(started, { cardInstanceId: 1, charactersId: 1031, unitIds: [] }),
+    enqueueLiveAllHandDraw(started, {
+      cardInstanceId: 1,
+      charactersId: 1031,
+      unitIds: [],
+      skillMainEffect: 42,
+    }),
   );
   expect(queued.deckActions.queue.map((action) => action.type)).toEqual([7, 8, 5]);
   const ready = flushLiveDeckActions(queued, unexpectedReset);

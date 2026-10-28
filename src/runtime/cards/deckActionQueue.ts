@@ -12,7 +12,11 @@ export type LiveDeckAction = Readonly<
   | { type: 1; param1: number }
   | ({ type: 3 } & LiveReshuffleDeckAction<LiveCardIdentifier | null>)
   | { type: 2 | 5 | 6 | 8 }
-  | { type: 7; card: LiveCardIdentity & Readonly<{ cardInstanceId: LiveCardIdentifier }> }
+  | {
+      type: 7;
+      card: LiveCardIdentity &
+        Readonly<{ cardInstanceId: LiveCardIdentifier; skillMainEffect: number | null }>;
+    }
 >;
 
 export type LiveDeckActionQueueState = Readonly<{

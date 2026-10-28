@@ -36,22 +36,24 @@ export function finishCardActivation(state: GameState): GameState {
   const handCountChange = activation.handCountChanges[source.cardInstanceId] ?? 0;
   const handReady: GameState = {
     ...next,
-    usedCard: source,
-    lastUsedSkillIcon: source.skillIcon ?? null,
-    drawContext: 'skill',
+
+    deckDrawContext: {
+      currentDrawType: 1 as const,
+      usedCard: source,
+      usedSkill: { skillType: 2 as const, skillMainEffect: source.skillMainEffect ?? null },
+    },
   };
   const skipSourceRefill = next.activation?.skipSourceRefill ?? false;
   if (skipSourceRefill) {
-    next = { ...handReady, drawContext: 'idle' };
+    next = handReady;
   } else if (handCountChange < 0) {
     const target = Math.min(handCapacity(handReady), handReady.deck.length);
     const removedCount = Math.max(0, handReady.hand.length + 1 - target);
     next = {
       ...removeRandomHandCards(handReady, removedCount),
-      drawContext: 'idle',
     };
   } else if (handCapacity(handReady) < handReady.hand.length + 1) {
-    next = { ...handReady, drawContext: 'idle' };
+    next = handReady;
   } else {
     next = fillHand(handReady);
   }
@@ -90,7 +92,10 @@ function finishAllHandActivation(state: GameState, source: GameState['deck'][num
     let next = current.tokenCardDeck.allHandSkillDeckReload
       ? recoverCurrentDeckGraveyard(current)
       : current;
-    next = { ...next, drawContext: 'skill', usedCard: card, lastUsedSkillIcon: null };
+    next = {
+      ...next,
+      deckDrawContext: { currentDrawType: 1 as const, usedCard: card, usedSkill: null },
+    };
     const target = Math.min(
       handCapacity(next),
       liveCurrentDeckCardCount(next.tokenCardDeck, next.deckBoard),
@@ -98,7 +103,10 @@ function finishAllHandActivation(state: GameState, source: GameState['deck'][num
     next = completeUsedCards(next, source.cardInstanceId);
     next = shuffleHand(next, { recoverDiscard: false, destination: 'discard' });
     next = fillHandToCountRetainingOverflow(
-      { ...next, drawContext: 'skill', usedCard: card, lastUsedSkillIcon: null },
+      {
+        ...next,
+        deckDrawContext: { currentDrawType: 1 as const, usedCard: card, usedSkill: null },
+      },
       target,
     );
     next = {
