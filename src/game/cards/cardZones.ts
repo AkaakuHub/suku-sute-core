@@ -38,7 +38,6 @@ export function finishCardActivation(state: GameState): GameState {
   const hasReshuffle = next.deckActions.queue.some(
     (action) => action.type === 3 && action.cardInstanceId === source.cardInstanceId,
   );
-  next = flushDeckActions(next);
   const handCountChange = activation.handCountChanges[source.cardInstanceId] ?? 0;
   const handReady: GameState = {
     ...next,
@@ -46,18 +45,14 @@ export function finishCardActivation(state: GameState): GameState {
     deckDrawContext: {
       currentDrawType: 1 as const,
       usedCard: source,
-      usedSkill: { skillType: 2 as const, skillMainEffect: source.skillMainEffect ?? null },
+      usedSkill: null,
     },
   };
   const skipSourceRefill = (next.activation?.skipSourceRefill ?? false) || hasReshuffle;
   if (skipSourceRefill) {
-    const sourceIndex = handReady.liveHands[handReady.tokenCardDeck.currentDeck].handCards.indexOf(
-      source.cardInstanceId,
+    next = completeLiveHandCardDraw(handReady, activation.handCardButtonId, null, (current, id) =>
+      removeHandCardEffects(current, [id]),
     );
-    next =
-      sourceIndex < 0
-        ? handReady
-        : completeLiveHandCardDraw(handReady, source.cardInstanceId, null);
   } else if (handCountChange < 0) {
     const target = Math.min(
       handCapacity(handReady),
@@ -66,15 +61,25 @@ export function finishCardActivation(state: GameState): GameState {
     const removedCount = Math.max(0, liveCurrentHandCardInstanceIds(handReady).length - target);
     next = {
       ...removeRandomHandCards(
-        completeLiveHandCardDraw(handReady, source.cardInstanceId, null),
+        completeLiveHandCardDraw(handReady, activation.handCardButtonId, null, (current, id) =>
+          removeHandCardEffects(current, [id]),
+        ),
         removedCount,
       ),
     };
   } else if (handCapacity(handReady) < liveCurrentHandCardInstanceIds(handReady).length + 1) {
-    next = completeLiveHandCardDraw(handReady, source.cardInstanceId, null);
+    next = completeLiveHandCardDraw(handReady, activation.handCardButtonId, null, (current, id) =>
+      removeHandCardEffects(current, [id]),
+    );
   } else {
-    next = completeLiveHandCardDraw(handReady, source.cardInstanceId, refillHand);
+    next = completeLiveHandCardDraw(
+      handReady,
+      activation.handCardButtonId,
+      refillHand,
+      (current, id) => removeHandCardEffects(current, [id]),
+    );
   }
+  next = flushDeckActions(next);
   next = {
     ...next,
     deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, source.cardInstanceId),

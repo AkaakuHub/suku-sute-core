@@ -1,6 +1,7 @@
 import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import {
   createLiveHandState,
+  removeLiveCurrentHandCard,
   liveHandCardInstanceIds,
   setLiveCurrentHandCards,
 } from '../../runtime/cards/liveHand.ts';
@@ -49,9 +50,6 @@ export function activateTokenDeckSplit(
       .map((card) => card.cardInstanceId),
   );
   const handCount = state.liveHands[state.tokenCardDeck.currentDeck].handCount;
-  const main = liveHandCardInstanceIds(state.liveHands[state.tokenCardDeck.currentDeck]).filter(
-    (id) => !selected.has(id),
-  );
   const suppressExpiration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const split: TokenDeckSplit = {
     remainingSeconds:
@@ -66,6 +64,11 @@ export function activateTokenDeckSplit(
     state,
     liveCurrentHandCardInstanceIds(state).filter((id) => selected.has(id)),
   );
+  for (let index = 7; index >= 0; index--) {
+    const id = next.liveHands[next.tokenCardDeck.currentDeck].handCards[index];
+    if (id !== null && id !== undefined && selected.has(id))
+      next = removeLiveCurrentHandCard(next, index, true);
+  }
   const partition = splitLiveTokenCardDeck(
     next.tokenCardDeck,
     next.deckBoard,
@@ -74,7 +77,6 @@ export function activateTokenDeckSplit(
   );
   next = {
     ...next,
-    liveHands: setLiveCurrentHandCards(next, main).liveHands,
     deckBoard: partition.deckBoard,
     tokenCardDeck: partition.state,
     tokenDeckSplit: split,

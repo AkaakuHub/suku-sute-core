@@ -1,7 +1,7 @@
 import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import {
   addLiveHandCard,
-  removeLiveHandCard,
+  removeLiveCurrentHandCard,
   setLiveCurrentHandCards,
 } from '../../runtime/cards/liveHand.ts';
 import { createLiveDeckDrawContextState } from '../../runtime/cards/cardDraw.ts';
@@ -88,18 +88,7 @@ export function removeRandomHandCards(state: GameState, count: number): GameStat
     const id = liveCurrentHandCardInstanceIds(next)[index];
     if (id === undefined) throw new Error('手札のカードがありません。');
     removed.push(id);
-    next = {
-      ...next,
-      randomSeed: random.seed,
-      liveHands: {
-        ...next.liveHands,
-        [next.tokenCardDeck.currentDeck]: removeLiveHandCard(
-          next.liveHands[next.tokenCardDeck.currentDeck],
-          index,
-          true,
-        ),
-      },
-    };
+    next = { ...removeLiveCurrentHandCard(next, index, true), randomSeed: random.seed };
   }
   next = removeHandCardEffects(next, removed);
   return {
@@ -187,7 +176,11 @@ function drawUntil(
     next = activateModeAbilityEffects(next, card, applyEffect);
   }
   const maximum = handCapacity(next);
-  if (trimOverflow && liveCurrentHandCardInstanceIds(next).length > maximum) {
+  if (
+    trimOverflow &&
+    state.activation === null &&
+    liveCurrentHandCardInstanceIds(next).length > maximum
+  ) {
     const ordered = [...liveCurrentHandCardInstanceIds(next)].sort(
       (left, right) =>
         Number(Boolean(next.deck.find((card) => card.cardInstanceId === right)?.passive)) -
@@ -197,17 +190,7 @@ function drawUntil(
     next = removeHandCardEffects(next, removed);
     for (const id of removed) {
       const hand = next.liveHands[next.tokenCardDeck.currentDeck];
-      next = {
-        ...next,
-        liveHands: {
-          ...next.liveHands,
-          [next.tokenCardDeck.currentDeck]: removeLiveHandCard(
-            hand,
-            hand.handCards.indexOf(id),
-            true,
-          ),
-        },
-      };
+      next = removeLiveCurrentHandCard(next, hand.handCards.indexOf(id), true);
     }
     next = moveCardsToBoard(next, removed, liveBoardState.graveyard);
   }

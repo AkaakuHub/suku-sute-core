@@ -1,4 +1,4 @@
-import { liveCurrentHandCardInstanceIds } from '../runtime/cards/liveHand.ts';
+import { liveCurrentHandCardInstanceIds, liveHandCardButtonId } from '../runtime/cards/liveHand.ts';
 import { beginLiveAllHandSkill } from '../runtime/cards/allHandDeckActions.ts';
 import { moveCardsToBoard } from './cards/deckBoard.ts';
 import { liveBoardState } from '../runtime/cards/deckBoardState.ts';
@@ -163,6 +163,7 @@ function useCard(state: GameState, index: number): GameState {
     ...paid,
     activation: {
       sourceId: source.cardInstanceId,
+      handCardButtonId: liveHandCardButtonId(state, source.cardInstanceId),
       usedCards: [],
       hasUseAllHandSkill: source.effects.some((effect) => effect.kind === 'use-hand'),
       skipSourceRefill: false,

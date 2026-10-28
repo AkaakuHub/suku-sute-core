@@ -10,6 +10,9 @@ import {
   createLiveDeckHandsState,
   createLiveHandState,
   liveCurrentHandCardInstanceIds,
+  liveHandCardButtonId,
+  removeLiveCurrentHandCard,
+  liveHandCardInstanceIds,
   removeLiveHandCard,
   setLiveCurrentHandCards,
 } from '../../src/runtime/cards/liveHand.ts';
@@ -88,27 +91,32 @@ test('使用中のカードは元の枠と枚数を保ち、使用可能な手�
   expect(state.liveHands.main.handCards.slice(0, 3)).toEqual([3, 1, 2]);
   expect(state.liveHands.main.handCount).toBe(3);
   expect(liveCurrentHandCardInstanceIds(state)).toEqual([3, 2]);
-  const completed = completeLiveHandCardDraw(state, 1, (removed, index) => {
-    expect(index).toBe(1);
-    expect(removed.liveHands.main.handCards.slice(0, 3)).toEqual([3, null, 2]);
-    expect(removed.liveHands.main.handCount).toBe(2);
-    return {
-      state: {
-        ...removed,
-        liveHands: {
-          ...removed.liveHands,
-          main: addLiveHandCard(removed.liveHands.main, index, 4),
+  const completed = completeLiveHandCardDraw(
+    state,
+    1,
+    (removed, index) => {
+      expect(index).toBe(1);
+      expect(removed.liveHands.main.handCards.slice(0, 3)).toEqual([3, null, 2]);
+      expect(removed.liveHands.main.handCount).toBe(2);
+      return {
+        state: {
+          ...removed,
+          liveHands: {
+            ...removed.liveHands,
+            main: addLiveHandCard(removed.liveHands.main, index, 4),
+          },
+          deckBoard: {
+            ...removed.deckBoard,
+            cards: removed.deckBoard.cards.map((card) =>
+              card.cardInstanceId === 4 ? { ...card, boardState: liveBoardState.hand } : card,
+            ),
+          },
         },
-        deckBoard: {
-          ...removed.deckBoard,
-          cards: removed.deckBoard.cards.map((card) =>
-            card.cardInstanceId === 4 ? { ...card, boardState: liveBoardState.hand } : card,
-          ),
-        },
-      },
-      drawSucceeded: true,
-    };
-  });
+        drawSucceeded: true,
+      };
+    },
+    (current) => current,
+  );
   expect(completed.liveHands.main.handCards.slice(0, 3)).toEqual([3, 4, 2]);
   expect(completed.liveHands.main.handCount).toBe(3);
   expect(liveCurrentHandCardInstanceIds(completed)).toEqual([3, 4, 2]);
@@ -117,16 +125,102 @@ test('使用中のカードは元の枠と枚数を保ち、使用可能な手�
 test('補充しない場合と抽選失敗時は後続を詰め、余分に枚数を減らさない', () => {
   const state = {
     liveHands: createLiveDeckHandsState<number>([3, 1, 2]),
+    deckBoard: createLiveDeckBoardState([1, 2, 3], [1, 2, 3]),
     tokenCardDeck: { currentDeck: 'main' as const },
   };
-  const skipped = completeLiveHandCardDraw(state, 1, null);
-  const failed = completeLiveHandCardDraw(state, 1, (removed) => ({
-    state: removed,
-    drawSucceeded: false,
-  }));
+  const skipped = completeLiveHandCardDraw(state, 1, null, (current) => current);
+  const failed = completeLiveHandCardDraw(
+    state,
+    1,
+    (removed) => ({
+      state: removed,
+      drawSucceeded: false,
+    }),
+    (current) => current,
+  );
   for (const result of [skipped, failed]) {
     expect(result.liveHands.main.handCards).toEqual([3, 2, null, null, null, null, null, null]);
     expect(result.liveHands.main.handCount).toBe(2);
     expect(result.liveHands.sub).toBe(state.liveHands.sub);
   }
+});
+
+test('引き直しで枠のカードが変わっても使用開始時のボタンへ補充する', () => {
+  const initial = {
+    liveHands: createLiveDeckHandsState<number>([3, 1, 2]),
+    tokenCardDeck: { currentDeck: 'main' as const },
+    deckBoard: moveLiveHandCardToExtra(createLiveDeckBoardState([1, 2, 3, 4, 5], [1, 2, 3]), 1),
+  };
+  const buttonId = liveHandCardButtonId(initial, 1);
+  const reshuffled = setLiveCurrentHandCards(
+    {
+      ...initial,
+      deckBoard: {
+        ...initial.deckBoard,
+        cards: initial.deckBoard.cards.map((card) =>
+          card.cardInstanceId === 4 ? { ...card, boardState: liveBoardState.hand } : card,
+        ),
+      },
+    },
+    [3, 4, 2],
+  );
+  const removedIds: number[] = [];
+  const result = completeLiveHandCardDraw(
+    reshuffled,
+    buttonId,
+    (removed, index) => ({
+      state: {
+        ...removed,
+        liveHands: {
+          ...removed.liveHands,
+          main: addLiveHandCard(removed.liveHands.main, index, 5),
+        },
+      },
+      drawSucceeded: true,
+    }),
+    (current, id) => {
+      removedIds.push(id);
+      return current;
+    },
+  );
+  expect(liveHandCardInstanceIds(result.liveHands.main)).toEqual([3, 5, 2]);
+  expect(removedIds).toEqual([4]);
+  expect(result.deckBoard.cards.find((card) => card.cardInstanceId === 4)?.boardState).toBe(
+    liveBoardState.graveyard,
+  );
+  expect(result.deckBoard.cards.find((card) => card.cardInstanceId === 1)?.boardState).toBe(
+    liveBoardState.extra,
+  );
+});
+
+test('ほかの枠を詰めた後もボタンの移動先を検索して補充する', () => {
+  const initial = {
+    liveHands: createLiveDeckHandsState<number>([3, 1, 2]),
+    tokenCardDeck: { currentDeck: 'main' as const },
+    deckBoard: moveLiveHandCardToExtra(createLiveDeckBoardState([1, 2, 3, 4], [1, 2, 3]), 1),
+  };
+  const buttonId = liveHandCardButtonId(initial, 1);
+  const shifted = removeLiveCurrentHandCard(initial, 0, true);
+  expect(shifted.liveHands.handCardButtonOrder).toEqual([1, 2, 3, 4, 5, 6, 7, 0]);
+  const result = completeLiveHandCardDraw(
+    shifted,
+    buttonId,
+    (removed, index) => {
+      expect(index).toBe(0);
+      return {
+        state: {
+          ...removed,
+          liveHands: {
+            ...removed.liveHands,
+            main: addLiveHandCard(removed.liveHands.main, index, 4),
+          },
+        },
+        drawSucceeded: true,
+      };
+    },
+    (current) => current,
+  );
+  expect(liveHandCardInstanceIds(result.liveHands.main)).toEqual([4, 2]);
+  expect(result.liveHands.main.handCount).toBe(2);
+  expect(result.liveHands.handCardButtonOrder).toEqual(shifted.liveHands.handCardButtonOrder);
 });

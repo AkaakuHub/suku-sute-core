@@ -195,6 +195,7 @@ export type GameState = Readonly<{
   deckBoard: LiveDeckBoardState<string>;
   activation: Readonly<{
     sourceId: string;
+    handCardButtonId: number;
     usedCards: readonly string[];
     hasUseAllHandSkill: boolean;
     skipSourceRefill?: boolean;
