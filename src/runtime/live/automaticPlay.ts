@@ -137,13 +137,6 @@ function selectLowestSkillCost<Skill extends LiveAutomaticSkill>(skills: readonl
   );
 }
 
-export function shouldLiveWaitForSkill(
-  settings: LiveAutomaticPlaySettings,
-  hasAvailableSkill: boolean,
-): boolean {
-  return settings.isWaitMode && hasAvailableSkill;
-}
-
 export function projectLiveAutomaticPlayClock(
   currentTimeSeconds: number,
   nextTimeSeconds: number,

@@ -9,7 +9,6 @@ import {
   type LiveAutomaticPlaySettings,
   liveAutomaticPlayDefaultSettings,
   selectLiveTopPrioritySkill,
-  shouldLiveWaitForSkill,
 } from '../../src/runtime/live/automaticPlay.ts';
 
 const settings: LiveAutomaticPlaySettings = {
@@ -191,12 +190,6 @@ test('skill自動はコスト超過中にゲージ満タンなら全手札の最
       maxAp: 2,
     }),
   ).toBe(skills[1]);
-});
-
-test('wait modeは使用可能なskillがある場合だけ待機する', () => {
-  expect(shouldLiveWaitForSkill({ ...settings, isWaitMode: true }, true)).toBe(true);
-  expect(shouldLiveWaitForSkill({ ...settings, isWaitMode: true }, false)).toBe(false);
-  expect(shouldLiveWaitForSkill(settings, true)).toBe(false);
 });
 
 test('WAITING中はStage clockを固定し解除後にAudio clockへ復帰する', () => {
