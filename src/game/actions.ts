@@ -85,8 +85,10 @@ function actInternal(state: GameState, action: Action): GameState {
       return deactivateTokenDeck(state, action.deactivationKey, applyEffect);
     case 'skip-ingame-mission':
       return skipIngameMission(state);
-    case 'deactivate-hand-limit':
-      return flushHandCardCountActions(deactivateHandLimitEffects(state, action.deactivationKey));
+    case 'deactivate-hand-limit': {
+      const changed = deactivateHandLimitEffects(state, action.deactivationKey);
+      return state.activation === null ? flushHandCardCountActions(changed) : changed;
+    }
     case 'deactivate-hand-max-card':
       return deactivateHandMaxCardEffects(state, action.deactivationKey);
     case 'deactivate-ap-speed':

@@ -67,6 +67,7 @@ export function missionActionEffect(
                           ? 34
                           : null;
   if (actionType === null) return state;
+  const handCountAction = state.deckActions.queue[before.deckActions.queue.length];
   const amount =
     actionType === 1
       ? effect.kind === 'hearts'
@@ -93,8 +94,9 @@ export function missionActionEffect(
                 : actionType === 28
                   ? state.deck.length - before.deck.length
                   : effect.kind === 'hand-limit'
-                    ? state.tokenCardDeck.handTargetCounts.current -
-                      before.tokenCardDeck.handTargetCounts.current
+                    ? handCountAction?.type === 0
+                      ? Math.fround(handCountAction.param1)
+                      : 0
                     : effect.kind === 'ap-speed-change'
                       ? state.apTimeEffects.length > before.apTimeEffects.length
                         ? state.apTimeEffects.at(-1)?.calculation === 'multiply'

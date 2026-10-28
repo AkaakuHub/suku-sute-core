@@ -48,7 +48,12 @@ export function refillHand(
   state: GameState,
   index: number,
 ): Readonly<{ state: GameState; drawSucceeded: boolean }> {
-  return drawUntil(state, handCapacity(state), true, index);
+  return drawUntil(
+    state,
+    state.liveHands[state.tokenCardDeck.currentDeck].handCount + 1,
+    false,
+    index,
+  );
 }
 
 export function fillHandToCount(state: GameState, count: number): GameState {
