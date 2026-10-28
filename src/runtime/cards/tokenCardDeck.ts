@@ -8,6 +8,7 @@ import {
 } from './deckBoardState.ts';
 
 export type LiveTokenCardDeckState<Id extends LiveCardIdentifier = number> = Readonly<{
+  initialCardCount: number;
   currentDeck: 'main' | 'sub';
   subDeckCardInstanceIds: readonly Id[] | null;
   tokenCardSeriesIds: readonly number[] | null;
@@ -15,7 +16,7 @@ export type LiveTokenCardDeckState<Id extends LiveCardIdentifier = number> = Rea
     current: number;
     main: number;
     sub: number;
-  }> | null;
+  }>;
 }>;
 
 export type LiveTokenCardDeckIdentity<Id extends LiveCardIdentifier = number> = Readonly<{
@@ -23,14 +24,16 @@ export type LiveTokenCardDeckIdentity<Id extends LiveCardIdentifier = number> = 
   tokenCardSeriesIds: readonly number[];
 }>;
 
-export function createLiveTokenCardDeckState<
-  Id extends LiveCardIdentifier = number,
->(): LiveTokenCardDeckState<Id> {
+export function createLiveTokenCardDeckState<Id extends LiveCardIdentifier = number>(
+  initialCardCount: number,
+): LiveTokenCardDeckState<Id> {
+  validateHandTargetCount(initialCardCount);
   return {
+    initialCardCount,
     currentDeck: 'main',
     subDeckCardInstanceIds: null,
     tokenCardSeriesIds: null,
-    handTargetCounts: null,
+    handTargetCounts: { current: initialCardCount, main: initialCardCount, sub: initialCardCount },
   };
 }
 
@@ -57,14 +60,11 @@ export function splitLiveTokenCardDeck<Id extends LiveCardIdentifier>(
   const subDeckIds = new Set(subDeckCardInstanceIds);
   return {
     state: {
+      ...state,
       currentDeck: 'main',
       subDeckCardInstanceIds,
       tokenCardSeriesIds: [tokenCardSeriesId],
-      handTargetCounts: {
-        current: handTargetCount,
-        main: handTargetCount,
-        sub: 0,
-      },
+      handTargetCounts: { ...state.handTargetCounts, current: handTargetCount },
     },
     deckBoard: {
       ...deckBoard,
@@ -81,13 +81,14 @@ export function switchLiveTokenCardDeck<Id extends LiveCardIdentifier>(
 ): LiveTokenCardDeckState<Id> {
   validateState(state, deckBoard);
   if (state.subDeckCardInstanceIds === null) return state;
-  if (state.handTargetCounts === null) {
-    throw new Error('Live sub deck hand target counts are absent');
-  }
   return reconcileLiveTokenCardDeckHandTarget(
     {
       ...state,
       currentDeck: state.currentDeck === 'main' ? 'sub' : 'main',
+      handTargetCounts: {
+        ...state.handTargetCounts,
+        [state.currentDeck]: state.handTargetCounts.current,
+      },
     },
     deckBoard,
   );
@@ -98,7 +99,6 @@ export function reconcileLiveTokenCardDeckHandTarget<Id extends LiveCardIdentifi
   deckBoard: LiveDeckBoardState<Id>,
 ): LiveTokenCardDeckState<Id> {
   validateState(state, deckBoard);
-  if (state.handTargetCounts === null) return state;
   const currentHandCount = liveCurrentDeckBoardCardInstanceIds(
     state,
     deckBoard,
@@ -120,7 +120,6 @@ export function reconcileLiveTokenCardDeckHandTarget<Id extends LiveCardIdentifi
     handTargetCounts: {
       ...state.handTargetCounts,
       current: nextTargetCount,
-      [state.currentDeck]: nextTargetCount,
     },
   };
 }
@@ -136,7 +135,12 @@ export function mergeLiveTokenCardDeck<Id extends LiveCardIdentifier>(
   if (state.subDeckCardInstanceIds === null) return { state, deckBoard };
   const subDeckIds = new Set(state.subDeckCardInstanceIds);
   return {
-    state: createLiveTokenCardDeckState<Id>(),
+    state: {
+      ...state,
+      currentDeck: 'main',
+      subDeckCardInstanceIds: null,
+      tokenCardSeriesIds: null,
+    },
     deckBoard: {
       ...deckBoard,
       cards: deckBoard.cards.map((card) =>
@@ -286,14 +290,10 @@ function validateState<Id extends LiveCardIdentifier>(
   if (state.currentDeck === 'sub' && state.subDeckCardInstanceIds === null) {
     throw new Error('Live current sub deck is absent');
   }
-  if ((state.subDeckCardInstanceIds === null) !== (state.handTargetCounts === null)) {
-    throw new Error('Live sub deck hand target counts are invalid');
-  }
-  if (state.handTargetCounts !== null) {
-    validateHandTargetCount(state.handTargetCounts.current);
-    validateHandTargetCount(state.handTargetCounts.main);
-    validateHandTargetCount(state.handTargetCounts.sub);
-  }
+  validateHandTargetCount(state.initialCardCount);
+  validateHandTargetCount(state.handTargetCounts.current);
+  validateHandTargetCount(state.handTargetCounts.main);
+  validateHandTargetCount(state.handTargetCounts.sub);
   if (state.subDeckCardInstanceIds === null) return;
   const boardIds = new Set(deckBoard.cards.map((card) => card.cardInstanceId));
   if (
