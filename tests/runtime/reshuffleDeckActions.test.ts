@@ -7,7 +7,11 @@ import {
   flushLiveDeckActions,
 } from '../../src/runtime/cards/deckActionQueue.ts';
 import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
-import { beginLiveAllHandSkill } from '../../src/runtime/cards/allHandDeckActions.ts';
+import {
+  beginLiveAllHandSkill,
+  enqueueLiveAllHandDraw,
+  executeLiveAllHandDraw,
+} from '../../src/runtime/cards/allHandDeckActions.ts';
 import { notifyLiveHandCardCountReset } from '../../src/runtime/cards/handCardCountReset.ts';
 
 function setup() {
@@ -25,6 +29,7 @@ function setup() {
 const action = {
   cardInstanceId: 1,
   skillMainEffect: 13,
+  countDeckOut: true,
   effect: { recoveryType: 'recovery', stashType: 'deck' },
 } as const;
 
@@ -108,4 +113,57 @@ test('引き直し中に予約した次の引き直しを再帰せず順に処�
   });
   expect(result.events).toEqual(['reshuffle', 'reshuffle']);
   expect(result.deckActions.queue).toEqual([]);
+});
+
+test.each([
+  { countDeckOut: true, expected: 5 },
+  { countDeckOut: false, expected: 3 },
+])('通常引き直しの回収回数を指定に従い加算または復元する:%j', ({ countDeckOut, expected }) => {
+  const initial = setup();
+  const queued = enqueueLiveReshuffle(
+    { ...initial, deckBoard: { ...initial.deckBoard, deckOutCount: 3 } },
+    { ...action, countDeckOut },
+  );
+  const result = flushLiveDeckActions(queued, unexpectedReset, {
+    reshuffle: {
+      activeHandCardInstanceIds: () => [1, 2],
+      draw: (state) => ({
+        ...state,
+        deckBoard: { ...state.deckBoard, deckOutCount: state.deckBoard.deckOutCount + 2 },
+      }),
+    },
+  });
+  expect(result.deckBoard.deckOutCount).toBe(expected);
+  expect(result.deckActions.queue).toEqual([]);
+});
+
+test('全手札使用の引き直し指定は後続7の補充回数を復元しない', () => {
+  const initial = setup();
+  const started = beginLiveAllHandSkill(
+    enqueueLiveReshuffle(
+      { ...initial, deckBoard: { ...initial.deckBoard, deckOutCount: 3 } },
+      { ...action, countDeckOut: false },
+    ),
+  );
+  const queued = enqueueLiveAllHandDraw(started, {
+    cardInstanceId: 1,
+    charactersId: 1031,
+    unitIds: [],
+  });
+  const ready = flushLiveDeckActions(queued, unexpectedReset, {
+    reshuffle: {
+      activeHandCardInstanceIds: () => [1, 2],
+      draw: () => {
+        throw new Error('All-hand reshuffle drew immediately');
+      },
+    },
+  });
+  expect(ready.tokenCardDeck.allHandSkillDeckReload).toBe(true);
+  const drawn = executeLiveAllHandDraw(ready, (state) => ({
+    ...state,
+    deckBoard: { ...state.deckBoard, deckOutCount: state.deckBoard.deckOutCount + 2 },
+  }));
+  const completed = flushLiveDeckActions(drawn, unexpectedReset);
+  expect(completed.deckBoard.deckOutCount).toBe(5);
+  expect(completed.tokenCardDeck.isAllHandSkill).toBe(false);
 });

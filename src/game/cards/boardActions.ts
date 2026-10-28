@@ -61,6 +61,7 @@ export function enqueueHandShuffle(
     {
       cardInstanceId: sourceId,
       skillMainEffect: source?.skillMainEffect ?? null,
+      countDeckOut: true,
       effect: {
         recoveryType: options.recoverDiscard ? 'recovery' : 'no-recovery',
         stashType: options.destination === 'draw' ? 'deck' : 'graveyard',

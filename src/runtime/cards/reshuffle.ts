@@ -11,6 +11,7 @@ export type LiveReshuffleDeckAction<Id extends LiveCardIdentifier | null = numbe
   effect: Pick<LiveReshuffleEffect, 'recoveryType' | 'stashType'>;
   cardInstanceId: Id;
   skillMainEffect: number | null;
+  countDeckOut: boolean;
 }>;
 
 export function applyLiveAllHandSkillReshuffle<Id extends LiveCardIdentifier>(

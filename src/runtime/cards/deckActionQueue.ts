@@ -118,7 +118,12 @@ export function flushLiveDeckActions<State extends DeckActionState>(
           action,
         );
         next = { ...next, deckBoard: changed.deckBoard, tokenCardDeck: changed.state };
-      } else next = reshuffle.draw(next, action);
+      } else {
+        const deckOutCount = next.deckBoard.deckOutCount;
+        next = reshuffle.draw(next, action);
+        if (!action.countDeckOut)
+          next = { ...next, deckBoard: { ...next.deckBoard, deckOutCount } };
+      }
     } else if (action.type === 6) {
       const afterDeckReload = handlers.afterDeckReload;
       if (!afterDeckReload) throw new Error('Live deck reload handler is absent');

@@ -19,6 +19,7 @@ for (const stashType of ['deck', 'graveyard'] as const) {
     const next = applyLiveAllHandSkillReshuffle(state, createLiveTokenCardDeckState(5), ids, {
       cardInstanceId: 1002,
       skillMainEffect: 13,
+      countDeckOut: true,
       effect: { recoveryType: 'recovery', stashType },
     });
     expect(next.deckBoard.cards.map((card) => card.boardState)).toEqual([5, 6, 2, 2, 2]);
