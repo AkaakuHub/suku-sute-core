@@ -35,7 +35,7 @@ export function flushDeckActions(state: GameState): GameState {
                 }
               : createLiveDeckDrawContextState(3),
           },
-          liveCurrentHandCardInstanceIds(current).length,
+          current.liveHands[current.tokenCardDeck.currentDeck].handCount,
         );
       },
     },
