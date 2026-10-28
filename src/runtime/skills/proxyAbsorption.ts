@@ -81,25 +81,26 @@ export function absorbLiveProxySkillEffect<State extends LiveProxyAbsorbInfo<Liv
   if (actionType !== 48 && amount < 0n) return { states, absorbed: false, changedIndex: null };
   for (const [index, state] of states.entries()) {
     if (state.isAbsorbEnd) continue;
-    const targetIndex = state.effects.findIndex((effect) => effect.actionType === actionType);
-    const target = state.effects[targetIndex];
-    if (!target) continue;
-    if (state.hasAbsorbLimit && liveProxyTargetReached(target, state.isAbsoluteAdd))
-      return { states, absorbed: true, changedIndex: null };
-    const absolute =
-      actionType === 48 && state.isAbsoluteAdd ? Math.abs(int64ToFloat32(amount)) : null;
-    const added =
-      absolute === null ? amount : absolute >= 2 ** 63 ? (1n << 63n) - 1n : BigInt(absolute);
-    const effects = state.effects.map((effect, effectIndex) =>
-      effectIndex === targetIndex
-        ? { ...effect, totalAmount: BigInt.asIntN(64, effect.totalAmount + added) }
-        : effect,
-    );
-    return {
-      states: states.map((item, itemIndex) => (itemIndex === index ? { ...item, effects } : item)),
-      absorbed: true,
-      changedIndex: index,
-    };
+    for (const [targetIndex, target] of state.effects.entries()) {
+      if (target.actionType !== actionType) continue;
+      if (state.hasAbsorbLimit && liveProxyTargetReached(target, state.isAbsoluteAdd)) continue;
+      const absolute =
+        actionType === 48 && state.isAbsoluteAdd ? Math.abs(int64ToFloat32(amount)) : null;
+      const added =
+        absolute === null ? amount : absolute >= 2 ** 63 ? (1n << 63n) - 1n : BigInt(absolute);
+      const effects = state.effects.map((effect, effectIndex) =>
+        effectIndex === targetIndex
+          ? { ...effect, totalAmount: BigInt.asIntN(64, effect.totalAmount + added) }
+          : effect,
+      );
+      return {
+        states: states.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, effects } : item,
+        ),
+        absorbed: true,
+        changedIndex: index,
+      };
+    }
   }
   return { states, absorbed: false, changedIndex: null };
 }

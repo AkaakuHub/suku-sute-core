@@ -15,13 +15,30 @@ test('終了済みProxyを飛ばし、最初に一致した有効なProxyだけ�
   expect(result.states.map((state) => state.effects[0]?.totalAmount)).toEqual([0n, 1n, 0n]);
 });
 
-test('上限到達後も最初の一致で吸収を止め、後続Proxyへ流さない', () => {
+test('上限到達した対象を飛ばして後続Proxyへ渡し、全対象が満杯なら吸収しない', () => {
   const first = { ...proxy(1), effects: [{ actionType: 20, targetAmount: 1n, totalAmount: 1n }] };
   const states = [first, proxy(2)];
   const result = absorbLiveProxySkillEffect(states, 20, 2n);
   expect(result.absorbed).toBe(true);
-  expect(result.states).toBe(states);
-  expect(result.changedIndex).toBeNull();
+  expect(result.states[1]?.effects[0]?.totalAmount).toBe(2n);
+  expect(result.changedIndex).toBe(1);
+  const saturated = [first, { ...first, cardInstanceId: 2 }];
+  const missed = absorbLiveProxySkillEffect(saturated, 20, 2n);
+  expect(missed.absorbed).toBe(false);
+  expect(missed.states).toBe(saturated);
+  expect(missed.changedIndex).toBeNull();
+});
+
+test('同じProxyに対象種別が複数ある場合も満杯の対象を飛ばして探索する', () => {
+  const state = {
+    ...proxy(1),
+    effects: [
+      { actionType: 20, targetAmount: 1n, totalAmount: 1n },
+      { actionType: 20, targetAmount: 2n, totalAmount: 0n },
+    ],
+  };
+  const result = absorbLiveProxySkillEffect([state], 20, 1n);
+  expect(result.states[0]?.effects.map((effect) => effect.totalAmount)).toEqual([1n, 1n]);
 });
 
 test('Action20の負数は吸収せず、累計はint64で折り返す', () => {
