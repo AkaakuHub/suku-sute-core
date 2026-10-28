@@ -5,6 +5,7 @@ import {
   advanceLiveApIncreaseSpeedState,
   createLiveApIncreaseSpeedState,
   resolveLiveApIncreaseIntervalSeconds,
+  resolveLiveApIncreaseIntervalMilliseconds,
 } from '../../src/runtime/skills/apIncreaseSpeed.ts';
 
 test('倍率型は短縮率へSkillBoostを適用してAP intervalを変更する', () => {
@@ -191,4 +192,19 @@ test('AP速度の時間・区間・終了期限は同じ状態で進み識別情
       musicEnded: true,
     }),
   ).toEqual([]);
+});
+
+test('AP時間の加算はDoubleで積算し大きな加算を相殺しても1msを失わない', () => {
+  const state = [16777216, 1, -16777216].map((milliseconds) => ({
+    calculation: { kind: 'add' as const, milliseconds },
+  }));
+  expect(resolveLiveApIncreaseIntervalMilliseconds(1, state)).toBe(1001);
+  expect(resolveLiveApIncreaseIntervalSeconds(1, state)).toBe(Math.fround(1.001));
+});
+
+test('同じ群の倍率差分はDoubleで合計してからFloat32に戻す', () => {
+  const state = [16777218, 2, -16777216].map((factor) => ({
+    calculation: { kind: 'multiply' as const, factor },
+  }));
+  expect(resolveLiveApIncreaseIntervalMilliseconds(1, state)).toBe(2000);
 });

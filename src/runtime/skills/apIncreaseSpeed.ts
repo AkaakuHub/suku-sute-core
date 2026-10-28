@@ -146,20 +146,20 @@ export function resolveLiveApIncreaseIntervalMilliseconds(
   const addedMilliseconds = state.reduce(
     (value, effect) =>
       effect.calculation.kind === 'add'
-        ? Math.fround(value + effect.calculation.milliseconds)
+        ? value + Math.fround(effect.calculation.milliseconds)
         : value,
     Math.fround(baseIntervalSeconds * 1_000),
   );
   const multiplyDelta = state.reduce(
     (value, effect) =>
       effect.calculation.kind === 'multiply'
-        ? Math.fround(value + Math.fround(effect.calculation.factor - 1))
+        ? value + Math.fround(Math.fround(effect.calculation.factor) - 1)
         : value,
     0,
   );
-  const multiplyFactor = Math.max(Math.fround(1 + multiplyDelta), 0);
-  const minimum = Math.fround(Math.fround(baseIntervalSeconds * 1000) * Math.fround(0.1));
-  return Math.max(Math.fround(addedMilliseconds * multiplyFactor), minimum);
+  const multiplyFactor = Math.fround(1 + Math.max(Math.fround(multiplyDelta), -1));
+  const minimum = Math.fround(baseIntervalSeconds * 1000) * 0.1;
+  return Math.max(addedMilliseconds * multiplyFactor, minimum);
 }
 
 function resolveCalculation(
