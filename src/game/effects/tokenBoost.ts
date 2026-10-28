@@ -1,5 +1,5 @@
 import { applyAction52SkillBoost } from './action52SkillBoost.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 
 export function activateTokenBoost(

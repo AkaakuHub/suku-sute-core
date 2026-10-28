@@ -2,7 +2,7 @@ import type { Card, Effect, GameState } from '../model.ts';
 import { skillValue } from './skillValue.ts';
 import { isProxyTargetReached } from './proxySkill.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type HandLimitEffect = Extract<Effect, { kind: 'hand-limit' }>;
 

@@ -1,5 +1,5 @@
 import type { Effect } from '../model.ts';
-import { int64ToFloat32, isInt64 } from '../numeric.ts';
+import { int64ToFloat32, isInt64 } from '../../runtime/numeric.ts';
 
 type Detail = Readonly<{ id: bigint; detailType: string; value: bigint }>;
 type Input = Readonly<{

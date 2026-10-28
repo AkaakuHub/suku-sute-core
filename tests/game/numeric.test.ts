@@ -1,5 +1,5 @@
 import { expect, test } from 'vite-plus/test';
-import { floatToInt32 } from '../../src/game/numeric.ts';
+import { floatToInt32 } from '../../src/runtime/numeric.ts';
 
 test.each([
   [1.9, 1],

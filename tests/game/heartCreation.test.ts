@@ -1,5 +1,5 @@
 import { expect, test } from 'vite-plus/test';
-import { ceilHeartCount } from '../../src/game/effects/heartCreation.ts';
+import { ceilToInt32 } from '../../src/runtime/numeric.ts';
 
 test.each([
   [1.1, 2],
@@ -10,5 +10,5 @@ test.each([
   [Number.POSITIVE_INFINITY, -2_147_483_648],
   [Number.NaN, 0],
 ])('生成数%sを整数へ変換する', (value, expected) => {
-  expect(ceilHeartCount(value)).toBe(expected);
+  expect(ceilToInt32(value)).toBe(expected);
 });

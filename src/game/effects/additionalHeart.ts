@@ -4,7 +4,7 @@ import type {
 } from '../additionalHeartTypes.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { matchesAdditionalHeartCondition } from '../additionalHeartTypes.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
 
 type ApplyEffect = (

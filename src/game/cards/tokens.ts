@@ -2,7 +2,7 @@ import { type Card, type GameState, type TokenKind, rules } from '../model.ts';
 import type { TokenRequest, TokenTemplateReference } from '../tokenRequestTypes.ts';
 import { boostTokenRequests } from './tokenBoost.ts';
 import { initializeParameterValueFactors } from '../parameters/parameterValueChange.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import { registerMissionAction } from '../ingameMissions.ts';
 import { validateCard } from '../deck.ts';
 import type { TokenCardEffect } from '../tokenRequestTypes.ts';

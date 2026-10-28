@@ -2,7 +2,7 @@ import type { Effect } from './modelTypes.ts';
 import type { UseCountInduceEffect, UseInduceEffect } from './induceSkillEffectTypes.ts';
 import type { CardMoveInduceEffect, EffectInduceEffect } from './induceSkillEffectTypes.ts';
 
-import { isInt64 } from './numeric.ts';
+import { isInt64 } from '../runtime/numeric.ts';
 
 export function validateUseInduceEffect(
   effect: UseInduceEffect,

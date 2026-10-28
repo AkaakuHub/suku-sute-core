@@ -30,10 +30,10 @@ export function calculateLiveFlowerRank(
   if (
     !Number.isSafeInteger(collectableHeartCount) ||
     collectableHeartCount < 0 ||
-    !Number.isSafeInteger(genesisGauge) ||
-    genesisGauge < 0
+    !Number.isSafeInteger(genesisGauge)
   )
     throw new Error('結晶の判定値が正しくありません。');
+  if (genesisGauge < 1) return { rank: 0, magnification: 1 };
   return rankFromValue(Math.sqrt(genesisGauge) * collectableHeartCount, flowerRankThresholds, null);
 }
 

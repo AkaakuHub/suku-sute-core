@@ -1,7 +1,7 @@
 import { calculateLiveSkillMoodCorrection } from '../../runtime/live/skillMood.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { moodValue } from '../projection.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type HeartLimitBoostEffect = Extract<Effect, { kind: 'heart-limit-boost' }>;
 

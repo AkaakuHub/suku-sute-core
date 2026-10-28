@@ -1,7 +1,7 @@
 import type { Card, Effect, GameState } from '../model.ts';
 import type { ComboInduceEffect } from '../modelTypes.ts';
 import type { ComboInduceEvent, ComboInducer } from '../comboInduceTypes.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
 
 type ApplyComboEffect = (

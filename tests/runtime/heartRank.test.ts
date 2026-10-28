@@ -1,5 +1,8 @@
 import { expect, test } from 'vite-plus/test';
-import { calculateLiveHeartRank } from '../../src/runtime/live/heartRank.ts';
+import {
+  calculateLiveFlowerRank,
+  calculateLiveHeartRank,
+} from '../../src/runtime/live/heartRank.ts';
 
 test('Heart rankは回収可能数とVoltage levelの積を閾値4段階へ投影する', () => {
   expect(calculateLiveHeartRank(99, 1, null)).toEqual({
@@ -25,4 +28,8 @@ test('Master Voltage設定時はHeart rankを指定範囲へ制限する', () =>
     rank: 3,
     magnification: 3,
   });
+});
+
+test.each([0, -1, -2_147_483_648])('Genesis gaugeが%sならAPKと同じく結晶ランク0を返す', (gauge) => {
+  expect(calculateLiveFlowerRank(1_000_000, gauge)).toEqual({ rank: 0, magnification: 1 });
 });

@@ -4,7 +4,7 @@ import { moodValue } from '../projection.ts';
 import { skillValue } from './skillValue.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { isProxyTargetReached } from './proxySkill.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type ApSpeedChange = Extract<Effect, { kind: 'ap-speed-change' }>;
 

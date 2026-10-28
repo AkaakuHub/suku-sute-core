@@ -1,7 +1,7 @@
 import type { Card, Effect, GameState } from '../model.ts';
 import type { InduceSkillCondition, InduceSkillEffectInput } from '../induceSkillEffectTypes.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 export type EffectApplier = (
   state: GameState,

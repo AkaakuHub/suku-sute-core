@@ -11,7 +11,7 @@ import { createDrawSuccessInduceEffect } from '../actionTypeEffects/drawSuccessI
 import { createOnDrawInduceRule } from '../actionTypeEffects/onDrawInduce.ts';
 import { createHandInducer } from '../actionTypeEffects/handInduce.ts';
 import { resolveHandPermanentEffects } from '../actionTypeEffects/handPermanent.ts';
-import { isInt64 } from '../numeric.ts';
+import { isInt64 } from '../../runtime/numeric.ts';
 
 export function resolveActionEffects(
   card: Card,

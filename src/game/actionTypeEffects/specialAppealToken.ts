@@ -3,7 +3,7 @@ import type {
   SpecialAppealTokenCardSet,
 } from '../specialAppealTokenTypes.ts';
 import type { MemberId } from '../model.ts';
-import { isInt64 } from '../numeric.ts';
+import { isInt64 } from '../../runtime/numeric.ts';
 
 type Input = Readonly<{
   skillEffectId: bigint;

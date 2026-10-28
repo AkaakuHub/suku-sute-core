@@ -1,7 +1,7 @@
 import type { GameState } from '../model.ts';
 import type { HandMaxCardEffect } from '../handMaxCardTypes.ts';
 import { fillHand } from '../cards/drawing.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 export function activateHandMaxCard(state: GameState, effect: HandMaxCardEffect): GameState {
   if (effect.duration.kind === 'sections' && effect.duration.value === 0n)

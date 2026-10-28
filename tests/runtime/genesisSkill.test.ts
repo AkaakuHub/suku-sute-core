@@ -166,6 +166,43 @@ test('同じGenesis effectの再発動を独立した期限として保持する
   expect(advanced.finishedRollback).toBeNull();
 });
 
+test('Genesis gaugeはAPKのint32加算と同じく上限超過で負数へ折り返す', () => {
+  const active = activateLiveGenesisEffect(createLiveGenesisState(), genesisEffect('1', 1, 1), {
+    skillPoint: 0,
+    mental: 100,
+    voltagePoint: 0n,
+    voltageLevel: 0,
+  });
+  const overflow = addLiveGenesisGauge(
+    { ...active, currentGauge: 2_147_483_647 },
+    { actionType: 10, gaugeType: 1, effectValue: 1 },
+  );
+  expect(overflow.currentGauge).toBe(-2_147_483_648);
+  expect(
+    addLiveGenesisGauge(overflow, { actionType: 10, gaugeType: 1, effectValue: 1 }).currentGauge,
+  ).toBe(-2_147_483_647);
+  expect(
+    addLiveGenesisGauge(
+      { ...active, currentGauge: 0 },
+      { actionType: 10, gaugeType: 1, effectValue: -1 },
+    ).currentGauge,
+  ).toBe(-1);
+});
+
+test.each([
+  [3_000_000_000, 2_147_483_647],
+  [Number.MAX_VALUE, -2_147_483_648],
+])('Genesis効果値%sの切り上げと範囲外変換をAPKへ合わせる', (strength, expected) => {
+  expect(
+    calculateLiveGenesisGaugeDelta({
+      actionType: 10,
+      gaugeType: 1,
+      effectValue: 1,
+      currentGenesisEffectValue: strength,
+    }),
+  ).toBe(expected);
+});
+
 function detail(id: string, detailType: string, effectValue: number) {
   return {
     id,

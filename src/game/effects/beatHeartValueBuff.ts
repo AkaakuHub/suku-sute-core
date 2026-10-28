@@ -2,7 +2,7 @@ import { calculateLiveSkillMoodCorrection } from '../../runtime/live/skillMood.t
 import type { Card, Effect, GameState } from '../model.ts';
 import { moodValue } from '../projection.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type BeatHeartValueBuffEffect = Extract<Effect, { kind: 'beat-heart-value-buff' }>;
 

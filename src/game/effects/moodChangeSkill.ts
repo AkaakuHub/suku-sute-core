@@ -3,7 +3,7 @@ import { moodValueWithoutLimit } from '../projection.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { applyMoodValueAdditionalBuffs } from './moodValueBoost.ts';
 import { absorbSkillEffect } from './proxySkill.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type MoodChangeSkillEffect = Extract<Effect, { kind: 'mood-change-skill' }>;
 

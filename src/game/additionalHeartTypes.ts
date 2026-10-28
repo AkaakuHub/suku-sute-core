@@ -1,6 +1,6 @@
 import type { Card } from './model.ts';
 import { validateSkillHeartsEffect, type SkillHeartsEffect } from './skillHeartTypes.ts';
-import { isInt64 } from './numeric.ts';
+import { isInt64 } from '../runtime/numeric.ts';
 
 export type AdditionalHeartInduceCondition =
   | Readonly<{ kind: 'all' }>

@@ -1,7 +1,7 @@
 import { calculateLiveSkillMoodCorrection } from '../../runtime/live/skillMood.ts';
 import { moodValue } from '../projection.ts';
 import { applyAction52SkillBoost } from './action52SkillBoost.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import type { Card, GameState } from '../model.ts';
 import type {
   LoveUpAdditionalBuffEffect,

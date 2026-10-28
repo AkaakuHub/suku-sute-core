@@ -6,7 +6,7 @@ import type { Card, GameState } from '../model.ts';
 import { energyMaximum, changeMaximum } from '../parameters/maximum.ts';
 import { voltageThreshold } from '../live/voltageLevel.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import stageVoltageLevelSettingCount from '../../master/stageVoltageLevelSettingCount.json';
 
 export function activateFixedParameterExtend(

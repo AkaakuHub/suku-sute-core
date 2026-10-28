@@ -1,6 +1,6 @@
 import type { Effect, HeartBoostTarget } from '../modelTypes.ts';
 import type { MemberId, UnitId } from '../model.ts';
-import { int64ToFloat32, isInt64 } from '../numeric.ts';
+import { int64ToFloat32, isInt64 } from '../../runtime/numeric.ts';
 
 type Detail = Readonly<{
   id: bigint;

@@ -3,7 +3,7 @@ import type { ProxySkillEffect } from '../modelTypes.ts';
 import type { EffectApplier } from './induceSkillEffect.ts';
 import { induceCardMoves } from './cardMoveInduce.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type ApplyProxyEffect = EffectApplier;
 

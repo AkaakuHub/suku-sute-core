@@ -4,7 +4,7 @@ import type { Card, GameState } from '../model.ts';
 import type { DrawSuccessInduceEffect } from '../drawSuccessInduceTypes.ts';
 import type { EffectApplier } from './induceSkillEffect.ts';
 import { deactivateInducedEffects, withDeactivationKey } from './effectInduce.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 function numToValue(value: bigint): number {
   return Math.fround(int64ToFloat32(value) / Math.fround(10_000));

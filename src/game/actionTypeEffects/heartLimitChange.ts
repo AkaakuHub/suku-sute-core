@@ -1,5 +1,5 @@
 import type { Effect, ParameterDetailValue } from '../modelTypes.ts';
-import { isInt64 } from '../numeric.ts';
+import { isInt64 } from '../../runtime/numeric.ts';
 
 type Detail = Readonly<{
   id: bigint;

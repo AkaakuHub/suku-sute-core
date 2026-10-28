@@ -1,6 +1,6 @@
 import type { AdditionalHeartInduceEffect } from '../additionalHeartTypes.ts';
 import { createAddHeartEffect } from './addHeart.ts';
-import { isInt64 } from '../numeric.ts';
+import { isInt64 } from '../../runtime/numeric.ts';
 
 type Detail = Readonly<{ id: bigint; detailType: string; value: bigint }>;
 type Input = Readonly<{

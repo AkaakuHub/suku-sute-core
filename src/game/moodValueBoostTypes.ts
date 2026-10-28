@@ -1,5 +1,5 @@
 import type { HeartLimitBoostTarget } from './heartLimitBoostTypes.ts';
-import { isInt64 } from './numeric.ts';
+import { isInt64 } from '../runtime/numeric.ts';
 
 export type MoodValueBoostEffect = Readonly<{
   kind: 'mood-value-boost';

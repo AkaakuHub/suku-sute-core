@@ -1,5 +1,5 @@
 import type { Card, GameState } from '../model.ts';
-import { floatToInt32 } from '../numeric.ts';
+import { floatToInt32 } from '../../runtime/numeric.ts';
 import { changeResource } from '../resources.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { applyAdditionalBuff } from './additionalBuff.ts';

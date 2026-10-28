@@ -17,7 +17,7 @@ import { validateAddVoltageSkillEffect } from './addVoltageTypes.ts';
 import { validateHeartBoostEffect } from './heartBoostTypes.ts';
 import { validateSkillHeartsEffect } from './skillHeartTypes.ts';
 import { validateSkillScoreUpEffect } from './skillScoreUpTypes.ts';
-import { isInt64 } from './numeric.ts';
+import { isInt64 } from '../runtime/numeric.ts';
 import { validateHandCardCountEffect } from './actionTypeEffects/handCardCount.ts';
 import { validateApSpeedChangeEffect } from './actionTypeEffects/apSpeedChange.ts';
 import { validateMentalBarrierEffect } from './mentalBarrierTypes.ts';

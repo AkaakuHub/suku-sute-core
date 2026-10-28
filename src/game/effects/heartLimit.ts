@@ -4,7 +4,7 @@ import { moodValue } from '../projection.ts';
 import { absorbSkillEffect } from './proxySkill.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { applyHeartLimitBoosts } from './heartLimitBoost.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 
 type HeartLimitChangeEffect = Extract<Effect, { kind: 'heart-limit-change' }>;

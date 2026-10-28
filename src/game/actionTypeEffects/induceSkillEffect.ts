@@ -1,5 +1,5 @@
 import type { InduceSkillCondition, InduceSkillEffectInput } from '../induceSkillEffectTypes.ts';
-import { isInt64 } from '../numeric.ts';
+import { isInt64 } from '../../runtime/numeric.ts';
 import type { Effect } from '../model.ts';
 
 type Detail = Readonly<{ id: bigint; detailType: string; value: bigint }>;

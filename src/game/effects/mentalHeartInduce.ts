@@ -3,7 +3,7 @@ import type { MentalHeartInduceEffect, MentalHeartInducer } from '../mentalHeart
 import { createSkillHearts } from './heartCreation.ts';
 import { applyAdditionalBuff } from './additionalBuff.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 export function activateMentalHeartInduce(
   state: GameState,

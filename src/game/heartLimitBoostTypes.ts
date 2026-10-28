@@ -1,5 +1,5 @@
 import type { MemberId, UnitId } from './model.ts';
-import { isInt64 } from './numeric.ts';
+import { isInt64 } from '../runtime/numeric.ts';
 
 export type HeartLimitBoostTarget =
   | Readonly<{ kind: 'all' }>

@@ -4,7 +4,7 @@ import {
   activateModeParameterChanges,
   deactivateParameterValueChanges,
 } from '../parameters/parameterValueChange.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
 import { activateModeAbilityEffects, deactivateModeAbilityEffects } from '../cards/modeAbility.ts';
 

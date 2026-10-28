@@ -1,5 +1,5 @@
 import type { Effect } from './modelTypes.ts';
-import { isInt64 } from './numeric.ts';
+import { isInt64 } from '../runtime/numeric.ts';
 
 export function validateHeartBoostEffect(effect: Extract<Effect, { kind: 'heart-boost' }>): void {
   const target = effect.target;

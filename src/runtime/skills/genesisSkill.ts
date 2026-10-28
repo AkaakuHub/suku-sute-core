@@ -1,4 +1,5 @@
 import type { LiveSkillEffect } from './skillTypes.ts';
+import { ceilToInt32, floatToInt32 } from '../numeric.ts';
 import {
   advanceLiveSkillEffectDuration,
   createLiveSkillEffectDuration,
@@ -109,7 +110,7 @@ export function addLiveGenesisGauge(
   if (delta === null) return state;
   return {
     ...state,
-    currentGauge: Math.max(0, state.currentGauge + delta),
+    currentGauge: Number(BigInt.asIntN(32, BigInt(state.currentGauge) + BigInt(delta))),
   };
 }
 
@@ -160,7 +161,7 @@ export function calculateLiveInitialGenesisGauge(input: {
   ) {
     throw new Error('Live initial Genesis gauge input is invalid');
   }
-  return Math.ceil(
+  return ceilToInt32(
     Math.fround(
       Math.fround(input.currentMental * 0.25) +
         Math.fround((input.currentVoltageLevel + input.currentAp) * 5),
@@ -181,11 +182,12 @@ export function calculateLiveGenesisGaugeDelta(input: {
   ) {
     throw new Error('Live Genesis gauge input is invalid');
   }
-  if (input.effectValue === 0) return null;
-  const sign = input.effectValue < 0 ? -1 : 1;
-  const magnitude = Math.abs(Math.fround(input.effectValue));
+  const effectValue = Math.fround(input.effectValue);
+  if (effectValue === 0) return null;
+  const sign = effectValue < 0 ? -1 : 1;
+  const magnitude = Math.abs(effectValue);
   if (input.actionType === 39) {
-    return Math.trunc(input.effectValue) * sign;
+    return Math.imul(floatToInt32(effectValue), sign);
   }
   const scale = genesisGaugeScale(input.gaugeType);
   if (scale === null) return 0;
@@ -193,7 +195,7 @@ export function calculateLiveGenesisGaugeDelta(input: {
   const delta = Math.fround(
     Math.fround(magnitude / denominator) * Math.fround(input.currentGenesisEffectValue),
   );
-  return Math.ceil(delta) * sign;
+  return Math.imul(ceilToInt32(delta), sign);
 }
 
 function genesisGaugeScale(gaugeType: 0 | 1 | 2 | 3): number | null {
@@ -212,7 +214,8 @@ function genesisGaugeScale(gaugeType: 0 | 1 | 2 | 3): number | null {
 function validateGenesisState(state: LiveGenesisState): void {
   if (
     !Number.isSafeInteger(state.currentGauge) ||
-    state.currentGauge < 0 ||
+    state.currentGauge < -2_147_483_648 ||
+    state.currentGauge > 2_147_483_647 ||
     (state.effects.length === 0) !== (state.rollback === null) ||
     state.effects.some(
       (effect, index) =>

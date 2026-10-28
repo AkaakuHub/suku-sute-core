@@ -1,6 +1,6 @@
 import type { DisableMentalDownEffect } from '../disableMentalDownTypes.ts';
 import type { GameState } from '../model.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 export function activateDisableMentalDown(
   state: GameState,

@@ -2,7 +2,7 @@ import { calculateLiveSkillMoodCorrection } from '../../runtime/live/skillMood.t
 import { moodValue } from '../projection.ts';
 import type { Action52BuffEffect, Action52BuffTarget } from '../skillBoostTypes.ts';
 import type { Card, GameState } from '../model.ts';
-import { int64ToFloat32 } from '../numeric.ts';
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 export function activateAction52SkillBoost(
   state: GameState,

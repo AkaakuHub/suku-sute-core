@@ -1,6 +1,6 @@
 import type { Effect } from '../model.ts';
 import type { ActionTypeDetail } from '../cards/actionTypeDetail.ts';
-import { int64ToFloat32, isInt64 } from '../numeric.ts';
+import { int64ToFloat32, isInt64 } from '../../runtime/numeric.ts';
 
 type Input = Readonly<{
   skillEffectId: bigint;

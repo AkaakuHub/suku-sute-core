@@ -3,6 +3,12 @@ export function floatToInt32(value: number): number {
   return Math.min(2_147_483_647, Math.max(-2_147_483_648, Math.trunc(value)));
 }
 
+export function ceilToInt32(value: number): number {
+  if (value === Number.POSITIVE_INFINITY) return -2_147_483_648;
+  if (Number.isNaN(value)) return 0;
+  return Math.min(2_147_483_647, Math.max(-2_147_483_648, Math.ceil(value)));
+}
+
 export function isInt64(value: bigint): boolean {
   return value >= -(1n << 63n) && value <= (1n << 63n) - 1n;
 }

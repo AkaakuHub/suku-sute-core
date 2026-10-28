@@ -1,7 +1,7 @@
 import type { Effect, ParameterValueChangeEffect } from '../modelTypes.ts';
 import type { ActionTypeDetail } from '../cards/actionTypeDetail.ts';
 import type { MemberId } from '../model.ts';
-import { int64ToFloat32, isInt64 } from '../numeric.ts';
+import { int64ToFloat32, isInt64 } from '../../runtime/numeric.ts';
 
 type Input = Readonly<{ skillEffectId: bigint; details: readonly ActionTypeDetail[] }>;
 
