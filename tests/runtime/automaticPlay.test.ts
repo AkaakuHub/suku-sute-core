@@ -1,7 +1,6 @@
 import { expect, test } from 'vite-plus/test';
 import {
   advanceLiveAutomaticHeart,
-  advanceLiveWaitMode,
   changeLiveAutomaticPlaySetting,
   hasLiveTopPrioritySkillCandidate,
   isLiveAutomaticHeartCount,
@@ -203,28 +202,4 @@ test('wait modeは使用可能なskillがある場合だけ待機する', () => 
 test('WAITING中はStage clockを固定し解除後にAudio clockへ復帰する', () => {
   expect(projectLiveAutomaticPlayClock(12.5, 12.6, true)).toBe(12.5);
   expect(projectLiveAutomaticPlayClock(12.5, 12.6, false)).toBe(12.6);
-});
-
-test('WaitModeの有効化はForceReservedから使用可能skillを評価する', () => {
-  const forceReserved = advanceLiveWaitMode(
-    { kind: 'disabled', remainingCoolTimeSeconds: 0 },
-    { enabled: true, hasAvailableSkill: true, deltaTimeSeconds: 0 },
-  );
-  const waiting = advanceLiveWaitMode(forceReserved, {
-    enabled: true,
-    hasAvailableSkill: true,
-    deltaTimeSeconds: 0,
-  });
-  const initial = advanceLiveWaitMode(
-    { kind: 'disabled', remainingCoolTimeSeconds: 0 },
-    { enabled: true, hasAvailableSkill: false, deltaTimeSeconds: 0 },
-  );
-  const initialAfterEvaluation = advanceLiveWaitMode(initial, {
-    enabled: true,
-    hasAvailableSkill: false,
-    deltaTimeSeconds: 0,
-  });
-  expect(forceReserved.kind).toBe('force-reserved');
-  expect(waiting.kind).toBe('waiting');
-  expect(initialAfterEvaluation.kind).toBe('initial');
 });

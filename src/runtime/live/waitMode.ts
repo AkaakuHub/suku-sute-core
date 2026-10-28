@@ -1,22 +1,27 @@
-const waitModeCooldownSeconds = 0.35;
+import type { LiveApGaugeState } from './apGauge.ts';
 
-export type WaitModeState = Readonly<{
+const waitModeCooldownSeconds = Math.fround(0.35);
+
+export type LiveWaitModeState = Readonly<{
   kind: 'disabled' | 'initial' | 'reserved' | 'force-reserved' | 'waiting';
   remainingCoolTimeSeconds: number;
   previousAvailableCards: number;
-  previousSkillPoint: number;
+  previousAp: number;
 }>;
 
-export function createWaitMode(): WaitModeState {
+export function createLiveWaitMode(): LiveWaitModeState {
   return {
     kind: 'disabled',
     remainingCoolTimeSeconds: 0,
     previousAvailableCards: 0,
-    previousSkillPoint: 0,
+    previousAp: 0,
   };
 }
 
-export function releaseWaitMode(state: WaitModeState, skillUsed: boolean): WaitModeState {
+export function releaseLiveWaitMode(
+  state: LiveWaitModeState,
+  skillUsed: boolean,
+): LiveWaitModeState {
   return {
     ...state,
     kind: skillUsed ? 'force-reserved' : 'initial',
@@ -24,8 +29,11 @@ export function releaseWaitMode(state: WaitModeState, skillUsed: boolean): WaitM
   };
 }
 
-export function notifyWaitModeSkillUse(state: WaitModeState, normalSkill: boolean): WaitModeState {
-  if (state.kind === 'waiting') return releaseWaitMode(state, true);
+export function notifyLiveWaitModeSkillUse(
+  state: LiveWaitModeState,
+  normalSkill: boolean,
+): LiveWaitModeState {
+  if (state.kind === 'waiting') return releaseLiveWaitMode(state, true);
   if (!normalSkill) return state;
   return {
     ...state,
@@ -34,36 +42,39 @@ export function notifyWaitModeSkillUse(state: WaitModeState, normalSkill: boolea
   };
 }
 
-export function advanceWaitMode(
-  state: WaitModeState,
-  input: Readonly<{
-    enabled: boolean;
-    availableCards: number;
-    skillPoint: number;
-    ableUseSkill: boolean;
-    mentalDown: boolean;
-    allSkillsCostOver: boolean;
-    deltaTimeSeconds: number;
-  }>,
-): WaitModeState {
+export type LiveWaitModeInput = Readonly<{
+  enabled: boolean;
+  availableCards: number;
+  ap: LiveApGaugeState;
+  ableUseSkill: boolean;
+  mentalDown: boolean;
+  allSkillsCostOver: boolean;
+  deltaTimeSeconds: number;
+}>;
+
+export function advanceLiveWaitMode(
+  state: LiveWaitModeState,
+  input: LiveWaitModeInput,
+): LiveWaitModeState {
   if (!Number.isFinite(input.deltaTimeSeconds) || input.deltaTimeSeconds < 0) {
     throw new Error('自動停止の経過時間が正しくありません。');
   }
-  if (!input.enabled) return { ...createWaitMode(), previousSkillPoint: input.skillPoint };
+  if (!input.enabled) return { ...createLiveWaitMode(), previousAp: input.ap.currentAp };
   if (state.kind === 'waiting') return state;
-  const remainingCoolTimeSeconds = Math.max(
-    0,
-    state.remainingCoolTimeSeconds - input.deltaTimeSeconds,
-  );
-  const next: WaitModeState = {
+  if (state.kind === 'disabled') state = { ...state, kind: 'force-reserved' };
+  const remainingCoolTimeSeconds =
+    state.remainingCoolTimeSeconds > 0
+      ? Math.fround(state.remainingCoolTimeSeconds - Math.fround(input.deltaTimeSeconds))
+      : state.remainingCoolTimeSeconds;
+  const next: LiveWaitModeState = {
     ...state,
     remainingCoolTimeSeconds,
-    previousSkillPoint: input.skillPoint,
+    previousAp: input.ap.currentAp,
   };
   if (
     state.kind !== 'reserved' &&
     state.kind !== 'force-reserved' &&
-    state.previousSkillPoint === input.skillPoint
+    state.previousAp === input.ap.currentAp
   )
     return next;
   if (remainingCoolTimeSeconds > 0 || !input.ableUseSkill || input.mentalDown) {
