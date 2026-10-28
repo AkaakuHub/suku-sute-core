@@ -47,7 +47,7 @@ export function restoreHandLimitCount(state: GameState, adjustment: number): Gam
   return fillHandToCountRetainingOverflow(state, target);
 }
 
-function fillHandToCountRetainingOverflow(state: GameState, count: number): GameState {
+export function fillHandToCountRetainingOverflow(state: GameState, count: number): GameState {
   return drawUntil(state, count, false);
 }
 
@@ -117,6 +117,7 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
     if (!card) throw new Error('引いたカードがありません。');
     drawnCards.push(card);
   }
+  if (state.drawContext === 'sub-deck-start') return { ...next, drawContext: 'idle' };
   for (const card of drawnCards) {
     if (state.drawContext !== 'initial') next = applyDrawAbility(next, card);
     if (state.drawContext !== 'initial')

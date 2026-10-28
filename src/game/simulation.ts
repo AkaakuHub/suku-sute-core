@@ -1,3 +1,4 @@
+import { createLiveTokenCardDeckState } from '../runtime/cards/tokenCardDeck.ts';
 import { createLiveDeckActionQueueState } from '../runtime/cards/deckActionQueue.ts';
 import { createCardDeckBoard } from './cards/deckBoard.ts';
 import { createModes } from './live/modes.ts';
@@ -88,6 +89,7 @@ export function createGame(
     activeModeParameterChanges: [],
     deckBoard: createCardDeckBoard(resolvedDeck, [lead.cardInstanceId]),
     handEffectCardIds: [lead.cardInstanceId],
+    tokenCardDeck: createLiveTokenCardDeckState<string>(rules.handSize),
     tokenDeckSplit: null,
     ingameMission: null,
     afterDeckReloadEvents: 0,

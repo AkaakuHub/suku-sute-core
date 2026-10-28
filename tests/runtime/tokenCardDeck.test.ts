@@ -24,7 +24,7 @@ const cards = [
 
 test('ActionType43は対象tokenを手札からsub deckのDeck状態へ移して切り替える', () => {
   const board = moveLiveDeckCardToHand(createLiveDeckBoardState([1001, 1002, 1003], []), 1002);
-  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), board, cards, 2, 5);
+  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), board, cards, [2], 5);
   const switched = switchLiveTokenCardDeck(split.state, split.deckBoard);
 
   expect(split.deckBoard.cards[1]?.boardState).toBe(liveBoardState.deck);
@@ -35,7 +35,7 @@ test('ActionType43は対象tokenを手札からsub deckのDeck状態へ移して
 
 test('MergeDeckはsub deckのGraveyardだけを保持してmainへ戻す', () => {
   const initial = createLiveDeckBoardState([1001, 1002, 1003], []);
-  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), initial, cards, 2, 5);
+  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), initial, cards, [2], 5);
   const used = moveLiveHandCardToGraveyard(moveLiveDeckCardToHand(split.deckBoard, 1002), 1002);
   const hand = moveLiveDeckCardToHand(used, 1003);
   const merged = mergeLiveTokenCardDeck(switchLiveTokenCardDeck(split.state, hand), hand);
@@ -52,7 +52,7 @@ test('指定系列の生成カードをsub deckへ追加する', () => {
     createLiveTokenCardDeckState(5),
     createLiveDeckBoardState([1001, 1002, 1003], []),
     cards,
-    2,
+    [2],
     5,
   );
   const state = switchLiveTokenCardDeck(split.state, split.deckBoard);
@@ -65,7 +65,7 @@ test('指定系列の生成カードをsub deckへ追加する', () => {
 
 test('deck切替はruntimeと同じ手札差分補正と切替先deck枚数上限を適用する', () => {
   const initial = createLiveDeckBoardState([1001, 1002, 1003], [1001]);
-  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), initial, cards, 2, 5);
+  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), initial, cards, [2], 5);
   const switched = switchLiveTokenCardDeck(split.state, split.deckBoard);
 
   expect(switched.currentDeck).toBe('sub');
@@ -74,7 +74,7 @@ test('deck切替はruntimeと同じ手札差分補正と切替先deck枚数上�
 
 test('current sub deckのDeckが空ならsub deckのGraveyardだけをreloadする', () => {
   const initial = createLiveDeckBoardState([1001, 1002, 1003], [1001, 1002, 1003]);
-  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), initial, cards, 2, 5);
+  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), initial, cards, [2], 5);
   const switched = switchLiveTokenCardDeck(split.state, split.deckBoard);
   const firstUsed = moveLiveHandCardToGraveyard(
     moveLiveDeckCardToHand(split.deckBoard, 1002),
@@ -91,7 +91,7 @@ test('current sub deckのDeckが空ならsub deckのGraveyardだけをreloadす�
 
 test('current deckの明示的な墓地回収はDeckOutCountを増やさない', () => {
   const initial = createLiveDeckBoardState([1001, 1002, 1003], []);
-  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), initial, cards, 2, 5);
+  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(5), initial, cards, [2], 5);
   const switched = switchLiveTokenCardDeck(split.state, split.deckBoard);
   const used = moveLiveHandCardToGraveyard(moveLiveDeckCardToHand(split.deckBoard, 1002), 1002);
   const reloaded = reloadLiveCurrentDeckCards(switched, { ...used, deckOutCount: 2 });
@@ -105,7 +105,7 @@ for (const currentDeck of ['main', 'sub'] as const) {
       createLiveTokenCardDeckState(5),
       createLiveDeckBoardState([1001, 1002, 1003], []),
       cards,
-      2,
+      [2],
       5,
     );
     const state = { ...split.state, currentDeck };
@@ -146,7 +146,7 @@ test('初期化は両手札の前回目標と現在目標を初期枚数へそ�
 
 test('分割前の上限変更でデッキ別の前回目標を上書きしない', () => {
   const initial = createLiveDeckBoardState([1001, 1002, 1003], []);
-  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(3), initial, cards, 2, 7);
+  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(3), initial, cards, [2], 7);
   expect(split.state.handTargetCounts).toEqual({ current: 7, main: 3, sub: 3 });
 });
 
@@ -157,7 +157,7 @@ test('切替は退出側の前回目標を保存し、入側の超過手札だ�
     tokenCardSeriesIds: cardInstanceId > 8 ? [2] : [],
   }));
   const board = createLiveDeckBoardState(ids, [1, 2, 3]);
-  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(3), board, identities, 2, 6);
+  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(3), board, identities, [2], 6);
   let prepared = split.deckBoard;
   for (const id of [9, 10, 11, 12, 13]) prepared = moveLiveDeckCardToHand(prepared, id);
   const sub = switchLiveTokenCardDeck(split.state, prepared);
@@ -167,6 +167,6 @@ test('切替は退出側の前回目標を保存し、入側の超過手札だ�
   const merged = mergeLiveTokenCardDeck(main, prepared);
   expect(merged.state.initialCardCount).toBe(3);
   expect(merged.state.handTargetCounts).toEqual(main.handTargetCounts);
-  const again = splitLiveTokenCardDeck(merged.state, merged.deckBoard, identities, 2, 4);
+  const again = splitLiveTokenCardDeck(merged.state, merged.deckBoard, identities, [2], 4);
   expect(again.state.handTargetCounts).toEqual({ current: 4, main: 6, sub: 8 });
 });

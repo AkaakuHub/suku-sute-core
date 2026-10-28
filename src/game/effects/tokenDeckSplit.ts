@@ -1,12 +1,25 @@
-import { moveCardsToBoard } from '../cards/deckBoard.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
-import type { Card } from '../cards/cardTypes.ts';
+import {
+  liveCurrentDeckBoardCardInstanceIds,
+  liveCurrentDeckCardCount,
+  liveTokenCardMatchesSeries,
+  mergeLiveTokenCardDeck,
+  reconcileLiveTokenCardDeckHandTarget,
+  splitLiveTokenCardDeck,
+  switchLiveTokenCardDeck,
+} from '../../runtime/cards/tokenCardDeck.ts';
 import {
   activateHandPermanentEffects,
   disposeHandEffects,
   removeHandCardEffects,
 } from '../cards/handEffects.ts';
-import { fillHandToCount } from '../cards/drawing.ts';
+import { activateModeAbilityEffects } from '../cards/modeAbility.ts';
+import {
+  fillHandToCount,
+  fillHandToCountRetainingOverflow,
+  handCapacity,
+  removeRandomHandCards,
+} from '../cards/drawing.ts';
 import type { GameState } from '../model.ts';
 import type { TokenDeckSplit, TokenDeckHand } from '../tokenDeckSplitTypes.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
@@ -16,40 +29,26 @@ function zones(state: GameState): TokenDeckHand {
   return { hand: state.hand };
 }
 
-function isSeriesCard(card: Card, seriesIds: readonly number[] | null): boolean {
-  return seriesIds !== null && card.tokenCardSeriesIds.some((id) => seriesIds.includes(id));
-}
-
-function withZones(state: GameState, value: TokenDeckHand): GameState {
-  return { ...state, hand: value.hand };
-}
-
 export function activateTokenDeckSplit(
   state: GameState,
   effect: Extract<import('../modelTypes').Effect, { kind: 'token-deck-split' }>,
   applyEffect: EffectApplier,
 ): GameState {
-  if (state.tokenDeckSplit) return state;
+  if (state.tokenCardDeck.subDeckCardInstanceIds !== null) return state;
   if (effect.duration.kind === 'sections' && effect.duration.value === 0n)
     throw new Error('表示パート数が0です。');
   const seriesIds = effect.seriesIds?.map((id) => Number(BigInt.asIntN(32, id))) ?? null;
   const selected = new Set(
-    state.deck.filter((card) => isSeriesCard(card, seriesIds)).map((card) => card.cardInstanceId),
+    state.deck
+      .filter((card) => liveTokenCardMatchesSeries(card, seriesIds))
+      .map((card) => card.cardInstanceId),
   );
   const handCount = state.hand.length;
-  const main: TokenDeckHand = {
-    hand: state.hand.filter((id) => !selected.has(id)),
-  };
-  const sub: TokenDeckHand = {
-    hand: [],
-  };
+  const main: TokenDeckHand = { hand: state.hand.filter((id) => !selected.has(id)) };
   const suppressExpiration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const split: TokenDeckSplit = {
-    seriesIds,
-    subDeckCardInstanceIds: [...selected],
     main,
-    sub,
-    active: 'main',
+    sub: { hand: [] },
     remainingSeconds:
       !suppressExpiration && effect.duration.kind === 'milliseconds'
         ? Math.fround(Math.fround(effect.duration.value) / Math.fround(1000))
@@ -62,82 +61,120 @@ export function activateTokenDeckSplit(
     state,
     state.hand.filter((id) => selected.has(id)),
   );
+  const partition = splitLiveTokenCardDeck(
+    next.tokenCardDeck,
+    next.deckBoard,
+    next.deck,
+    seriesIds,
+    Math.min(handCapacity(next), next.deck.length),
+  );
   next = {
-    ...withZones(moveCardsToBoard(next, [...selected], liveBoardState.deck), main),
+    ...next,
+    hand: main.hand,
+    deckBoard: partition.deckBoard,
+    tokenCardDeck: partition.state,
     tokenDeckSplit: split,
   };
   next = fillHandToCount(next, handCount);
   const activeMain = zones(next);
   let subState: GameState = {
-    ...withZones(next, { hand: [] }),
-    tokenDeckSplit: { ...split, active: 'sub' as const },
+    ...next,
+    hand: [],
+    tokenCardDeck: { ...next.tokenCardDeck, currentDeck: 'sub' },
+    handEffectCardIds: [],
+    drawContext: 'sub-deck-start',
+    usedCard: null,
+    lastUsedSkillIcon: null,
   };
-  subState = { ...subState, handEffectCardIds: [], drawContext: 'initial' };
-  subState = fillHandToCount(subState, Math.min(handCount, selected.size));
-  const inactiveSubStats = { ...subState.handCardStats };
+  subState = fillHandToCountRetainingOverflow(
+    subState,
+    Math.min(
+      subState.tokenCardDeck.handTargetCounts.sub,
+      liveCurrentDeckCardCount(subState.tokenCardDeck, subState.deckBoard),
+    ),
+  );
+  const handCardStats = { ...subState.handCardStats };
   for (const id of subState.hand) {
-    const stats = inactiveSubStats[id];
-    if (stats) inactiveSubStats[id] = { ...stats, isActive: false };
+    const stats = handCardStats[id];
+    if (stats) handCardStats[id] = { ...stats, isActive: false };
   }
   const completed: GameState = {
     ...next,
     randomSeed: subState.randomSeed,
     deckBoard: subState.deckBoard,
-    handCardStats: { ...next.handCardStats, ...inactiveSubStats },
+    deckActions: subState.deckActions,
+    handHeartCollectCounts: subState.handHeartCollectCounts,
+    relayUsed: subState.relayUsed,
+    handCardStats,
     drawContext: 'idle',
+    usedCard: null,
+    lastUsedSkillIcon: null,
     tokenDeckSplit: { ...split, main: activeMain, sub: zones(subState) },
   };
   return completeDeckOutChecks(completed, applyEffect);
 }
 
+function reconcileHand(state: GameState): GameState {
+  const target = state.tokenCardDeck.handTargetCounts.current;
+  const next =
+    state.hand.length > target ? removeRandomHandCards(state, state.hand.length - target) : state;
+  return fillHandToCountRetainingOverflow(next, target);
+}
+
 export function switchTokenDeck(state: GameState, applyEffect: EffectApplier): GameState {
   const split = state.tokenDeckSplit;
   if (!split) return state;
-  const incoming = split.active === 'main' ? split.sub : split.main;
-  const outgoingName = split.active;
-  const incomingName = split.active === 'main' ? 'sub' : 'main';
+  const outgoingName = state.tokenCardDeck.currentDeck;
+  const incomingName = outgoingName === 'main' ? 'sub' : 'main';
   let next = disposeHandEffects(state, state.hand);
-  const updated: TokenDeckSplit = {
-    ...split,
-    [outgoingName]: zones(state),
-    active: incomingName,
-  };
-  next = {
-    ...withZones(next, incoming),
-    tokenDeckSplit: updated,
-    handEffectCardIds: [],
-  };
+  const tokenCardDeck = switchLiveTokenCardDeck(next.tokenCardDeck, next.deckBoard);
+  const physicalHand = new Set(
+    liveCurrentDeckBoardCardInstanceIds(tokenCardDeck, next.deckBoard, liveBoardState.hand),
+  );
+  const incoming = split[incomingName].hand.filter((id) => physicalHand.has(id));
+  const updated: TokenDeckSplit = { ...split, [outgoingName]: zones(state) };
+  next = { ...next, hand: incoming, tokenCardDeck, tokenDeckSplit: updated, handEffectCardIds: [] };
   const handCardStats = { ...next.handCardStats };
   for (const id of state.hand) {
     const stats = handCardStats[id];
     if (stats) handCardStats[id] = { ...stats, isActive: false };
   }
-  for (const id of incoming.hand) {
+  for (const id of incoming) {
     const stats = handCardStats[id];
     if (stats) handCardStats[id] = { ...stats, isActive: true };
   }
-  next = { ...next, handCardStats };
-  next = { ...next, handEffectCardIds: [...incoming.hand] };
-  for (const id of incoming.hand) {
+  next = { ...next, handCardStats, handEffectCardIds: [...incoming] };
+  for (const id of incoming) {
     const card = next.deck.find((item) => item.cardInstanceId === id);
-    if (card) next = activateHandPermanentEffects(next, card);
+    if (!card) throw new Error('切替先の手札がありません。');
+    next = activateHandPermanentEffects(next, card);
+    next = activateModeAbilityEffects(next, card, applyEffect);
   }
-  const switched = { ...next, tokenDeckSplit: { ...updated, [incomingName]: zones(next) } };
-  return incoming.hand.length === 0 ? completeDeckOutChecks(switched, applyEffect) : switched;
+  next = reconcileHand(next);
+  return completeDeckOutChecks(
+    { ...next, tokenDeckSplit: { ...updated, [incomingName]: zones(next) } },
+    applyEffect,
+  );
 }
 
 function mergeTokenDeck(state: GameState, applyEffect: EffectApplier): GameState {
   const split = state.tokenDeckSplit;
   if (!split) return state;
   const mainState =
-    split.active === 'main'
-      ? { ...state, tokenDeckSplit: { ...split, main: zones(state) } }
+    state.tokenCardDeck.currentDeck === 'main'
+      ? reconcileHand({
+          ...state,
+          tokenCardDeck: reconcileLiveTokenCardDeckHandTarget(state.tokenCardDeck, state.deckBoard),
+        })
       : switchTokenDeck(state, applyEffect);
   const activeSplit = mainState.tokenDeckSplit;
-  if (!activeSplit) return mainState;
-  const sub = activeSplit.sub;
+  if (!activeSplit) throw new Error('統合する手札情報がありません。');
+  const removed = removeHandCardEffects(mainState, activeSplit.sub.hand);
+  const merged = mergeLiveTokenCardDeck(removed.tokenCardDeck, removed.deckBoard);
   return {
-    ...moveCardsToBoard(removeHandCardEffects(mainState, sub.hand), sub.hand, liveBoardState.deck),
+    ...removed,
+    deckBoard: merged.deckBoard,
+    tokenCardDeck: merged.state,
     tokenDeckSplit: null,
   };
 }

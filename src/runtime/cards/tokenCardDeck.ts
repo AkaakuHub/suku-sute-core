@@ -41,7 +41,7 @@ export function splitLiveTokenCardDeck<Id extends LiveCardIdentifier>(
   state: LiveTokenCardDeckState<Id>,
   deckBoard: LiveDeckBoardState<Id>,
   cards: readonly LiveTokenCardDeckIdentity<Id>[],
-  tokenCardSeriesId: number,
+  tokenCardSeriesIds: readonly number[] | null,
   handTargetCount: number,
 ): Readonly<{
   state: LiveTokenCardDeckState<Id>;
@@ -49,13 +49,16 @@ export function splitLiveTokenCardDeck<Id extends LiveCardIdentifier>(
 }> {
   validateState(state, deckBoard);
   validateCards(deckBoard, cards);
-  if (!Number.isSafeInteger(tokenCardSeriesId) || tokenCardSeriesId < 1) {
+  if (tokenCardSeriesIds?.some((id) => !Number.isSafeInteger(id))) {
     throw new Error('Live sub deck token CardSeries.Id is invalid');
   }
   validateHandTargetCount(handTargetCount);
   if (state.subDeckCardInstanceIds !== null) return { state, deckBoard };
+  const mainIds = new Set(liveDeckCardInstanceIds(state, deckBoard, 'main'));
   const subDeckCardInstanceIds = cards.flatMap((card) =>
-    card.tokenCardSeriesIds.includes(tokenCardSeriesId) ? [card.cardInstanceId] : [],
+    mainIds.has(card.cardInstanceId) && liveTokenCardMatchesSeries(card, tokenCardSeriesIds)
+      ? [card.cardInstanceId]
+      : [],
   );
   const subDeckIds = new Set(subDeckCardInstanceIds);
   return {
@@ -63,7 +66,7 @@ export function splitLiveTokenCardDeck<Id extends LiveCardIdentifier>(
       ...state,
       currentDeck: 'main',
       subDeckCardInstanceIds,
-      tokenCardSeriesIds: [tokenCardSeriesId],
+      tokenCardSeriesIds,
       handTargetCounts: { ...state.handTargetCounts, current: handTargetCount },
     },
     deckBoard: {
@@ -144,12 +147,21 @@ export function mergeLiveTokenCardDeck<Id extends LiveCardIdentifier>(
     deckBoard: {
       ...deckBoard,
       cards: deckBoard.cards.map((card) =>
-        subDeckIds.has(card.cardInstanceId) && card.boardState !== liveBoardState.graveyard
+        subDeckIds.has(card.cardInstanceId) &&
+        card.boardState !== liveBoardState.graveyard &&
+        card.boardState !== liveBoardState.exclusion
           ? { ...card, boardState: liveBoardState.deck }
           : card,
       ),
     },
   };
+}
+
+export function liveTokenCardMatchesSeries(
+  card: Pick<LiveTokenCardDeckIdentity<LiveCardIdentifier>, 'tokenCardSeriesIds'>,
+  seriesIds: readonly number[] | null,
+): boolean {
+  return seriesIds !== null && card.tokenCardSeriesIds.some((id) => seriesIds.includes(id));
 }
 
 export function addLiveTokenCardDeckCard<Id extends LiveCardIdentifier>(
@@ -165,8 +177,7 @@ export function addLiveTokenCardDeckCard<Id extends LiveCardIdentifier>(
     throw new Error('Live sub deck card instance ID is invalid');
   }
   if (state.subDeckCardInstanceIds === null) return state;
-  if (state.tokenCardSeriesIds === null) throw new Error('Live sub deck token series are absent');
-  if (!card.tokenCardSeriesIds.some((id) => state.tokenCardSeriesIds?.includes(id))) return state;
+  if (!liveTokenCardMatchesSeries(card, state.tokenCardSeriesIds)) return state;
   if (state.subDeckCardInstanceIds.includes(cardInstanceId)) {
     throw new Error('Live sub deck card instance ID is duplicated');
   }
@@ -188,7 +199,11 @@ export function liveCurrentDeckBoardCardInstanceIds<Id extends LiveCardIdentifie
       state.currentDeck === 'sub'
         ? subDeckIds.has(card.cardInstanceId)
         : !subDeckIds.has(card.cardInstanceId);
-    return belongsToCurrentDeck && card.boardState === boardState ? [card.cardInstanceId] : [];
+    return belongsToCurrentDeck &&
+      card.boardState !== liveBoardState.exclusion &&
+      card.boardState === boardState
+      ? [card.cardInstanceId]
+      : [];
   });
 }
 
@@ -270,14 +285,17 @@ export function moveLiveCurrentDeckHandCardToBoardState<Id extends LiveCardIdent
   };
 }
 
-function liveDeckCardInstanceIds<Id extends LiveCardIdentifier>(
+export function liveDeckCardInstanceIds<Id extends LiveCardIdentifier>(
   state: LiveTokenCardDeckState<Id>,
   deckBoard: LiveDeckBoardState<Id>,
   deck: 'main' | 'sub',
 ): readonly Id[] {
   const subDeckIds = new Set(state.subDeckCardInstanceIds ?? []);
   return deckBoard.cards.flatMap((card) =>
-    (deck === 'sub') === subDeckIds.has(card.cardInstanceId) ? [card.cardInstanceId] : [],
+    card.boardState !== liveBoardState.exclusion &&
+    (deck === 'sub') === subDeckIds.has(card.cardInstanceId)
+      ? [card.cardInstanceId]
+      : [],
   );
 }
 
@@ -285,7 +303,7 @@ function validateState<Id extends LiveCardIdentifier>(
   state: LiveTokenCardDeckState<Id>,
   deckBoard: LiveDeckBoardState<Id>,
 ): void {
-  if ((state.subDeckCardInstanceIds === null) !== (state.tokenCardSeriesIds === null))
+  if (state.subDeckCardInstanceIds === null && state.tokenCardSeriesIds !== null)
     throw new Error('Live sub deck token series are inconsistent');
   if (state.currentDeck === 'sub' && state.subDeckCardInstanceIds === null) {
     throw new Error('Live current sub deck is absent');
@@ -316,13 +334,17 @@ function validateCards<Id extends LiveCardIdentifier>(
 ): void {
   const boardIds = deckBoard.cards.map((card) => card.cardInstanceId);
   if (
-    cards.length !== boardIds.length ||
+    deckBoard.cards.some(
+      (card) =>
+        card.boardState !== liveBoardState.exclusion &&
+        !cards.some((identity) => identity.cardInstanceId === card.cardInstanceId),
+    ) ||
     new Set(cards.map((card) => card.cardInstanceId)).size !== cards.length ||
     cards.some(
       (card) =>
         !boardIds.includes(card.cardInstanceId) ||
         new Set(card.tokenCardSeriesIds).size !== card.tokenCardSeriesIds.length ||
-        card.tokenCardSeriesIds.some((seriesId) => !Number.isSafeInteger(seriesId) || seriesId < 1),
+        card.tokenCardSeriesIds.some((seriesId) => !Number.isSafeInteger(seriesId)),
     )
   ) {
     throw new Error('Live sub deck card identities are invalid');

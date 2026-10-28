@@ -1,8 +1,12 @@
 import {
+  liveDeckCardInstanceIds,
+  liveCurrentDeckBoardCardInstanceIds,
+  reloadLiveCurrentDeckCards,
+} from '../../runtime/cards/tokenCardDeck.ts';
+import {
   type LiveBoardState,
   type LiveDeckBoardState,
   liveBoardState,
-  reloadLiveDeckCardInstanceIds,
   setLiveCardBoardState,
 } from '../../runtime/cards/deckBoardState.ts';
 import type { Card, GameState } from '../model.ts';
@@ -25,20 +29,15 @@ export function createCardDeckBoard(
 }
 
 export function currentDeckCardIds(state: GameState): readonly string[] {
-  const split = state.tokenDeckSplit;
-  return state.deck.flatMap((card) =>
-    split === null ||
-    split.subDeckCardInstanceIds.includes(card.cardInstanceId) === (split.active === 'sub')
-      ? [card.cardInstanceId]
-      : [],
+  return liveDeckCardInstanceIds(
+    state.tokenCardDeck,
+    state.deckBoard,
+    state.tokenCardDeck.currentDeck,
   );
 }
 
 export function boardCardIds(state: GameState, boardState: LiveBoardState): readonly string[] {
-  const ids = new Set(currentDeckCardIds(state));
-  return state.deckBoard.cards.flatMap((card) =>
-    ids.has(card.cardInstanceId) && card.boardState === boardState ? [card.cardInstanceId] : [],
-  );
+  return liveCurrentDeckBoardCardInstanceIds(state.tokenCardDeck, state.deckBoard, boardState);
 }
 
 export function moveCardsToBoard(
@@ -54,9 +53,6 @@ export function moveCardsToBoard(
 export function recoverCurrentDeckGraveyard(state: GameState): GameState {
   return {
     ...state,
-    deckBoard: reloadLiveDeckCardInstanceIds(
-      state.deckBoard,
-      boardCardIds(state, liveBoardState.graveyard),
-    ),
+    deckBoard: reloadLiveCurrentDeckCards(state.tokenCardDeck, state.deckBoard),
   };
 }

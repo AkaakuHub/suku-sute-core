@@ -1,3 +1,4 @@
+import { addLiveTokenCardDeckCard } from '../../runtime/cards/tokenCardDeck.ts';
 import { type Card, type GameState, type TokenId, rules } from '../model.ts';
 import type { TokenRequest, TokenTemplateReference } from '../tokenRequestTypes.ts';
 import { boostTokenRequests } from './tokenBoost.ts';
@@ -127,20 +128,10 @@ function addTokenCards(
     },
   );
   for (const card of generated) validateCard(card);
-  const split = state.tokenDeckSplit;
-  const splitMatches = (card: (typeof generated)[number]) =>
-    split?.seriesIds !== null &&
-    split?.seriesIds !== undefined &&
-    card.tokenCardSeriesIds.some((id) => split.seriesIds?.includes(id));
-  const tokenDeckSplit = split
-    ? {
-        ...split,
-        subDeckCardInstanceIds: [
-          ...split.subDeckCardInstanceIds,
-          ...generated.filter(splitMatches).map((card) => card.cardInstanceId),
-        ],
-      }
-    : null;
+  const tokenCardDeck = generated.reduce(
+    (deck, card) => addLiveTokenCardDeckCard(deck, card),
+    state.tokenCardDeck,
+  );
   return initializeParameterValueFactors(
     {
       ...state,
@@ -159,7 +150,7 @@ function addTokenCards(
         ],
         nextCardInstanceId: state.deckBoard.nextCardInstanceId + generated.length,
       },
-      tokenDeckSplit,
+      tokenCardDeck,
     },
     generated,
   );
