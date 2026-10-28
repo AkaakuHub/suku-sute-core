@@ -93,7 +93,7 @@ function conditionValue(state: GameState, source: Card, change: SkillCostChange)
     case 2:
       return state.cardUseCounts[source.id] ?? 0;
     case 3:
-      return voltageLevel(state.currentVoltage, state.maximumVoltageLevel);
+      return voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel);
     case 4:
       return Math.min(1, Math.trunc(state.mental.currentMental) / state.maximumMental);
     case 5:

@@ -1,3 +1,4 @@
+import type { LiveVoltageGaugeState } from '../runtime/live/voltageGauge.ts';
 import type { SkillCooldownEffect } from './skillCooldownTypes.ts';
 import type {
   ActiveCardMoveInducer,
@@ -234,7 +235,6 @@ export type GameState = Readonly<{
   additionalHeartInducers: readonly AdditionalHeartInducer[];
   nextAdditionalHeartInducerId: number;
   comboInducer: ComboInducer | null;
-  voltageTimerSeconds: number;
   voltageStops: readonly Readonly<{
     id: number;
     remainingSeconds: number | null;
@@ -280,7 +280,7 @@ export type GameState = Readonly<{
   heartBoosts: readonly HeartBoostState[];
   mentalShields: readonly MentalShield[];
   mentalBarriers: readonly MentalBarrier[];
-  currentVoltage: number;
+  voltage: LiveVoltageGaugeState;
   masteryVoltageProgress: number;
   maximumVoltageLevel: number;
   specialAppealTokens: readonly SpecialAppealToken[];

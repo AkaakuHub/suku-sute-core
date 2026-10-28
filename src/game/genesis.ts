@@ -9,8 +9,6 @@ import {
   type LiveGenesisEffect,
 } from '../runtime/skills/genesisSkill.ts';
 
-const gaugeTypes = { ap: 3, mental: 2, voltage: 1 } as const;
-
 export function activateGenesis(state: GameState, effectValue: number): GameState {
   return applyGenesisEffect(state, {
     effectId: String(state.genesis.effects.length + 1),
@@ -25,22 +23,18 @@ export function applyGenesisEffect(state: GameState, effect: LiveGenesisEffect):
     genesis: activateLiveGenesisEffect(state.genesis, effect, {
       currentAp: Math.floor(state.ap.currentAp),
       currentMental: Math.floor(state.mental.currentMental),
-      currentVoltage: BigInt(state.currentVoltage),
-      currentVoltageLevel: voltageLevel(state.currentVoltage, state.maximumVoltageLevel),
+      currentVoltage: state.voltage.currentVoltage,
+      currentVoltageLevel: voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel),
     }),
   };
 }
 
-export function changeGenesisResource(
-  state: GameState,
-  resource: 'ap' | 'mental' | 'voltage',
-  amount: bigint,
-): GameState {
+export function changeGenesisMental(state: GameState, amount: bigint): GameState {
   return {
     ...state,
     genesis: addLiveGenesisGauge(state.genesis, {
       actionType: 14,
-      gaugeType: gaugeTypes[resource],
+      gaugeType: 2,
       effectValue: Number(amount),
     }),
   };
@@ -63,16 +57,22 @@ export function finishGenesis(state: GameState): GameState {
   if (!rollback) return state;
   let next: GameState = {
     ...state,
-    currentVoltage: Number(rollback.currentVoltage),
     gaugeInfinities: state.gaugeInfinities.map((infinity) => ({ ...infinity, suspended: false })),
     genesis: frame.state,
     mental: { ...state.mental, currentMental: rollback.currentMental },
     ap: { ...state.ap, currentAp: rollback.currentAp },
+    voltage: { ...state.voltage, currentVoltage: rollback.currentVoltage },
   };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'ap'))
     next = { ...next, ap: { ...next.ap, currentAp: next.ap.maxAp } };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'voltage'))
-    next = { ...next, currentVoltage: voltageThreshold(next.maximumVoltageLevel) };
+    next = {
+      ...next,
+      voltage: {
+        ...next.voltage,
+        currentVoltage: voltageThreshold(next.maximumVoltageLevel),
+      },
+    };
   if (state.gaugeInfinities.some((infinity) => infinity.gauge === 'mental')) {
     next = {
       ...next,

@@ -1,9 +1,11 @@
+import { advanceLiveVoltageGauge } from '../runtime/live/voltageGauge.ts';
+import { voltageThreshold } from './live/voltageLevel.ts';
 import { setLiveApGaugeValue } from '../runtime/live/apGaugeChange.ts';
 import { calculateLiveMentalDownRecovery } from '../runtime/live/gaugeTiming.ts';
 import type { GameState } from './model.ts';
 import { advanceLiveMentalGauge } from '../runtime/live/mentalGauge.ts';
 import { advanceLiveApGauge } from '../runtime/live/apGauge.ts';
-import { changeResource, decreaseMentalNaturally } from './resources.ts';
+import { changeResource, decreaseMentalNaturally, setVoltageValue } from './resources.ts';
 import { mentalDecreaseInterval } from './live/mentalBarriers.ts';
 import { durationSeconds } from './projection.ts';
 import { apIncreaseIntervalSeconds } from './effects/apSpeed.ts';
@@ -45,32 +47,38 @@ export function advanceAutomaticGauges(
       },
     },
   ).state;
-  next = {
-    ...next,
-    ap,
-    voltageTimerSeconds:
-      state.voltageStops.length > 0
-        ? state.voltageTimerSeconds
-        : Math.fround(Math.fround(state.voltageTimerSeconds) + Math.fround(dt)),
-  };
-  while (
-    next.voltageStops.length === 0 &&
-    stage.voltageIncreaseIntervalSeconds < next.voltageTimerSeconds
-  ) {
-    next = changeResource(
-      {
-        ...next,
-        voltageTimerSeconds: Math.fround(
-          next.voltageTimerSeconds - stage.voltageIncreaseIntervalSeconds,
-        ),
+  next = { ...next, ap };
+  const voltage = advanceLiveVoltageGauge(
+    next.voltage,
+    {
+      deltaTimeSeconds: dt,
+      stopIncreaseRequestCount: next.voltageStops.length,
+      increaseIntervalSeconds: stage.voltageIncreaseIntervalSeconds,
+      maxBaseVoltageLevel: next.maximumVoltageLevel,
+      voltageInfinity: next.gaugeInfinities.some(
+        (effect) => effect.gauge === 'voltage' && !effect.suspended,
+      ),
+    },
+    {
+      getVoltageThreshold: voltageThreshold,
+      setVoltage: (value) => {
+        next = setVoltageValue(next, value, applyEffect);
+        return next.voltage.currentVoltage;
       },
-      'voltage',
-      1n,
-      'natural',
-      undefined,
-      applyEffect,
-    );
-  }
+      addVoltage: (currentVoltage, request) => {
+        next = changeResource(
+          { ...next, voltage: { ...next.voltage, currentVoltage } },
+          'voltage',
+          BigInt(request.addValue),
+          'natural',
+          undefined,
+          applyEffect,
+        );
+        return next.voltage.currentVoltage;
+      },
+    },
+  );
+  next = { ...next, voltage: voltage.state };
   const recovery = calculateLiveMentalDownRecovery(next.maximumMental, durationSeconds(next));
   const mental = advanceLiveMentalGauge(
     next.mental,

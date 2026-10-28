@@ -32,7 +32,8 @@ export function evaluateDrawSuccessInduce(
     }
     case 5: {
       return (
-        voltageLevel(state.currentVoltage, state.maximumVoltageLevel) <= numToValue(branchValue)
+        voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel) <=
+        numToValue(branchValue)
       );
     }
     case 6:

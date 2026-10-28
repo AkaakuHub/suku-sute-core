@@ -91,7 +91,7 @@ export function collectHearts(state: GameState): GameState {
     } else if (card.collectionAbility) {
       if (
         triggered.genesis.effects.length > 0 ||
-        (voltageLevel(triggered.currentVoltage, triggered.maximumVoltageLevel) >= 950 &&
+        (voltageLevel(triggered.voltage.currentVoltage, triggered.maximumVoltageLevel) >= 950 &&
           Math.trunc(triggered.mental.currentMental) === 0)
       ) {
         triggered = applyEffect(
@@ -103,7 +103,7 @@ export function collectHearts(state: GameState): GameState {
         triggered = applyEffect(triggered, { kind: 'voltage', amount: -1_400_000 }, card);
         if (
           triggered.genesis.effects.length > 0 ||
-          voltageLevel(triggered.currentVoltage, triggered.maximumVoltageLevel) >= 1000
+          voltageLevel(triggered.voltage.currentVoltage, triggered.maximumVoltageLevel) >= 1000
         )
           triggered = applyEffect(triggered, { kind: 'voltage', amount: -14_000_000 }, card);
       }

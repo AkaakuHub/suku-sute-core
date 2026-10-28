@@ -1,3 +1,4 @@
+import { int64ToFloat32 } from '../../runtime/numeric.ts';
 import { voltageThreshold } from '../live/voltageLevel.ts';
 import type { Effect, GameState } from '../model.ts';
 import { induceMentalHearts } from './mentalHeartInduce.ts';
@@ -49,8 +50,11 @@ export function activateInfinityGauge(
     );
   if (effect.gauge === 'voltage') {
     const currentVoltage = voltageThreshold(next.maximumVoltageLevel);
-    next = { ...next, currentVoltage };
-    const mastery = addMasteryVoltage(next, Math.fround(currentVoltage - state.currentVoltage));
+    next = { ...next, voltage: { ...next.voltage, currentVoltage } };
+    const mastery = addMasteryVoltage(
+      next,
+      int64ToFloat32(BigInt.asIntN(64, currentVoltage - state.voltage.currentVoltage)),
+    );
     next = mastery.state;
     let voltageUp = mastery.gain;
     if (voltageUp > 0) {

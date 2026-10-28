@@ -14,18 +14,18 @@ const thresholds = createLiveVoltageThresholds(
   settingCount,
 );
 
-export function voltageThreshold(level: number): number {
-  return Number(getLiveVoltageThreshold(thresholds, level));
+export function voltageThreshold(level: number): bigint {
+  return getLiveVoltageThreshold(thresholds, level);
 }
 
-export function voltageLevel(points: number, maximumLevel: number): number {
-  return projectLiveVoltageLevel(thresholds, BigInt(points), maximumLevel).currentLevel;
+export function voltageLevel(points: bigint, maximumLevel: number): number {
+  return projectLiveVoltageLevel(thresholds, points, maximumLevel).currentLevel;
 }
 
-export function voltageProgress(points: number, maximumLevel: number): number {
+export function voltageProgress(points: bigint, maximumLevel: number): number {
   const level = voltageLevel(points, maximumLevel);
   if (level >= maximumLevel) return 100;
   const lower = voltageThreshold(level);
   const upper = voltageThreshold(level + 1);
-  return ((points - lower) / (upper - lower)) * 100;
+  return (Number(points - lower) / Number(upper - lower)) * 100;
 }

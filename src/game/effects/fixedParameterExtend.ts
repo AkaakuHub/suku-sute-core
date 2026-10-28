@@ -122,12 +122,17 @@ function recalculateFixedParameters(state: GameState): GameState {
   return {
     ...state,
     maximumVoltageLevel,
-    currentVoltage: voltageInfinite ? voltageThreshold(maximumVoltageLevel) : state.currentVoltage,
     maximumMental,
     ap: {
       ...state.ap,
       maxAp: maxAp,
       currentAp: apInfinite ? maxAp : Math.min(state.ap.currentAp, maxAp),
+    },
+    voltage: {
+      ...state.voltage,
+      currentVoltage: voltageInfinite
+        ? voltageThreshold(maximumVoltageLevel)
+        : state.voltage.currentVoltage,
     },
   };
 }

@@ -264,7 +264,7 @@ function applyEffectInternal(
     case 'fixed-parameter-extend':
       return activateFixedParameterExtend(state, effect, card);
     case 'voltage-set':
-      return setVoltageValue(state, effect.amount, applyEffect);
+      return setVoltageValue(state, BigInt(Math.trunc(Math.fround(effect.amount))), applyEffect);
     case 'stop-voltage-increase':
       return activateVoltageIncreaseStop(state, effect);
     case 'infinity-gauge':
@@ -323,7 +323,7 @@ function applyEffectInternal(
         effect.condition === 'always' ||
         (effect.condition === 'mental100'
           ? state.mental.currentMental >= state.maximumMental
-          : voltageLevel(state.currentVoltage, state.maximumVoltageLevel) >= 20);
+          : voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel) >= 20);
       return eligible
         ? {
             ...state,

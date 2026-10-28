@@ -134,7 +134,6 @@ export function createGame(
     mentalBarrierAdditionalBuffs: [],
     nextSkillAdditionalBuffId: 1,
     temporaryScoreBoosts: [],
-    voltageTimerSeconds: 0,
     voltageStops: [],
     nextVoltageStopId: 1,
     gaugeInfinities: [],
@@ -153,7 +152,6 @@ export function createGame(
     beatHeartValueBuffs: [],
     heartBoosts: [],
     mentalBarriers: [],
-    currentVoltage: 0,
     masteryVoltageProgress: 0,
     maximumVoltageLevel: 1000,
     specialUsed: [],
@@ -207,6 +205,7 @@ export function createGame(
     },
     mental: { timerSeconds: 0, currentMental: 100, mentalDown: false },
     ap: { currentAp: 0, maxAp: track.stage.maxAp, timerSeconds: 0 },
+    voltage: { timerSeconds: 0, currentVoltage: 0n },
   };
   return fillHand(initializeHandCardStats(initializeParameterValueFactors(initial), [lead.id]));
 }

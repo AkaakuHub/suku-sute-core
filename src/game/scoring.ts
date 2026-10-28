@@ -21,7 +21,7 @@ export function collectionScore(
   missed: boolean,
   rankHeartCount: number,
 ): bigint {
-  const voltage = voltageLevel(state.currentVoltage, state.maximumVoltageLevel);
+  const voltage = voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel);
   const rank =
     state.genesis.effects.length > 0
       ? calculateLiveFlowerRank(rankHeartCount, Number(state.genesis.currentGauge))
