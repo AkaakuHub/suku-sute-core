@@ -214,7 +214,7 @@ function applyEffectInternal(
       };
     }
     case 'use-hand':
-      throw new Error('一斉使用はカード使用処理で実行してください。');
+      return state;
     case 'card-move': {
       if (
         !card ||
