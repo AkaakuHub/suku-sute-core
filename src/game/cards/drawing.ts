@@ -83,9 +83,8 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
         deckOutCount: next.deckOutCount + 1,
       };
     }
-    const available = next.deck
-      .filter((card) => boardCardIds(next, liveBoardState.deck).includes(card.id))
-      .map((card) => card.id);
+    const deckIds = new Set(boardCardIds(next, liveBoardState.deck));
+    const available = next.deck.filter((card) => deckIds.has(card.id)).map((card) => card.id);
     const random = createRangeRandom(next.randomSeed);
     const randomIndex = (maximumExclusive: number) => Math.floor(random.range(0, maximumExclusive));
     const searched = consumeSearch(next, randomIndex);

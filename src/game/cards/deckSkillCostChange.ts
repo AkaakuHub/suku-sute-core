@@ -11,11 +11,12 @@ export function applyDeckSkillCostChange(
   multiplier: number,
   addValue: number,
 ): GameState {
+  const deckIds = new Set(boardCardIds(state, liveBoardState.deck));
   const candidates =
     effect.targetRange === 2
       ? state.hand.flatMap((id) => state.deck.filter((card) => card.id === id))
       : effect.targetRange === 3
-        ? state.deck.filter((card) => boardCardIds(state, liveBoardState.deck).includes(card.id))
+        ? state.deck.filter((card) => deckIds.has(card.id))
         : state.deck;
   const targets = candidates.filter((card) => {
     switch (effect.target) {
