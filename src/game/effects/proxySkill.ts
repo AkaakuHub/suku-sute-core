@@ -1,9 +1,9 @@
+import { applyEffect } from '../effects.ts';
 import {
   forceLiveProxySkillActivation,
   selectLiveProxySkillsForForcedActivation,
 } from '../../runtime/skills/proxyForcedActivation.ts';
 import {
-  absorbLiveProxySkillEffect,
   createLiveProxyAbsorbInfo,
   liveProxyInducePower,
 } from '../../runtime/skills/proxyAbsorption.ts';
@@ -19,10 +19,12 @@ import type { EffectApplier } from './induceSkillEffect.ts';
 import { induceCardMoves } from './cardMoveInduce.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
 import {
+  absorbLiveProxySkill,
   advanceLiveProxySkillPeriod,
   checkLiveProxySkillEnd,
   createLiveProxySkillPeriod,
   type LiveProxySkillPeriodEvent,
+  type LiveProxySkillEndResult,
 } from '../../runtime/skills/proxyLifecycle.ts';
 
 type ApplyProxyEffect = EffectApplier;
@@ -111,11 +113,14 @@ export function absorbSkillEffect(
   actionType: number,
   amount: bigint,
 ): Readonly<{ state: GameState; absorbed: boolean }> {
-  const result = absorbLiveProxySkillEffect(state.proxySkills, actionType, amount);
-  return {
-    state: result.states === state.proxySkills ? state : { ...state, proxySkills: result.states },
-    absorbed: result.absorbed,
-  };
+  const result = absorbLiveProxySkill(state.proxySkills, actionType, amount);
+  let next = result.states === state.proxySkills ? state : { ...state, proxySkills: result.states };
+  if (result.changedIndex !== null) {
+    const changed = result.states[result.changedIndex];
+    if (!changed) throw new Error('Live Proxy absorption index is invalid');
+    next = applyProxySkillEnd(next, changed, result.result, applyEffect);
+  }
+  return { state: next, absorbed: result.absorbed };
 }
 
 export function forceProxySkillActivation(
@@ -141,11 +146,19 @@ function finishProxySkillState(
   apply: ApplyProxyEffect,
 ): GameState {
   const checked = checkLiveProxySkillEnd(absorption, true);
-  let next =
+  const next =
     checked.state === absorption ? state : updateProxySkillState(state, absorption, checked.state);
-  if (checked.result === 'release') return releaseProxySkillState(next, checked.state, apply);
-  if (checked.result !== 'induce') return next;
-  return induceProxySkillState(next, checked.state, apply);
+  return applyProxySkillEnd(next, checked.state, checked.result, apply);
+}
+
+function applyProxySkillEnd(
+  state: GameState,
+  absorption: GameState['proxySkills'][number],
+  result: LiveProxySkillEndResult,
+  apply: ApplyProxyEffect,
+): GameState {
+  if (result === 'release') return releaseProxySkillState(state, absorption, apply);
+  return result === 'induce' ? induceProxySkillState(state, absorption, apply) : state;
 }
 
 function induceProxySkillState(

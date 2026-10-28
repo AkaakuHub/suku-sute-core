@@ -9,7 +9,7 @@ import {
 import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { skillValue } from './skillValue.ts';
-import { absorbLiveProxySkillEffect } from '../../runtime/skills/proxyAbsorption.ts';
+import { absorbSkillEffect } from './proxySkill.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { ceilToInt32 } from '../../runtime/numeric.ts';
 import { markLiveCardHandCountActivated } from '../../runtime/cards/cardSkillActivatedFlags.ts';
@@ -34,15 +34,16 @@ export function applyHandCardCount(
   const current = action52.state;
   const absorption =
     effect.calculationType === 1 && amount >= 0
-      ? absorbLiveProxySkillEffect(current.proxySkills, 20, BigInt(amount))
+      ? absorbSkillEffect(current, 20, BigInt(amount))
       : null;
   const appliedAmount = effect.calculationType !== 1 || absorption?.absorbed ? 0 : amount;
-  let activated = current;
+  const afterAbsorption = absorption === null ? current : absorption.state;
+  let activated = afterAbsorption;
   if (!absorption?.absorbed) {
     const transition = activateLiveHandCardCountEffect(
-      current.handCardCountEffects,
-      current.tokenCardDeck,
-      current.deckActions,
+      afterAbsorption.handCardCountEffects,
+      afterAbsorption.tokenCardDeck,
+      afterAbsorption.deckActions,
       card?.cardInstanceId ?? null,
       {
         effectId: effect.skillEffectId === undefined ? null : String(effect.skillEffectId),
@@ -61,7 +62,7 @@ export function applyHandCardCount(
       effect.deactivationKey ?? null,
     );
     activated = {
-      ...current,
+      ...afterAbsorption,
       tokenCardDeck: transition.tokenCardDeck,
       deckActions: transition.deckActions,
       handCardCountEffects: transition.state,
@@ -72,7 +73,6 @@ export function applyHandCardCount(
     deckBoard: card
       ? markLiveCardHandCountActivated(activated.deckBoard, card.cardInstanceId, appliedAmount)
       : activated.deckBoard,
-    ...(absorption ? { proxySkills: absorption.states } : {}),
   };
 }
 

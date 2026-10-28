@@ -1,6 +1,10 @@
 import type { LiveCardIdentifier } from '../cards/deckBoardState.ts';
 import { int64ToFloat32, int64ToInt32, isInt64 } from '../numeric.ts';
-import { type LiveProxyAbsorbInfo, liveProxyTargetReached } from './proxyAbsorption.ts';
+import {
+  absorbLiveProxySkillEffect,
+  type LiveProxyAbsorbInfo,
+  liveProxyTargetReached,
+} from './proxyAbsorption.ts';
 
 export type LiveProxySkillPeriodType = 1 | 2 | 3 | 4 | 5;
 export type LiveProxySkillPeriod =
@@ -92,5 +96,33 @@ export function checkLiveProxySkillEnd<State extends LiveProxySkillLifecycle>(
       state.induceTiming === 3 || (state.induceTiming === 1 && state.periodType === 2)
         ? 'defer'
         : 'induce',
+  };
+}
+
+export function absorbLiveProxySkill<State extends LiveProxySkillLifecycle>(
+  states: readonly State[],
+  actionType: number,
+  amount: bigint,
+): Readonly<{
+  states: readonly State[];
+  absorbed: boolean;
+  changedIndex: number | null;
+  result: LiveProxySkillEndResult;
+}> {
+  const absorbed = absorbLiveProxySkillEffect(states, actionType, amount);
+  if (absorbed.changedIndex === null) return { ...absorbed, result: 'none' };
+  const current = absorbed.states[absorbed.changedIndex];
+  if (!current) throw new Error('Live Proxy absorption index is invalid');
+  if (current.induceTiming !== 1) return { ...absorbed, result: 'none' };
+  const checked = checkLiveProxySkillEnd(current, false);
+  return {
+    ...absorbed,
+    result: checked.result,
+    states:
+      checked.state === current
+        ? absorbed.states
+        : absorbed.states.map((entry, index) =>
+            index === absorbed.changedIndex ? checked.state : entry,
+          ),
   };
 }

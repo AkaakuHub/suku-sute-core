@@ -1,6 +1,7 @@
 import { expect, test } from 'vite-plus/test';
 import { createLiveProxyAbsorbInfo } from '../../src/runtime/skills/proxyAbsorption.ts';
 import {
+  absorbLiveProxySkill,
   advanceLiveProxySkillPeriod,
   checkLiveProxySkillEnd,
   createLiveProxySkillPeriod,
@@ -122,4 +123,42 @@ test('セクション期間のTARGET_AMOUNTは終了flagを立てて次の通知
   expect(ended.result).toBe('defer');
   expect(checkLiveProxySkillEnd(ended.state, true).result).toBe('none');
   expect(checkLiveProxySkillEnd({ ...state, induceTiming: 2 }, true).result).toBe('induce');
+});
+
+test('吸収通知はtiming1の目標到達だけを即時判定する', () => {
+  const state = {
+    ...createLiveProxyAbsorbInfo(1, 1n, [{ actionType: 20n, targetAmount: 2n }]),
+    periodType: 3 as const,
+    induceTiming: 1 as const,
+    induceCondition: 1 as const,
+  };
+  const first = absorbLiveProxySkill([state], 20, 1n);
+  expect(first.result).toBe('none');
+  expect(first.states[0]?.isAbsorbEnd).toBe(false);
+  const second = absorbLiveProxySkill(first.states, 20, 1n);
+  expect(second.absorbed).toBe(true);
+  expect(second.changedIndex).toBe(0);
+  expect(second.result).toBe('induce');
+  expect(second.states[0]?.isAbsorbEnd).toBe(true);
+  const after = absorbLiveProxySkill(second.states, 20, 1n);
+  expect(after.absorbed).toBe(false);
+  expect(after.states).toBe(second.states);
+  const timed = absorbLiveProxySkill([{ ...state, induceTiming: 2 as const }], 20, 2n);
+  expect(timed.result).toBe('none');
+  expect(timed.states[0]?.effects[0]?.totalAmount).toBe(2n);
+  expect(timed.states[0]?.isAbsorbEnd).toBe(false);
+});
+
+test('セクション期間の吸収到達は同じ終了flagとdefer判定を使う', () => {
+  const state = {
+    ...createLiveProxyAbsorbInfo('source', 1n, [{ actionType: 14n, targetAmount: 1n }]),
+    periodType: 2 as const,
+    remainingPeriod: 1n,
+    induceTiming: 1 as const,
+    induceCondition: 1 as const,
+  };
+  const result = absorbLiveProxySkill([state], 14, 1n);
+  expect(result.result).toBe('defer');
+  expect(result.states[0]?.isAbsorbEnd).toBe(true);
+  expect(result.states[0]?.remainingPeriod).toBe(1n);
 });

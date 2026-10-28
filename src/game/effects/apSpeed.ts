@@ -3,7 +3,7 @@ import { calculateLiveSkillMoodCorrection } from '../../runtime/live/skillMood.t
 import { moodValue } from '../projection.ts';
 import { skillValue } from './skillValue.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
-import { absorbLiveProxySkillEffect } from '../../runtime/skills/proxyAbsorption.ts';
+import { absorbSkillEffect } from './proxySkill.ts';
 import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type ApSpeedChange = Extract<Effect, { kind: 'ap-speed-change' }>;
@@ -86,10 +86,8 @@ export function applyApSpeedChange(
   if ((calculation === 'multiply' && value === 1) || (calculation === 'add' && value === 0))
     return currentState;
   const absorption =
-    absorbedAmount > 0
-      ? absorbLiveProxySkillEffect(currentState.proxySkills, 21, BigInt(absorbedAmount))
-      : null;
-  if (absorption?.absorbed) return { ...currentState, proxySkills: absorption.states };
+    absorbedAmount > 0 ? absorbSkillEffect(currentState, 21, BigInt(absorbedAmount)) : null;
+  if (absorption?.absorbed) return absorption.state;
   const suppressDuration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const entry: GameState['apTimeEffects'][number] = {
     calculation,
@@ -101,11 +99,7 @@ export function applyApSpeedChange(
     remainingSections: suppressDuration || displayTimeType !== 2 ? null : effect.displayTime,
     deactivationKey: effect.deactivationKey ?? null,
   };
-  return updateApTimeEffects(
-    currentState,
-    [...currentState.apTimeEffects, entry],
-    absorption?.states,
-  );
+  return updateApTimeEffects(currentState, [...currentState.apTimeEffects, entry]);
 }
 
 export function applyApSpeedPercent(
@@ -157,11 +151,10 @@ export function deactivateApSpeedEffects(state: GameState, deactivationKey: stri
 function updateApTimeEffects(
   state: GameState,
   apTimeEffects: GameState['apTimeEffects'],
-  proxySkills: GameState['proxySkills'] = state.proxySkills,
 ): GameState {
-  if (apTimeEffects === state.apTimeEffects && proxySkills === state.proxySkills) return state;
+  if (apTimeEffects === state.apTimeEffects) return state;
   const before = apIncreaseIntervalSeconds(state);
-  const candidate = { ...state, apTimeEffects, proxySkills };
+  const candidate = { ...state, apTimeEffects };
   const after = apIncreaseIntervalSeconds(candidate);
   return {
     ...candidate,
