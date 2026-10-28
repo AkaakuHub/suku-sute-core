@@ -84,17 +84,14 @@ export function switchLiveTokenCardDeck<Id extends LiveCardIdentifier>(
 ): LiveTokenCardDeckState<Id> {
   validateState(state, deckBoard);
   if (state.subDeckCardInstanceIds === null) return state;
-  return reconcileLiveTokenCardDeckHandTarget(
-    {
-      ...state,
-      currentDeck: state.currentDeck === 'main' ? 'sub' : 'main',
-      handTargetCounts: {
-        ...state.handTargetCounts,
-        [state.currentDeck]: state.handTargetCounts.current,
-      },
+  return {
+    ...state,
+    currentDeck: state.currentDeck === 'main' ? 'sub' : 'main',
+    handTargetCounts: {
+      ...state.handTargetCounts,
+      [state.currentDeck]: state.handTargetCounts.current,
     },
-    deckBoard,
-  );
+  };
 }
 
 export function reconcileLiveTokenCardDeckHandTarget<Id extends LiveCardIdentifier>(

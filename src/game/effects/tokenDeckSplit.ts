@@ -150,7 +150,10 @@ export function switchTokenDeck(state: GameState, applyEffect: EffectApplier): G
     next = activateHandPermanentEffects(next, card);
     next = activateModeAbilityEffects(next, card, applyEffect);
   }
-  next = reconcileHand(next);
+  next = reconcileHand({
+    ...next,
+    tokenCardDeck: reconcileLiveTokenCardDeckHandTarget(next.tokenCardDeck, next.deckBoard),
+  });
   return completeDeckOutChecks(
     { ...next, tokenDeckSplit: { ...updated, [incomingName]: zones(next) } },
     applyEffect,
