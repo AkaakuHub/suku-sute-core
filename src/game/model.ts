@@ -1,3 +1,4 @@
+import type { LiveCardIdentity } from '../runtime/cards/cardIdentity.ts';
 import type { LiveSkillUseAtBoardState } from '../runtime/cards/deckBoardState.ts';
 import type { LiveHandCardStats } from '../runtime/cards/handCardStats.ts';
 import type { LiveVoltageGaugeState } from '../runtime/live/voltageGauge.ts';
@@ -189,8 +190,7 @@ export type GameState = Readonly<{
     }>[];
     searches: readonly SearchRequest[];
   }>;
-  lastUsedMember: MemberId | null;
-  lastUsedUnit: UnitId | null;
+  usedCard: LiveCardIdentity | null;
   lastUsedSkillIcon: number | null;
   cardUseCounts: Readonly<Record<string, number>>;
   skillActivationCounts: Readonly<Record<string, number>>;

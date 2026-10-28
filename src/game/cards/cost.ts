@@ -50,7 +50,7 @@ export function applyCostReduction(
       state.deck.map((card) => {
         const matches =
           effect.target.kind === 'unit'
-            ? card.unit === effect.target.unit
+            ? card.unitIds.includes(effect.target.unit)
             : card.token === effect.target.token;
         return [card.id, (state.costReductions[card.id] ?? 0) + (matches ? effect.amount : 0)];
       }),

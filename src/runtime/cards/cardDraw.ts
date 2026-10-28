@@ -1,3 +1,4 @@
+import type { LiveCardIdentity } from './cardIdentity.ts';
 import type { LiveSkillEffect } from '../skills/skillTypes.ts';
 
 export type LiveDrawCandidate = Readonly<{
@@ -9,10 +10,7 @@ export type LiveOnDrawInduceContext = Readonly<{
   currentDrawType: 0 | 1 | 2 | 3;
   currentSection: number;
   feverSection: number;
-  usedCard: Readonly<{
-    charactersId: number;
-    unitIds: readonly number[];
-  }> | null;
+  usedCard: LiveCardIdentity | null;
   usedSkillMainEffect: number | null;
 }>;
 

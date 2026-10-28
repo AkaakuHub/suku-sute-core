@@ -55,8 +55,7 @@ export function finishCardActivation(state: GameState): GameState {
   const handCountChange = activation.handCountChanges[source.id] ?? 0;
   const handReady: GameState = {
     ...next,
-    lastUsedMember: source.member,
-    lastUsedUnit: source.unit,
+    usedCard: source,
     lastUsedSkillIcon: source.skillIcon ?? null,
     drawContext: 'skill',
   };

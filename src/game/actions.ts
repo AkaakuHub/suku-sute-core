@@ -195,8 +195,7 @@ function activateCard(
     },
     lastActionTick: state.tick,
     lastPerformer: card.performer,
-    lastUsedMember: card.member,
-    lastUsedUnit: card.unit,
+    usedCard: card,
     lastUsedSkillIcon: card.skillIcon ?? null,
     drawContext: 'skill',
     skillActivationCounts: {
@@ -248,7 +247,7 @@ function activateCard(
   }
   const tokenGeneration = finishTokenGeneration(next, card.id);
   next = tokenGeneration.state;
-  next = registerMissionMember(notifyHandSkillUse(next, card, applyEffect), card.member);
+  next = registerMissionMember(notifyHandSkillUse(next, card, applyEffect), card.charactersId);
   const ability = resolveModeAbility(card, next.modes);
   next = applyAbilityEffects(next, card, ability.ability893Effects ?? [], applyEffect);
   next = applyAbilityEffects(next, card, ability.ability894Effects ?? [], applyEffect);

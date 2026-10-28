@@ -25,8 +25,7 @@ export function drawWeight(card: Card, state: GameState): number {
   return drawProbability(card.drawRules ?? [], {
     initial: state.drawContext === 'initial',
     skill: state.drawContext === 'skill',
-    member: state.lastUsedMember,
-    unit: state.lastUsedUnit,
+    usedCard: state.usedCard,
     icon: state.lastUsedSkillIcon,
     section: sectionNumber(state),
   });

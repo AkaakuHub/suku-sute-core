@@ -19,8 +19,8 @@ export function applySpecialReset(
         effect.target.kind === 'all' ||
         (effect.target.kind === 'source' && card.id === sourceCard?.id) ||
         (effect.target.kind === 'others' && card.id !== sourceCard?.id) ||
-        (effect.target.kind === 'member' && card.member === effect.target.member) ||
-        (effect.target.kind === 'unit' && card.unit === effect.target.unit);
+        (effect.target.kind === 'member' && card.charactersId === effect.target.member) ||
+        (effect.target.kind === 'unit' && card.unitIds.includes(effect.target.unit));
       return !matchesTarget || (state.currentSkillType === 1 && card.id === sourceCard?.id);
     }),
   };

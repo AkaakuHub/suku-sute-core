@@ -8,9 +8,9 @@ function matches(card: Card, target: SearchTarget): boolean {
     case 'main-effect':
       return card.mainEffect === target.actionType;
     case 'member':
-      return card.member === target.member;
+      return card.charactersId === target.member;
     case 'unit':
-      return card.unit === target.unit;
+      return card.unitIds.includes(target.unit);
     case 'token-series':
       return card.tokenSeriesIds?.includes(target.seriesId) ?? false;
     case 'token':

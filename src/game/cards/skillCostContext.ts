@@ -11,14 +11,16 @@ export function skillCostContext(state: GameState, source: Card): LiveChangeSkil
       const card = state.deck.find((candidate) => candidate.id === id);
       if (!card) throw new Error('手札のカードがありません。');
       return {
-        charactersId: card.member,
+        charactersId: card.charactersId,
         skillMainEffect: card.mainEffect ?? null,
         styleType: card.style ?? null,
-        unitIds: card.unit === null ? [] : [card.unit],
+        unitIds: card.unitIds,
       };
     }),
     isUnitMember: (unitId, charactersId) =>
-      state.cardPool.some((card) => card.member === charactersId && card.unit === unitId),
+      state.cardPool.some(
+        (card) => card.charactersId === charactersId && card.unitIds.includes(unitId),
+      ),
     loveUpEffect: Math.fround(
       state.boosts.reduce((sum, boost) => sum + boost.percent, 0) +
         state.skillScoreUps.reduce((sum, boost) => sum + boost.percent, 0) +

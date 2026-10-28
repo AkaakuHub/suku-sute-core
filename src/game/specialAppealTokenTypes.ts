@@ -55,7 +55,10 @@ export function validateSpecialAppealTokenEffect(effect: AddSpecialAppealTokenEf
       !Number.isSafeInteger(tokenCardSet.skillSeriesId) ||
       tokenCardSet.cardsBySkillLevel.some(
         ({ skillLevel, card }) =>
-          !Number.isSafeInteger(skillLevel) || skillLevel < 1 || !card.special || card.member !== 0,
+          !Number.isSafeInteger(skillLevel) ||
+          skillLevel < 1 ||
+          !card.special ||
+          card.charactersId !== 0,
       )
     )
       throw new Error('特別アピールトークンのマスター記録が正しくありません。');

@@ -12,7 +12,7 @@ export function applyAdditionalBuff(
   if (!(value > 0)) return { state, value };
   const matches = (boost: ResourceBoost) =>
     boost.target === target &&
-    (!boost.members || (card !== undefined && boost.members.includes(card.member)));
+    (!boost.members || (card !== undefined && boost.members.includes(card.charactersId)));
   const voltageBuffs = target === 'voltage' ? matchingVoltageUpAdditionalBuffs(state, card) : [];
   const mentalBuffs = target === 'mental' ? matchingMentalRecoverAdditionalBuffs(state, card) : [];
   const percent = Math.max(

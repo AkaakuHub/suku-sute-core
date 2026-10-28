@@ -14,11 +14,11 @@ export function notifyHandSkillUse(state: GameState, used: Card, apply: EffectAp
   return activateHandInducers(withUpdatedStats, apply, (trigger) => {
     switch (trigger.kind) {
       case 'member':
-        return int32(trigger.member) === used.member;
+        return int32(trigger.member) === used.charactersId;
       case 'skill-main-effect':
         return int32(trigger.mainEffect) === used.mainEffect;
       case 'unit':
-        return used.unit !== null && int32(trigger.unit) === used.unit;
+        return used.unitIds.includes(int32(trigger.unit));
       case 'heart-quantity-count':
         return false;
       case 'same-card':
@@ -36,7 +36,7 @@ function updateHandCardSkillUseStats(state: GameState, used: Card): GameState {
   const handCardStats = Object.fromEntries(
     Object.entries(state.handCardStats).map(([id, stats]) => [
       id,
-      notifyLiveHandCardStatsSkillUse(stats, used.member, used.mainEffect ?? null),
+      notifyLiveHandCardStatsSkillUse(stats, used.charactersId, used.mainEffect ?? null),
     ]),
   );
   return { ...state, handCardStats };

@@ -1,15 +1,16 @@
+import type { LiveCardIdentity } from '../cards/cardIdentity.ts';
 import { type LiveConditionContext, liveConditionVoltageLevel } from '../live/conditionContext.ts';
 import { liveMentalRatio } from '../live/mentalGauge.ts';
 import { type LiveHandCardStats, liveHandCardStatsUnitUseCount } from '../cards/handCardStats.ts';
 import type { LiveChangeApEffect } from '../cards/deckActionTypes.ts';
 import { liveSkillCostMoodValue } from './changeSkillCostValue.ts';
 
-export type LiveChangeSkillCostCard = Readonly<{
-  charactersId: number;
-  skillMainEffect: number | null;
-  styleType: number | null;
-  unitIds: readonly number[];
-}>;
+export type LiveChangeSkillCostCard = Readonly<
+  LiveCardIdentity & {
+    skillMainEffect: number | null;
+    styleType: number | null;
+  }
+>;
 
 export type LiveChangeSkillCostContext = Readonly<
   LiveConditionContext & {

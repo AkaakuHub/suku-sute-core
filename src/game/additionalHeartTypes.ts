@@ -58,10 +58,10 @@ export function matchesAdditionalHeartCondition(
     case 'all':
       return true;
     case 'member':
-      return BigInt(card.member) === condition.member;
+      return BigInt(card.charactersId) === condition.member;
     case 'main-effect':
       return card.mainEffect !== undefined && BigInt(card.mainEffect) === condition.actionType;
     case 'unit':
-      return card.unit === condition.unit;
+      return card.unitIds.includes(condition.unit);
   }
 }

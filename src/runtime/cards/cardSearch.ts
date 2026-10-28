@@ -1,12 +1,13 @@
+import type { LiveCardIdentity } from './cardIdentity.ts';
 import type { LiveDeckBoardState, LiveDeckCardSearchParam } from './deckBoardState.ts';
 
-export type LiveCardSearchCandidate = Readonly<{
-  cardInstanceId: number;
-  skillMainEffect: number;
-  charactersId: number;
-  unitIds: readonly number[];
-  tokenCardSeriesIds: readonly number[];
-}>;
+export type LiveCardSearchCandidate = Readonly<
+  LiveCardIdentity & {
+    cardInstanceId: number;
+    skillMainEffect: number;
+    tokenCardSeriesIds: readonly number[];
+  }
+>;
 
 export type LiveCardSearchResult<Candidate extends LiveCardSearchCandidate> = Readonly<{
   deckBoard: LiveDeckBoardState;

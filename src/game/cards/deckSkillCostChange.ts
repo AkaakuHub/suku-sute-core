@@ -24,11 +24,11 @@ export function applyDeckSkillCostChange(
       case 'all':
         return true;
       case 'member':
-        return card.member === effect.targetId;
+        return card.charactersId === effect.targetId;
       case 'main-effect':
         return card.mainEffect === effect.targetId;
       case 'unit':
-        return card.unit === effect.targetId;
+        return card.unitIds.includes(effect.targetId);
       case 'token-series':
         return card.tokenSeriesIds?.includes(effect.targetId) === true;
     }

@@ -136,9 +136,9 @@ function matches(target: MentalBarrierAdditionalBuffTarget, card: Card): boolean
     case 'all':
       return true;
     case 'member':
-      return card.member === target.member;
+      return card.charactersId === target.member;
     case 'unit':
-      return card.unit === target.unit;
+      return card.unitIds.includes(target.unit);
     case 'token-series':
       return card.tokenSeriesIds?.includes(target.seriesId) === true;
   }

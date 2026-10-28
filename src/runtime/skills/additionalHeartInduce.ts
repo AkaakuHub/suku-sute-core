@@ -1,3 +1,4 @@
+import type { LiveCardIdentity } from '../cards/cardIdentity.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -95,12 +96,12 @@ export function activateLiveAdditionalHeartInduce(
 
 export function notifyLiveAdditionalHeartSkillActivation(
   state: LiveAdditionalHeartInduceState,
-  input: Readonly<{
-    charactersId: number;
-    skillMainEffect: number;
-    unitIds: readonly number[];
-    consumeAp: number;
-  }>,
+  input: Readonly<
+    LiveCardIdentity & {
+      skillMainEffect: number;
+      consumeAp: number;
+    }
+  >,
 ): readonly LiveAdditionalHeartInduceApplication[] {
   if (!Number.isSafeInteger(input.consumeAp) || input.consumeAp < 0) {
     throw new Error('Live Additional Heart consumed AP is invalid');
@@ -194,11 +195,11 @@ function resolveCondition(type: number, value: number): LiveAdditionalHeartInduc
 
 function matchesCondition(
   condition: LiveAdditionalHeartInduceCondition,
-  card: Readonly<{
-    charactersId: number;
-    skillMainEffect: number;
-    unitIds: readonly number[];
-  }>,
+  card: Readonly<
+    LiveCardIdentity & {
+      skillMainEffect: number;
+    }
+  >,
 ): boolean {
   switch (condition.kind) {
     case 'all':

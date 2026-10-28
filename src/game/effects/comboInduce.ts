@@ -48,7 +48,7 @@ export function activateComboInduce(
 export function notifyComboSkillPoint(state: GameState, card: Card, ap: number): GameState {
   const inducer = state.comboInducer;
   if (!inducer?.active) return state;
-  return acceptComboEvent(state, inducer, { member: card.member, ap });
+  return acceptComboEvent(state, inducer, { member: card.charactersId, ap });
 }
 
 export function advanceComboInducer(

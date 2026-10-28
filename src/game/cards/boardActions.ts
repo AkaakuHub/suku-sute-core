@@ -23,8 +23,7 @@ export function flushDeckActions(state: GameState): GameState {
       {
         ...shuffled,
         drawContext: source ? 'skill' : 'shuffle',
-        lastUsedMember: source?.member ?? null,
-        lastUsedUnit: source?.unit ?? null,
+        usedCard: source,
         lastUsedSkillIcon: source?.skillIcon ?? null,
       },
       count,

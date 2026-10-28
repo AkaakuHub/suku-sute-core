@@ -8,8 +8,7 @@ import {
 const context: DrawProbabilityContext = {
   initial: false,
   skill: true,
-  member: 1031,
-  unit: 1,
+  usedCard: { charactersId: 1031, unitIds: [1] },
   icon: 8,
   section: 2,
 };
@@ -77,4 +76,14 @@ it('優先指定に通常倍率を掛けても優先を保持し、禁止指定�
         context,
       ),
     ).toBe(0);
+});
+
+it.each([1, 2])('使用カードの所属%sを複数ユニットの一覧から判定する', (unit) => {
+  const usedCard = { charactersId: 1031, unitIds: [1, 2] };
+  expect(
+    drawProbability([{ condition: { kind: 'unit', value: unit }, negated: false, weight: -1 }], {
+      ...context,
+      usedCard,
+    }),
+  ).toBe(-1);
 });

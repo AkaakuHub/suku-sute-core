@@ -1,3 +1,4 @@
+import type { LiveCardIdentity } from './cardIdentity.ts';
 import type { LiveSkillEffect } from '../skills/skillTypes.ts';
 import {
   requireLiveSkillEffectDetails,
@@ -11,11 +12,11 @@ const resetSpecialAppealDetailTypes = [
   'RESET_SPECIAL_APPEAL_COUNT_TARGET_ID',
 ] as const;
 
-export type LiveSpecialAppealResetCard = Readonly<{
-  cardDatasId: number;
-  charactersId: number;
-  unitIds: readonly number[];
-}>;
+export type LiveSpecialAppealResetCard = Readonly<
+  LiveCardIdentity & {
+    cardDatasId: number;
+  }
+>;
 
 export type LiveSpecialAppealResetSource = Readonly<{
   kind: 'card-skill' | 'special-appeal' | 'ex-special-appeal';

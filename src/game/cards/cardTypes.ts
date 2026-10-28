@@ -1,6 +1,7 @@
+import type { LiveCardIdentity } from '../../runtime/cards/cardIdentity.ts';
 import type { DrawProbabilityRule } from './drawProbability.ts';
 import type { LiveCardAppealParameters } from '../../runtime/live/clientScoreInput.ts';
-import type { PerformerId, MemberId, UnitId, CostumeId, TokenId } from '../model.ts';
+import type { PerformerId, MemberId, CostumeId, TokenId } from '../model.ts';
 import type { Effect } from '../modelTypes.ts';
 import type { MoodBonus, ParameterValueChangeEffect } from '../modelTypes.ts';
 import type { SpecialAppealTokenCardSet } from '../specialAppealTokenTypes.ts';
@@ -223,8 +224,7 @@ export type Card = Readonly<{
   name: string;
   costume: CostumeId | null;
   performer: PerformerId | null;
-  member: MemberId;
-  unit: UnitId | null;
+  charactersId: MemberId;
   mainEffect?: number;
   cost: number;
   style?: number;
@@ -335,7 +335,11 @@ export type Card = Readonly<{
     heartsPercent?: number;
     handLimitDelta?: number;
     moodBonus?: MoodBonus;
-    skillBoost?: Readonly<{ members: readonly MemberId[]; percent: number; moodBonus?: MoodBonus }>;
+    skillBoost?: Readonly<{
+      members: readonly MemberId[];
+      percent: number;
+      moodBonus?: MoodBonus;
+    }>;
   }>;
   drawAbility?:
     | 'clock'
@@ -355,4 +359,5 @@ export type Card = Readonly<{
     limitMemory?: 'reset' | 'retain';
   }>;
   collectionAbility?: 'rain-echo' | 'rain-pulse';
-}>;
+}> &
+  LiveCardIdentity;

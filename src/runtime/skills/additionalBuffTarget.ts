@@ -1,15 +1,16 @@
+import type { LiveCardIdentity } from '../cards/cardIdentity.ts';
 export type LiveAdditionalBuffTarget =
   | Readonly<{ kind: 'all' }>
   | Readonly<{ kind: 'member'; charactersId: number }>
   | Readonly<{ kind: 'unit'; unitId: number }>
   | Readonly<{ kind: 'card-token-series'; cardSeriesId: number }>;
 
-export type LiveAdditionalBuffCard = Readonly<{
-  charactersId: number;
-  unitIds: readonly number[];
-  tokenCardSeriesIds: readonly number[];
-  skillTokenCardSeriesIds: readonly number[];
-}>;
+export type LiveAdditionalBuffCard = Readonly<
+  LiveCardIdentity & {
+    tokenCardSeriesIds: readonly number[];
+    skillTokenCardSeriesIds: readonly number[];
+  }
+>;
 
 export function resolveLiveAdditionalBuffTarget(
   targetType: number,

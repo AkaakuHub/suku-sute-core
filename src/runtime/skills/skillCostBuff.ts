@@ -1,3 +1,4 @@
+import type { LiveCardIdentity } from '../cards/cardIdentity.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import { floatToInt32 } from '../numeric.ts';
 import {
@@ -29,12 +30,12 @@ export type LiveSkillCostBuff = Readonly<{
   target: LiveSkillCostBuffTarget;
 }>;
 
-export type LiveSkillCostBuffCard = Readonly<{
-  charactersId: number;
-  mainEffect: number;
-  unitIds: readonly number[];
-  tokenCardSeriesIds: readonly number[];
-}>;
+export type LiveSkillCostBuffCard = Readonly<
+  LiveCardIdentity & {
+    mainEffect: number;
+    tokenCardSeriesIds: readonly number[];
+  }
+>;
 
 export type LiveSkillCostBuffState = Readonly<{
   continuous: readonly LiveSkillCostBuff[];

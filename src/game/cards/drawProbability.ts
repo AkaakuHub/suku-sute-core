@@ -1,3 +1,4 @@
+import type { LiveCardIdentity } from '../../runtime/cards/cardIdentity.ts';
 export type DrawProbabilityCondition =
   | Readonly<{ kind: 'member' | 'icon' | 'unit' | 'section'; value: number }>
   | Readonly<{ kind: 'initial' }>;
@@ -11,8 +12,7 @@ export type DrawProbabilityRule = Readonly<{
 export type DrawProbabilityContext = Readonly<{
   initial: boolean;
   skill: boolean;
-  member: number | null;
-  unit: number | null;
+  usedCard: LiveCardIdentity | null;
   icon: number | null;
   section: number;
 }>;
@@ -24,9 +24,9 @@ function matches(condition: DrawProbabilityCondition, context: DrawProbabilityCo
     case 'section':
       return context.section === condition.value;
     case 'member':
-      return context.skill && context.member === condition.value;
+      return context.skill && context.usedCard?.charactersId === condition.value;
     case 'unit':
-      return context.skill && context.unit === condition.value;
+      return context.skill && context.usedCard?.unitIds.includes(condition.value) === true;
     case 'icon':
       return context.skill && context.icon === condition.value;
   }

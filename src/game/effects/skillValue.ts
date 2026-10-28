@@ -39,14 +39,17 @@ function skillBoostPercent(state: GameState, card?: Card): number {
   const story = card?.token === 'story' ? state.storyAmplification + handBoost : 0;
   const targeted = card
     ? state.targetBoosts.reduce(
-        (sum, boost) => sum + (boost.members.includes(card.member) ? boost.percent : 0),
+        (sum, boost) => sum + (boost.members.includes(card.charactersId) ? boost.percent : 0),
         0,
       )
     : 0;
   const passive = card
     ? state.deck.reduce((sum, item) => {
         const boost = item.passive?.skillBoost;
-        if (!state.handEffectCardIds.includes(item.id) || !boost?.members.includes(card.member))
+        if (
+          !state.handEffectCardIds.includes(item.id) ||
+          !boost?.members.includes(card.charactersId)
+        )
           return sum;
         const mood = boost.moodBonus
           ? calculateLiveSkillMoodCorrection(
