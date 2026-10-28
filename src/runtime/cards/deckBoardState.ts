@@ -234,7 +234,8 @@ export function prepareLiveDeckDraw<Id extends LiveCardIdentifier>(
   }
   const hasGraveyard = liveDeckBoardCardInstanceIds(state, liveBoardState.graveyard).length > 0;
   if (!hasGraveyard) return state;
-  return reloadLiveDeckCards(state);
+  const reloaded = reloadLiveDeckCards(state);
+  return { ...reloaded, deckOutCount: reloaded.deckOutCount + 1 };
 }
 
 export function reloadLiveDeckCards<Id extends LiveCardIdentifier>(
@@ -362,6 +363,5 @@ export function reloadLiveDeckCardInstanceIds<Id extends LiveCardIdentifier>(
     cards: state.cards.map((card) =>
       ids.has(card.cardInstanceId) ? { ...card, boardState: liveBoardState.deck } : card,
     ),
-    deckOutCount: state.deckOutCount + 1,
   };
 }

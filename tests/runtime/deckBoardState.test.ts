@@ -84,7 +84,7 @@ describe('Live deck board state', () => {
     const used = moveLiveHandCardToGraveyard(initial, 1001);
     const reloaded = reloadLiveDeckCards(used);
 
-    expect(reloaded.deckOutCount).toBe(1);
+    expect(reloaded.deckOutCount).toBe(0);
     expect(liveDeckBoardCardInstanceIds(reloaded, liveBoardState.deck)).toEqual([1001, 1003]);
   });
 
@@ -201,4 +201,16 @@ test('文字列IDの盤面も使用中からProxyへの移動と保存先リセ�
   expect(updated.cards).toEqual([
     { cardInstanceId: 'source', cardDatasId: 'blueprint', boardState: 7, skillUseAtBoardState: 3 },
   ]);
+});
+
+test('墓地回収は蓄積済みのDeckOutCountを保持する', () => {
+  const used = moveLiveHandCardToGraveyard(createLiveDeckBoardState([1001], [1001]), 1001);
+  const reloaded = reloadLiveDeckCards({ ...used, deckOutCount: 3 });
+  expect(reloaded.deckOutCount).toBe(3);
+  expect(liveDeckBoardCardInstanceIds(reloaded, liveBoardState.deck)).toEqual([1001]);
+});
+
+test('候補も墓地もないドローはDeckOutCountを増やさない', () => {
+  const initial = createLiveDeckBoardState([1001], [1001]);
+  expect(prepareLiveDeckDraw(initial).deckOutCount).toBe(0);
 });

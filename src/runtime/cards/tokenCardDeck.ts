@@ -1,4 +1,9 @@
-import { type LiveBoardState, type LiveDeckBoardState, liveBoardState } from './deckBoardState.ts';
+import {
+  type LiveBoardState,
+  type LiveDeckBoardState,
+  liveBoardState,
+  reloadLiveDeckCardInstanceIds,
+} from './deckBoardState.ts';
 
 export type LiveTokenCardDeckState = Readonly<{
   currentDeck: 'main' | 'sub';
@@ -192,7 +197,8 @@ export function prepareLiveCurrentDeckDraw(
     liveCurrentDeckBoardCardInstanceIds(state, deckBoard, liveBoardState.graveyard),
   );
   if (graveyardIds.size === 0) return deckBoard;
-  return reloadLiveCurrentDeckCards(state, deckBoard);
+  const reloaded = reloadLiveCurrentDeckCards(state, deckBoard);
+  return { ...reloaded, deckOutCount: reloaded.deckOutCount + 1 };
 }
 
 export function reloadLiveCurrentDeckCards(
@@ -200,17 +206,10 @@ export function reloadLiveCurrentDeckCards(
   deckBoard: LiveDeckBoardState,
 ): LiveDeckBoardState {
   validateState(state, deckBoard);
-  const graveyardIds = new Set(
+  return reloadLiveDeckCardInstanceIds(
+    deckBoard,
     liveCurrentDeckBoardCardInstanceIds(state, deckBoard, liveBoardState.graveyard),
   );
-  if (graveyardIds.size === 0) return deckBoard;
-  return {
-    ...deckBoard,
-    cards: deckBoard.cards.map((card) =>
-      graveyardIds.has(card.cardInstanceId) ? { ...card, boardState: liveBoardState.deck } : card,
-    ),
-    deckOutCount: deckBoard.deckOutCount + 1,
-  };
 }
 
 export function moveLiveCurrentDeckHandCardsToBoardState(

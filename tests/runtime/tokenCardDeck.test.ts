@@ -10,6 +10,7 @@ import {
   createLiveTokenCardDeckState,
   mergeLiveTokenCardDeck,
   prepareLiveCurrentDeckDraw,
+  reloadLiveCurrentDeckCards,
   liveCurrentDeckBoardCardInstanceIds,
   splitLiveTokenCardDeck,
   switchLiveTokenCardDeck,
@@ -81,4 +82,14 @@ test('current sub deckのDeckが空ならsub deckのGraveyardだけをreloadす�
   expect(reloaded.cards[0]?.boardState).toBe(liveBoardState.hand);
   expect(reloaded.cards[1]?.boardState).toBe(liveBoardState.deck);
   expect(reloaded.cards[2]?.boardState).toBe(liveBoardState.deck);
+});
+
+test('current deckの明示的な墓地回収はDeckOutCountを増やさない', () => {
+  const initial = createLiveDeckBoardState([1001, 1002, 1003], []);
+  const split = splitLiveTokenCardDeck(createLiveTokenCardDeckState(), initial, cards, 2, 5);
+  const switched = switchLiveTokenCardDeck(split.state, split.deckBoard);
+  const used = moveLiveHandCardToGraveyard(moveLiveDeckCardToHand(split.deckBoard, 1002), 1002);
+  const reloaded = reloadLiveCurrentDeckCards(switched, { ...used, deckOutCount: 2 });
+  expect(reloaded.deckOutCount).toBe(2);
+  expect(reloaded.cards[1]?.boardState).toBe(liveBoardState.deck);
 });
