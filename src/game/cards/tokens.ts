@@ -1,4 +1,4 @@
-import { type Card, type GameState, type TokenKind, rules } from '../model.ts';
+import { type Card, type GameState, type TokenId, rules } from '../model.ts';
 import type { TokenRequest, TokenTemplateReference } from '../tokenRequestTypes.ts';
 import { boostTokenRequests } from './tokenBoost.ts';
 import { initializeParameterValueFactors } from '../parameters/parameterValueChange.ts';
@@ -8,8 +8,8 @@ import { validateCard } from '../deck.ts';
 import type { TokenCardEffect } from '../tokenRequestTypes.ts';
 import type { ModeAbilityVariant, ModeSkillVariant } from './cardTypes.ts';
 
-export function addTokens(state: GameState, kind: TokenKind, count: number): GameState {
-  return addTokenCards(state, { kind: 'token-kind', token: kind }, count, true);
+export function addTokens(state: GameState, kind: TokenId, count: number): GameState {
+  return addTokenCards(state, { kind: 'token-id', token: kind }, count, true);
 }
 
 export function beginTokenGeneration(state: GameState, sourceId: string): GameState {
@@ -18,14 +18,14 @@ export function beginTokenGeneration(state: GameState, sourceId: string): GameSt
 
 export function requestTokens(
   state: GameState,
-  token: TokenKind,
+  token: TokenId,
   count: number,
   sourceId: string | null,
   seriesIds?: readonly number[],
 ): GameState {
   if (count < 1) return state;
   const request: TokenRequest = {
-    template: { kind: 'token-kind', token },
+    template: { kind: 'token-id', token },
     count,
     ...(seriesIds === undefined ? {} : { seriesIds: seriesIds.map(BigInt) }),
   };
@@ -104,7 +104,7 @@ function addTokenCards(
   throwIfMissing: boolean,
 ): GameState {
   const template =
-    templateReference.kind === 'token-kind'
+    templateReference.kind === 'token-id'
       ? state.tokenCatalog.find((card) => card.token === templateReference.token)
       : null;
   if (!template && templateReference.kind !== 'action-token-card') {

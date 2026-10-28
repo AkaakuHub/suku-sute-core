@@ -1,6 +1,6 @@
 import type { DrawProbabilityRule } from './drawProbability.ts';
 import type { LiveCardAppealParameters } from '../../runtime/live/clientScoreInput.ts';
-import type { PerformerId, MemberId, UnitId, CostumeId, TokenKind } from '../model.ts';
+import type { PerformerId, MemberId, UnitId, CostumeId, TokenId } from '../model.ts';
 import type { Effect } from '../modelTypes.ts';
 import type { MoodBonus, ParameterValueChangeEffect } from '../modelTypes.ts';
 import type { SpecialAppealTokenCardSet } from '../specialAppealTokenTypes.ts';
@@ -323,7 +323,7 @@ export type Card = Readonly<{
   beforeUseEffects?: readonly Effect[];
   handInducers?: readonly HandInducer[];
   relay?: Readonly<{ threshold: number; hearts: number; beats?: boolean; moodBonus?: MoodBonus }>;
-  token?: TokenKind;
+  token?: TokenId;
   exhausts?: true;
   special?: Readonly<{ cost: number; extra: boolean; effects: readonly Effect[] }>;
   allHandCost?: Readonly<{

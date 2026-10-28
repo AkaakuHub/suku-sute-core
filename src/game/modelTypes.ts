@@ -14,7 +14,7 @@ export type { SkillCostChangeEffect, SkillCostConditionType } from './skillCostC
 import type { TokenCardEffect } from './tokenRequestTypes.ts';
 import type { GameCondition } from './conditions/model.ts';
 import type { ModeChange } from './live/modes.ts';
-import type { MemberId, TokenKind, UnitId } from './model.ts';
+import type { MemberId, TokenId, UnitId } from './model.ts';
 import type { StopVoltageIncreaseEffect, VoltageConvertEffect } from './voltageConversionTypes.ts';
 import type { Action52BuffEffect } from './skillBoostTypes.ts';
 import type { MentalHeartInduceEffect } from './mentalHeartInduceTypes.ts';
@@ -82,7 +82,7 @@ export type SearchTarget =
   | Readonly<{ kind: 'member'; member: MemberId }>
   | Readonly<{ kind: 'unit'; unit: UnitId }>
   | Readonly<{ kind: 'token-series'; seriesId: number }>
-  | Readonly<{ kind: 'token'; token: TokenKind }>;
+  | Readonly<{ kind: 'token'; token: TokenId }>;
 export type SearchRequest = Readonly<{
   scope: 'grade' | 'section' | 'skill';
   target: SearchTarget;
@@ -209,7 +209,7 @@ type EffectShape =
     }>
   | DrawSuccessInduceEffect
   | InduceEffect
-  | Readonly<{ kind: 'tokens'; token: TokenKind; count: number; seriesIds?: readonly number[] }>
+  | Readonly<{ kind: 'tokens'; token: TokenId; count: number; seriesIds?: readonly number[] }>
   | Readonly<{ kind: 'ingame-mission'; groupId: bigint }>
   | Readonly<{
       kind: 'token-deck-split';
@@ -258,7 +258,7 @@ type EffectShape =
   | Readonly<{ kind: 'card-move'; destination: 'deck' | 'exclusion' }>
   | Readonly<{ kind: 'shuffle'; recoverDiscard: boolean; destination: 'draw' | 'discard' }>
   | Readonly<{ kind: 'search-unit'; unit: UnitId; count: number }>
-  | Readonly<{ kind: 'search-token'; token: TokenKind; count: number }>
+  | Readonly<{ kind: 'search-token'; token: TokenId; count: number }>
   | Readonly<{
       kind: 'search';
       scope: SearchRequest['scope'];
@@ -313,7 +313,7 @@ type EffectShape =
       amount: number;
       target:
         | Readonly<{ kind: 'unit'; unit: UnitId }>
-        | Readonly<{ kind: 'token'; token: TokenKind }>;
+        | Readonly<{ kind: 'token'; token: TokenId }>;
     }>
   | SkillCostChangeEffect
   | ParameterValueChangeEffect

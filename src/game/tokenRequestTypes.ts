@@ -1,8 +1,8 @@
-import type { TokenKind } from './model.ts';
+import type { TokenId } from './model.ts';
 import type { TokenCardSkillMasterData } from './cards/cardTypes.ts';
 
 export type TokenTemplateReference =
-  | Readonly<{ kind: 'token-kind'; token: TokenKind }>
+  | Readonly<{ kind: 'token-id'; token: TokenId }>
   | Readonly<{ kind: 'action-token-card'; effect: TokenCardEffect }>;
 
 export type TokenRequest = Readonly<{

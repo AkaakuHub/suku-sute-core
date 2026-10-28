@@ -78,7 +78,7 @@ export const costumeIds = [
 export type CostumeId = (typeof costumeIds)[number];
 export type HandShuffle = Readonly<{ recoverDiscard: boolean; destination: 'draw' | 'discard' }>;
 
-export type TokenKind = 'ensemble' | 'story' | 'clock' | 'bookmark' | 'shadow';
+export type TokenId = string;
 
 export type Section = Readonly<{
   name: string;
