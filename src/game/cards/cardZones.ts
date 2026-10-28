@@ -1,3 +1,5 @@
+import { cardSkillUseState, resetCardSkillUseAtBoardStates } from './skillUseAtBoardState.ts';
+import { type LiveBoardState, liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import type { GameState } from '../model.ts';
 import { removeHandCardEffects } from './handEffects.ts';
 import { flushDeckActions } from './boardActions.ts';
@@ -10,17 +12,15 @@ export function finishCardActivation(state: GameState): GameState {
   const source = state.deck.find((card) => card.id === activation.sourceId);
   if (!source) throw new Error('使用したカードがありません。');
   const children = activation.usedCards.filter((id) => id !== source.id);
-  const excludedIds = new Set([
-    ...activation.excluded,
-    ...activation.usedCards.filter((id) => state.skillUseDestinations[id] === 'exclusion'),
-  ]);
-  const proxyIds = new Set(
-    activation.usedCards.filter((id) => state.skillUseDestinations[id] === 'proxy'),
-  );
-  const returnToDrawIds = new Set([
-    ...activation.returnToDraw,
-    ...activation.usedCards.filter((id) => state.skillUseDestinations[id] === 'deck'),
-  ]);
+  const targetIds = (boardState: LiveBoardState) =>
+    new Set(
+      activation.usedCards.filter(
+        (id) => cardSkillUseState(state, id).skillUseAtBoardState === boardState,
+      ),
+    );
+  const excludedIds = targetIds(liveBoardState.exclusion);
+  const proxyIds = targetIds(liveBoardState.proxy);
+  const returnToDrawIds = targetIds(liveBoardState.deck);
   const handStatsCompleted = (activation.pendingHandStatsDeactivationKeys ?? []).reduce(
     (current, key) => deactivateInducedEffects(current, key),
     removeHandCardEffects(state, activation.usedCards),
@@ -82,16 +82,7 @@ export function finishCardActivation(state: GameState): GameState {
       : returnToDrawIds.has(source.id)
         ? { ...next, drawPile: [...next.drawPile, source.id] }
         : { ...next, discard: [...next.discard, source.id] };
-  const completed = {
-    ...next,
-    skillUseDestinations: Object.fromEntries(
-      Object.entries(next.skillUseDestinations).filter(
-        ([id]) => !activation.usedCards.includes(id),
-      ),
-    ),
-    activation: null,
-  };
-  return completed;
+  return { ...resetCardSkillUseAtBoardStates(next, activation.usedCards), activation: null };
 }
 
 function excludeCards(state: GameState, ids: readonly string[]): GameState {
@@ -108,9 +99,6 @@ function excludeCards(state: GameState, ids: readonly string[]): GameState {
       (item) => !ids.includes(item.cardId),
     ),
     proxyCards: state.proxyCards.filter((id) => !ids.includes(id)),
-    skillUseDestinations: Object.fromEntries(
-      Object.entries(state.skillUseDestinations).filter(([id]) => !ids.includes(id)),
-    ),
     hand: state.hand.filter((id) => !ids.includes(id)),
     drawPile: state.drawPile.filter((id) => !ids.includes(id)),
     discard: state.discard.filter((id) => !ids.includes(id)),

@@ -1,3 +1,5 @@
+import { liveBoardState } from '../runtime/cards/deckBoardState.ts';
+import { setCardSkillUseAtBoardState } from './cards/skillUseAtBoardState.ts';
 import { selectLiveBranchEffects } from '../runtime/skills/branchSkillActivation.ts';
 import { applyApRecovery } from './effects/apRecovery.ts';
 import { enqueueHandShuffle } from './cards/boardActions.ts';
@@ -215,18 +217,10 @@ function applyEffectInternal(
     }
     case 'use-hand':
       return state;
-    case 'card-move': {
-      if (
-        !card ||
-        state.skillUseDestinations[card.id] === 'exclusion' ||
-        state.skillUseDestinations[card.id] === 'proxy'
-      )
-        return state;
-      return {
-        ...state,
-        skillUseDestinations: { ...state.skillUseDestinations, [card.id]: effect.destination },
-      };
-    }
+    case 'card-move':
+      return card
+        ? setCardSkillUseAtBoardState(state, card.id, liveBoardState[effect.destination])
+        : state;
     case 'ap':
       return applyApRecovery(state, effect, card, {
         addValue,

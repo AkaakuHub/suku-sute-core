@@ -1,3 +1,4 @@
+import type { LiveSkillUseAtBoardState } from '../runtime/cards/deckBoardState.ts';
 import type { LiveHandCardStats } from '../runtime/cards/handCardStats.ts';
 import type { LiveVoltageGaugeState } from '../runtime/live/voltageGauge.ts';
 import type { SkillCooldownEffect } from './skillCooldownTypes.ts';
@@ -202,15 +203,13 @@ export type GameState = Readonly<{
     modeId: number;
     isOn: boolean;
   }>[];
-  skillUseDestinations: Readonly<Record<string, 'deck' | 'exclusion' | 'proxy'>>;
+  cardSkillUseStates: Readonly<Record<string, LiveSkillUseAtBoardState>>;
   activation: Readonly<{
     sourceId: string;
     usedCards: readonly string[];
     allHand: boolean;
     skipSourceRefill?: boolean;
     recoverDiscard: boolean;
-    returnToDraw: readonly string[];
-    excluded: readonly string[];
     handCountChanges: Readonly<Record<string, number>>;
     pendingHandStatsDeactivationKeys?: readonly string[];
   }> | null;

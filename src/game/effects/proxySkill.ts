@@ -1,3 +1,5 @@
+import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
+import { setCardSkillUseAtBoardState } from '../cards/skillUseAtBoardState.ts';
 import type { Card, GameState } from '../model.ts';
 import type { ProxySkillEffect } from '../modelTypes.ts';
 import type { EffectApplier } from './induceSkillEffect.ts';
@@ -47,7 +49,8 @@ export function registerProxySkill(
     ...state,
     proxyAbsorptions: [...state.proxyAbsorptions, absorption],
     nextProxyAbsorptionId: state.nextProxyAbsorptionId + 1,
-    skillUseDestinations: { ...state.skillUseDestinations, [card.id]: 'proxy' },
+    cardSkillUseStates: setCardSkillUseAtBoardState(state, card.id, liveBoardState.proxy)
+      .cardSkillUseStates,
   };
 }
 

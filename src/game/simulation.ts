@@ -85,7 +85,9 @@ export function createGame(
     parameterValueFactors: [],
     parameterValueChangeCounts: {},
     activeModeParameterChanges: [],
-    skillUseDestinations: {},
+    cardSkillUseStates: Object.fromEntries(
+      resolvedDeck.map((card) => [card.id, { skillUseAtBoardState: 3 as const }]),
+    ),
     handEffectCardIds: [lead.id],
     drawPile: resolvedDeck.filter((card) => card.id !== lead.id).map((card) => card.id),
     tokenDeckSplit: null,

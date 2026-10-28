@@ -1,3 +1,5 @@
+import { cardSkillUseState } from '../cards/skillUseAtBoardState.ts';
+import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import type { Card, GameState } from '../model.ts';
 import type { CardMoveInduceEffect } from '../induceSkillEffectTypes.ts';
 import type { EffectApplier } from './induceSkillEffect.ts';
@@ -42,7 +44,8 @@ export function induceCardMoves(
       inducer.timing !== 'stage-to-graveyard' ||
       !movedCardIds.has(inducer.sourceCardId) ||
       !next.proxyCards.includes(inducer.sourceCardId) ||
-      next.skillUseDestinations[inducer.sourceCardId] !== undefined
+      cardSkillUseState(next, inducer.sourceCardId).skillUseAtBoardState !==
+        liveBoardState.graveyard
     )
       continue;
     const useCount = int32(inducer.useCount + 1);

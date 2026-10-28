@@ -158,6 +158,12 @@ function addTokenCards(
       ...state,
       deck: [...state.deck, ...generated],
       cardPool: [...state.cardPool, ...generated],
+      cardSkillUseStates: {
+        ...state.cardSkillUseStates,
+        ...Object.fromEntries(
+          generated.map((card) => [card.id, { skillUseAtBoardState: 3 as const }]),
+        ),
+      },
       drawPile: [...state.drawPile, ...activeIds],
       tokenDeckSplit,
       nextTokenId: state.nextTokenId + generated.length,

@@ -1,3 +1,5 @@
+import { setCardSkillUseAtBoardState } from './skillUseAtBoardState.ts';
+import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import type { Card, GameState } from '../model.ts';
 import { applyEffect } from '../effects.ts';
 import { beginTokenGeneration, finishTokenGeneration } from './tokens.ts';
@@ -39,10 +41,7 @@ export function applyUseAbility(state: GameState, card: Card): GameState {
     (card.useAbility === 'shadow' && count >= 14)
   ) {
     if (!next.activation) throw new Error('カードの使用処理がありません。');
-    next = {
-      ...next,
-      activation: { ...next.activation, excluded: [...next.activation.excluded, card.id] },
-    };
+    next = setCardSkillUseAtBoardState(next, card.id, liveBoardState.exclusion);
   }
   return next;
 }

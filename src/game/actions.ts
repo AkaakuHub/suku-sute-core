@@ -167,8 +167,6 @@ function useCard(state: GameState, index: number): GameState {
       allHand: source.effects.some((effect) => effect.kind === 'use-hand'),
       skipSourceRefill: false,
       recoverDiscard: false,
-      returnToDraw: [],
-      excluded: [],
       handCountChanges: {},
       pendingHandStatsDeactivationKeys: [],
     },

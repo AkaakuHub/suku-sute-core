@@ -10,12 +10,17 @@ export const liveBoardState = {
 
 export type LiveBoardState = (typeof liveBoardState)[keyof typeof liveBoardState];
 
-export type LiveDeckBoardCard = Readonly<{
-  cardInstanceId: number;
-  cardDatasId: number;
-  boardState: LiveBoardState;
+export type LiveSkillUseAtBoardState = Readonly<{
   skillUseAtBoardState: LiveBoardState;
 }>;
+
+export type LiveDeckBoardCard = Readonly<
+  LiveSkillUseAtBoardState & {
+    cardInstanceId: number;
+    cardDatasId: number;
+    boardState: LiveBoardState;
+  }
+>;
 
 export type LiveDeckCardSearchParam = Readonly<{
   searchType: 'skill-main-effect' | 'character-id' | 'unit-id' | 'token-card-series';
@@ -166,7 +171,19 @@ export function setLiveCardSkillUseAtBoardState(
   skillUseAtBoardState: LiveBoardState,
 ): LiveDeckBoardState {
   const card = requireCard(state, cardInstanceId);
-  const current = card.skillUseAtBoardState;
+  const updated = setLiveSkillUseAtBoardState(card, skillUseAtBoardState);
+  if (updated === card) return state;
+  return {
+    ...state,
+    cards: state.cards.map((entry) => (entry === card ? updated : entry)),
+  };
+}
+
+export function setLiveSkillUseAtBoardState<T extends LiveSkillUseAtBoardState>(
+  state: T,
+  skillUseAtBoardState: LiveBoardState,
+): Omit<T, 'skillUseAtBoardState'> & LiveSkillUseAtBoardState {
+  const current = state.skillUseAtBoardState;
   if (
     skillUseAtBoardState !== liveBoardState.proxy &&
     (current === liveBoardState.proxy ||
@@ -174,12 +191,13 @@ export function setLiveCardSkillUseAtBoardState(
       (current === liveBoardState.deck && skillUseAtBoardState === liveBoardState.graveyard))
   )
     return state;
-  return {
-    ...state,
-    cards: state.cards.map((entry) =>
-      entry.cardInstanceId === cardInstanceId ? { ...entry, skillUseAtBoardState } : entry,
-    ),
-  };
+  return { ...state, skillUseAtBoardState };
+}
+
+export function resetLiveSkillUseAtBoardState<T extends LiveSkillUseAtBoardState>(
+  state: T,
+): Omit<T, 'skillUseAtBoardState'> & LiveSkillUseAtBoardState {
+  return { ...state, skillUseAtBoardState: liveBoardState.graveyard };
 }
 
 export function updateLiveCardSkillUseAtBoardState(
@@ -196,9 +214,8 @@ export function updateLiveCardSkillUseAtBoardState(
     cards: state.cards.map((entry) =>
       entry.cardInstanceId === cardInstanceId
         ? {
-            ...entry,
+            ...resetLiveSkillUseAtBoardState(entry),
             boardState: canMove ? entry.skillUseAtBoardState : entry.boardState,
-            skillUseAtBoardState: liveBoardState.graveyard,
           }
         : entry,
     ),

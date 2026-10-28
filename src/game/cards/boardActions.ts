@@ -1,3 +1,5 @@
+import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
+import { setCardSkillUseAtBoardState } from './skillUseAtBoardState.ts';
 import type { GameState, HandShuffle } from '../model.ts';
 import { fillHandToCount, shuffleHand } from './drawing.ts';
 
@@ -54,23 +56,18 @@ export function enqueueHandShuffle(
         shuffles: [...state.deckActions.shuffles, { sourceId, options, skipSourceRefill }],
       },
     };
+  let next = state;
+  if (options.destination === 'draw') {
+    for (const id of [...activation.usedCards, ...state.hand]) {
+      if (id !== sourceId) next = setCardSkillUseAtBoardState(next, id, liveBoardState.deck);
+    }
+  }
   return {
-    ...state,
+    ...next,
     activation: {
       ...activation,
       skipSourceRefill: activation.skipSourceRefill || skipSourceRefill,
       recoverDiscard: activation.recoverDiscard || options.recoverDiscard,
-      returnToDraw:
-        options.destination === 'draw'
-          ? [
-              ...new Set([
-                ...activation.returnToDraw,
-                ...[...activation.usedCards, ...state.hand].filter(
-                  (id) => id !== sourceId && state.skillUseDestinations[id] !== 'proxy',
-                ),
-              ]),
-            ]
-          : activation.returnToDraw,
     },
   };
 }
