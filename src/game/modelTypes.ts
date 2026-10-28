@@ -1,3 +1,4 @@
+import type { LiveChangeSkillCostValue } from '../runtime/skills/changeSkillCostValue.ts';
 import type { SkillCooldownEffectInput } from './skillCooldownTypes.ts';
 import type { InduceSkillEffectInput, InduceEffect } from './induceSkillEffectTypes.ts';
 import type { DisableMentalDownEffect } from './disableMentalDownTypes.ts';
@@ -5,12 +6,8 @@ import type { MentalBarrierAdditionalBuffEffect } from './mentalBarrierAdditiona
 import type { MentalRecoverAdditionalBuffEffect } from './mentalRecoverAdditionalBuffTypes.ts';
 import type { VoltageUpAdditionalBuffEffect } from './voltageUpAdditionalBuffTypes.ts';
 import type { LoveUpAdditionalBuffEffect } from './loveUpAdditionalBuffTypes.ts';
-import type {
-  DeckSkillCostChangeEffect,
-  SkillCostChangeEffect,
-  SkillCostConditionType,
-} from './skillCostChangeTypes.ts';
-export type { SkillCostChangeEffect, SkillCostConditionType } from './skillCostChangeTypes.ts';
+import type { DeckSkillCostChangeEffect, SkillCostChangeEffect } from './skillCostChangeTypes.ts';
+export type { SkillCostChangeEffect } from './skillCostChangeTypes.ts';
 import type { TokenCardEffect } from './tokenRequestTypes.ts';
 import type { GameCondition } from './conditions/model.ts';
 import type { ModeChange } from './live/modes.ts';
@@ -125,17 +122,15 @@ export type HandCardStats = Readonly<{
   skillUseCountsByIcon: Readonly<Record<number, number>>;
   skillUseCountsByUnit: Readonly<Record<number, number>>;
 }>;
-export type SkillCostChange = Readonly<{
-  sourceId: string;
-  amount: number;
-  minimum: number;
-  maximum: number;
-  conditionType: SkillCostConditionType;
-  conditionId: number;
-  remainingSections: number | null;
-  invocationType: number | null;
-  deactivationKey: string | null;
-}>;
+export type SkillCostChange = Readonly<
+  LiveChangeSkillCostValue & {
+    sourceId: string;
+    conditionId: number;
+    remainingSections: number | null;
+    invocationType: number | null;
+    deactivationKey: string | null;
+  }
+>;
 export type ParameterDetailValue = Readonly<{
   id: bigint;
   value: bigint;

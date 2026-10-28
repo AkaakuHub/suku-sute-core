@@ -1,3 +1,8 @@
+import {
+  calculateLiveChangeSkillCostValue,
+  liveSkillCostMoodValue,
+} from '../../runtime/skills/changeSkillCostValue.ts';
+import { liveMentalRatio } from '../../runtime/live/mentalGauge.ts';
 import { voltageLevel } from '../live/voltageLevel.ts';
 import { sectionAt, moodValue } from '../projection.ts';
 import { applyAction52SkillBoostForCard } from '../effects/action52SkillBoost.ts';
@@ -58,11 +63,7 @@ export function skillCostDelta(state: GameState, card: Card): number {
     .filter((change) => change.sourceId === card.id)
     .reduce((total, change) => {
       const value = conditionValue(state, card, change);
-      const bounded =
-        change.conditionType === 1
-          ? change.amount
-          : Math.max(change.minimum, Math.min(change.maximum, value * change.amount));
-      return total + bounded;
+      return total + calculateLiveChangeSkillCostValue(change, value);
     }, 0);
 }
 
@@ -95,7 +96,7 @@ function conditionValue(state: GameState, source: Card, change: SkillCostChange)
     case 3:
       return voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel);
     case 4:
-      return Math.min(1, Math.trunc(state.mental.currentMental) / state.maximumMental);
+      return Math.min(1, liveMentalRatio(state.mental, state.maximumMental));
     case 5:
       return stats ? state.track.sections.indexOf(sectionAt(state)) - stats.enteredSectionIndex : 0;
     case 6:
@@ -114,16 +115,8 @@ function conditionValue(state: GameState, source: Card, change: SkillCostChange)
       return currentHand.filter((card) => card.style === change.conditionId).length;
     case 11:
       return currentHand.filter((card) => card.member === change.conditionId).length;
-    case 12: {
-      const mood = moodValue(state);
-      return change.conditionId === 2
-        ? Math.abs(mood)
-        : change.conditionId === 1
-          ? Math.max(0, mood)
-          : mood > -1
-            ? mood
-            : -mood;
-    }
+    case 12:
+      return liveSkillCostMoodValue(moodValue(state), change.conditionId);
     case 13:
       return stats?.skillUseCountsByUnit[change.conditionId] ?? 0;
     case 14:

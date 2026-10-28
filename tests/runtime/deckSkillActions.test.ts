@@ -68,7 +68,7 @@ test('ActionType17/20は保存detailの加算条件と表示期間を保持す�
     amount: -1,
     maximum: -1,
     minimum: -1,
-    conditionType: 'none',
+    conditionType: 1,
     duration: { kind: 'full-end' },
   });
   expect(() =>

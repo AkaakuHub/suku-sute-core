@@ -1,3 +1,9 @@
+import { type LiveConditionContext, liveConditionVoltageLevel } from '../live/conditionContext.ts';
+import { liveMentalRatio } from '../live/mentalGauge.ts';
+import {
+  calculateLiveChangeSkillCostValue,
+  liveSkillCostMoodValue,
+} from './changeSkillCostValue.ts';
 import type { LiveChangeApEffect } from '../cards/deckActionTypes.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -12,17 +18,15 @@ export type LiveChangeSkillCostCard = Readonly<{
   unitIds: readonly number[];
 }>;
 
-export type LiveChangeSkillCostContext = Readonly<{
-  useCount: number;
-  voltageLevel: number;
-  mentalRatio: number;
-  sectionCount: number;
-  deckCards: readonly LiveChangeSkillCostCard[];
-  handCardInstanceIds: readonly number[];
-  loveUpEffect: number;
-  moodValue: number | null;
-  excludeCount: number;
-}>;
+export type LiveChangeSkillCostContext = Readonly<
+  LiveConditionContext & {
+    useCount: number;
+    sectionCount: number;
+    deckCards: readonly LiveChangeSkillCostCard[];
+    handCardInstanceIds: readonly number[];
+    loveUpEffect: number;
+  }
+>;
 
 export type LiveChangeSkillCostAbilityState = Readonly<{
   effects: readonly Readonly<{
@@ -83,13 +87,7 @@ export function resolveLiveChangeSkillCost(
     .filter((effect) => effect.cardInstanceId === cardInstanceId)
     .reduce(
       (sum, effect) =>
-        sum +
-        Math.ceil(
-          Math.min(
-            Math.max(effect.amount * resolveConditionValue(effect, context), effect.minimum),
-            effect.maximum,
-          ),
-        ),
+        sum + calculateLiveChangeSkillCostValue(effect, resolveConditionValue(effect, context)),
       0,
     );
 }
@@ -101,48 +99,36 @@ function resolveConditionValue(
   const handIds = new Set(context.handCardInstanceIds);
   const handCards = context.deckCards.filter((card) => handIds.has(card.cardInstanceId));
   switch (effect.conditionType) {
-    case 'none':
+    case 1:
       return 1;
-    case 'use-count':
+    case 2:
       return context.useCount;
-    case 'voltage-level':
-      return context.voltageLevel;
-    case 'mental-ratio':
-      return Math.min(context.mentalRatio, 1);
-    case 'section-count':
+    case 3:
+      return liveConditionVoltageLevel(context);
+    case 4:
+      return Math.min(liveMentalRatio(context.mental, context.maximumMental), 1);
+    case 5:
       return context.sectionCount;
-    case 'member-id-count':
+    case 6:
       return count(context.deckCards, (card) => card.charactersId === effect.conditionId);
-    case 'skill-icon-count':
+    case 7:
       return count(context.deckCards, (card) => card.skillIcon === effect.conditionId);
-    case 'hand-skill-icon-count':
+    case 8:
       return count(handCards, (card) => card.skillIcon === effect.conditionId);
-    case 'love-up-effect':
+    case 9:
       return context.loveUpEffect;
-    case 'hand-style-type-count':
+    case 10:
       return count(handCards, (card) => card.styleType === effect.conditionId);
-    case 'hand-member-id-count':
+    case 11:
       return count(handCards, (card) => card.charactersId === effect.conditionId);
-    case 'mood-value':
-      if (context.moodValue === null) {
-        throw new Error('Live ChangeSkillCost mood is unresolved');
-      }
-      switch (effect.conditionId) {
-        case 0:
-          return Math.abs(context.moodValue);
-        case 1:
-          return Math.max(context.moodValue, 0);
-        case 2:
-          return Math.max(-context.moodValue, 0);
-        default:
-          throw new Error('Live ChangeSkillCost mood condition ID is invalid');
-      }
-    case 'unit-id-count':
+    case 12:
+      return liveSkillCostMoodValue(context.moodValue, effect.conditionId);
+    case 13:
       return count(context.deckCards, (card) => card.unitIds.includes(effect.conditionId));
-    case 'hand-unit-id-count':
+    case 14:
       return count(handCards, (card) => card.unitIds.includes(effect.conditionId));
-    case 'exclude-count':
-      return context.excludeCount;
+    case 15:
+      return context.exclusionCount;
   }
 }
 
@@ -170,16 +156,21 @@ function validateState(state: LiveChangeSkillCostAbilityState): void {
 
 function validateContext(context: LiveChangeSkillCostContext): void {
   if (
-    ![context.mentalRatio, context.loveUpEffect].every(Number.isFinite) ||
-    ![context.useCount, context.voltageLevel, context.sectionCount, context.excludeCount].every(
-      Number.isSafeInteger,
+    ![liveMentalRatio(context.mental, context.maximumMental), context.loveUpEffect].every(
+      Number.isFinite,
     ) ||
+    ![
+      context.useCount,
+      liveConditionVoltageLevel(context),
+      context.sectionCount,
+      context.exclusionCount,
+    ].every(Number.isSafeInteger) ||
     (context.moodValue !== null && !Number.isSafeInteger(context.moodValue)) ||
     context.useCount < 0 ||
-    context.voltageLevel < 0 ||
-    context.mentalRatio < 0 ||
+    liveConditionVoltageLevel(context) < 0 ||
+    liveMentalRatio(context.mental, context.maximumMental) < 0 ||
     context.sectionCount < 0 ||
-    context.excludeCount < 0 ||
+    context.exclusionCount < 0 ||
     new Set(context.deckCards.map((card) => card.cardInstanceId)).size !==
       context.deckCards.length ||
     context.handCardInstanceIds.some(

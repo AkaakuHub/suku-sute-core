@@ -1,3 +1,4 @@
+import { resolveChangeApConditionType } from '../../runtime/cards/deckActionDetails.ts';
 import type { Effect } from '../modelTypes.ts';
 import { int64ToFloat32, isInt64 } from '../../runtime/numeric.ts';
 
@@ -9,9 +10,9 @@ type Input = Readonly<{
 }>;
 
 export function createSkillCostChangeEffect(input: Input): Effect {
-  const conditionType = int32(find(input.details, 'CHANGE_AP_CONDITION_TYPE')?.value ?? 1n);
-  if (conditionType < 1 || conditionType > 15)
-    throw new Error('スキルコスト変更の条件種別が正しくありません。');
+  const conditionType = resolveChangeApConditionType(
+    int32(find(input.details, 'CHANGE_AP_CONDITION_TYPE')?.value ?? 1n),
+  );
   const displayTimeType = int32(find(input.details, 'CHANGE_AP_DISPLAY_TIME_TYPE')?.value ?? 1n);
   const displayTime = find(input.details, 'CHANGE_AP_DISPLAY_TIME')?.value ?? 0n;
   return {
@@ -19,7 +20,7 @@ export function createSkillCostChangeEffect(input: Input): Effect {
     amount: numToValue(find(input.details, 'CHANGE_AP_NUM')?.value ?? 0n),
     maximum: numToValue(find(input.details, 'CHANGE_AP_MAX')?.value ?? 0n),
     minimum: numToValue(find(input.details, 'CHANGE_AP_MIN')?.value ?? 0n),
-    conditionType: conditionType as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15,
+    conditionType,
     conditionId: int32(find(input.details, 'CHANGE_AP_CONDITION_ID')?.value ?? 0n),
     ...(displayTimeType === 2 ? { duration: { sections: int32(displayTime) } } : {}),
     ...(input.invocationType !== undefined ? { invocationType: input.invocationType } : {}),

@@ -1,3 +1,4 @@
+import type { LiveChangeSkillCostValue } from '../skills/changeSkillCostValue.ts';
 import { type LiveAdditionalBuffTarget } from '../skills/additionalBuffTarget.ts';
 
 import { type LiveSkillEffectDuration } from '../skills/skillEffectDuration.ts';
@@ -15,31 +16,29 @@ export type LiveCardSearchEffect = Readonly<{
 }>;
 
 export type LiveChangeApConditionType =
-  | 'none'
-  | 'use-count'
-  | 'voltage-level'
-  | 'mental-ratio'
-  | 'section-count'
-  | 'member-id-count'
-  | 'skill-icon-count'
-  | 'hand-skill-icon-count'
-  | 'love-up-effect'
-  | 'hand-style-type-count'
-  | 'hand-member-id-count'
-  | 'mood-value'
-  | 'unit-id-count'
-  | 'hand-unit-id-count'
-  | 'exclude-count';
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 13
+  | 14
+  | 15;
 
-export type LiveChangeApEffect = Readonly<{
-  effectId: string;
-  amount: number;
-  maximum: number;
-  minimum: number;
-  conditionType: LiveChangeApConditionType;
-  conditionId: number;
-  duration: LiveSkillEffectDuration;
-}>;
+export type LiveChangeApEffect = Readonly<
+  LiveChangeSkillCostValue & {
+    effectId: string;
+    conditionId: number;
+    duration: LiveSkillEffectDuration;
+  }
+>;
 
 export type LiveCardMoveEffect = Readonly<{
   effectId: string;

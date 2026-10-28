@@ -1,19 +1,4 @@
-export type SkillCostConditionType =
-  | 1
-  | 2
-  | 3
-  | 4
-  | 5
-  | 6
-  | 7
-  | 8
-  | 9
-  | 10
-  | 11
-  | 12
-  | 13
-  | 14
-  | 15;
+import type { LiveChangeSkillCostValue } from '../runtime/skills/changeSkillCostValue.ts';
 
 export type DeckSkillCostChangeEffect = Readonly<{
   kind: 'deck-skill-cost-change';
@@ -34,18 +19,16 @@ export function validateDeckSkillCostChange(effect: DeckSkillCostChangeEffect): 
   return undefined;
 }
 
-export type SkillCostChangeEffect = Readonly<{
-  kind: 'skill-cost-change';
-  amount: number;
-  minimum: number;
-  maximum: number;
-  conditionType: SkillCostConditionType;
-  conditionId?: number;
-  addValue?: number;
-  duration?: Readonly<{ sections: number }>;
-  invocationType?: number;
-  deactivationKey?: string;
-}>;
+export type SkillCostChangeEffect = Readonly<
+  LiveChangeSkillCostValue & {
+    kind: 'skill-cost-change';
+    conditionId?: number;
+    addValue?: number;
+    duration?: Readonly<{ sections: number }>;
+    invocationType?: number;
+    deactivationKey?: string;
+  }
+>;
 
 export function validateSkillCostChangeEffect(effect: SkillCostChangeEffect): void {
   if (

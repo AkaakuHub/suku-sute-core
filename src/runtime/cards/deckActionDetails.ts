@@ -178,35 +178,21 @@ export function resolveCardSearchType(value: number): LiveCardSearchEffect['sear
 export function resolveChangeApConditionType(value: number): LiveChangeApConditionType {
   switch (value) {
     case 1:
-      return 'none';
     case 2:
-      return 'use-count';
     case 3:
-      return 'voltage-level';
     case 4:
-      return 'mental-ratio';
     case 5:
-      return 'section-count';
     case 6:
-      return 'member-id-count';
     case 7:
-      return 'skill-icon-count';
     case 8:
-      return 'hand-skill-icon-count';
     case 9:
-      return 'love-up-effect';
     case 10:
-      return 'hand-style-type-count';
     case 11:
-      return 'hand-member-id-count';
     case 12:
-      return 'mood-value';
     case 13:
-      return 'unit-id-count';
     case 14:
-      return 'hand-unit-id-count';
     case 15:
-      return 'exclude-count';
+      return value;
     default:
       throw new Error('Live ChangeAP condition type is invalid');
   }
