@@ -1,68 +1,65 @@
+import { consumeLiveCardSearch } from '../../runtime/cards/cardSearch.ts';
+import {
+  deactivateLiveCardSearchParams,
+  registerLiveCardSearchParam,
+  type LiveCardSearchScope,
+  type LiveDeckCardSearchParam,
+} from '../../runtime/cards/cardSearchState.ts';
 import { boardCardIds } from './deckBoard.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
-import type { Card, GameState, SearchRequest, SearchTarget } from '../model.ts';
+import type { GameState, SearchTarget } from '../model.ts';
 
-function matches(card: Card, target: SearchTarget): boolean {
+export function registerSearch(
+  state: GameState,
+  scope: LiveCardSearchScope,
+  target: SearchTarget,
+  count: number,
+  deactivationKey?: string,
+): GameState {
+  let param: LiveDeckCardSearchParam<string>;
   switch (target.kind) {
     case 'main-effect':
-      return card.skillMainEffect === target.actionType;
+      param = { searchType: 'skill-main-effect', searchId: target.actionType };
+      break;
     case 'member':
-      return card.charactersId === target.member;
+      param = { searchType: 'character-id', searchId: target.member };
+      break;
     case 'unit':
-      return card.unitIds.includes(target.unit);
+      param = { searchType: 'unit-id', searchId: target.unit };
+      break;
     case 'token-series':
-      return card.tokenCardSeriesIds.includes(target.seriesId);
-    case 'token':
-      return card.token === target.token;
+      param = { searchType: 'token-card-series', searchId: target.seriesId };
+      break;
+    case 'token': {
+      const card = state.tokenCatalog.find((candidate) => candidate.token === target.token);
+      if (!card) throw new Error('検索する追加カードの定義がありません。');
+      param = { searchType: 'card-datas-id', searchId: card.cardDatasId };
+      break;
+    }
   }
-}
-
-function candidates(state: GameState, ids: readonly string[], target: SearchTarget): string[] {
-  return state.deck
-    .filter((card) => ids.includes(card.cardInstanceId) && matches(card, target))
-    .map((card) => card.cardInstanceId);
+  if (deactivationKey !== undefined) param = { ...param, deactivationKey };
+  let deckBoard = state.deckBoard;
+  for (let index = 0; index < count; index++)
+    deckBoard = registerLiveCardSearchParam(deckBoard, scope, param);
+  return { ...state, deckBoard };
 }
 
 export function consumeSearch(
   state: GameState,
 ): Readonly<{ state: GameState; cardInstanceIds: readonly string[] }> {
-  let next = state;
-  for (const scope of ['grade', 'section', 'skill'] as const) {
-    const index = next.deckActions.searches.findLastIndex((search) => search.scope === scope);
-    if (index < 0) continue;
-    const search: SearchRequest | undefined = next.deckActions.searches[index];
-    if (!search) throw new Error('検索指定がありません。');
-    next = {
-      ...next,
-      deckActions: {
-        ...next.deckActions,
-        searches: next.deckActions.searches.filter((_, position) => position !== index),
-      },
-    };
-    const inDeck = candidates(next, boardCardIds(next, liveBoardState.deck), search.target);
-    const matched =
-      inDeck.length > 0
-        ? inDeck
-        : scope === 'skill'
-          ? []
-          : candidates(next, boardCardIds(next, liveBoardState.graveyard), search.target);
-    if (matched.length === 0) continue;
-    return {
-      state: next,
-      cardInstanceIds: matched,
-    };
-  }
-  return { state: next, cardInstanceIds: [] };
+  const deckIds = new Set(boardCardIds(state, liveBoardState.deck));
+  const graveyardIds = new Set(boardCardIds(state, liveBoardState.graveyard));
+  const searched = consumeLiveCardSearch(
+    state.deckBoard,
+    state.deck.filter((card) => deckIds.has(card.cardInstanceId)),
+    state.deck.filter((card) => graveyardIds.has(card.cardInstanceId)),
+  );
+  return {
+    state: { ...state, deckBoard: searched.deckBoard },
+    cardInstanceIds: searched.candidates.map((card) => card.cardInstanceId),
+  };
 }
 
 export function deactivateSearchRequests(state: GameState, deactivationKey: string): GameState {
-  return {
-    ...state,
-    deckActions: {
-      ...state.deckActions,
-      searches: state.deckActions.searches.filter(
-        (search) => search.deactivationKey !== deactivationKey,
-      ),
-    },
-  };
+  return { ...state, deckBoard: deactivateLiveCardSearchParams(state.deckBoard, deactivationKey) };
 }

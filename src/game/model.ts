@@ -43,7 +43,6 @@ import type {
   GaugeRegeneration,
   HeartBoostState,
   MentalBarrier,
-  SearchRequest,
   SkillCostChange,
   ParameterValueFactor,
   TokenBoost,
@@ -62,7 +61,6 @@ import type { Boost, ResourceBoost, SkillScoreUp, TargetBoost } from './boostTyp
 export { rules } from './rules.ts';
 export type { Boost, ResourceBoost, TargetBoost } from './boostTypes.ts';
 
-export type { SearchRequest } from './modelTypes.ts';
 export type { SearchTarget, TokenBoost } from './modelTypes.ts';
 export type { Effect } from './modelTypes.ts';
 
@@ -188,7 +186,6 @@ export type GameState = Readonly<{
         options: HandShuffle;
         skipSourceRefill: boolean;
       }>[];
-      searches: readonly SearchRequest[];
     }
   >;
   usedCard: LiveCardIdentity | null;

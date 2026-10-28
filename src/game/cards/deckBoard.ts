@@ -1,3 +1,4 @@
+import { createLiveCardSearchState } from '../../runtime/cards/cardSearchState.ts';
 import {
   liveDeckCardInstanceIds,
   liveCurrentDeckBoardCardInstanceIds,
@@ -24,7 +25,7 @@ export function createCardDeckBoard(
     })),
     nextCardInstanceId: 1,
     deckOutCount: 0,
-    skillCardSearchParams: [],
+    ...createLiveCardSearchState<string>(),
   };
 }
 

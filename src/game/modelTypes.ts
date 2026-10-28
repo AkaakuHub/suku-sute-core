@@ -1,3 +1,4 @@
+import type { LiveCardSearchScope } from '../runtime/cards/cardSearchState.ts';
 import type { LiveChangeSkillCostValue } from '../runtime/skills/changeSkillCostValue.ts';
 import type { SkillCooldownEffectInput } from './skillCooldownTypes.ts';
 import type { InduceSkillEffectInput, InduceEffect } from './induceSkillEffectTypes.ts';
@@ -79,11 +80,6 @@ export type SearchTarget =
   | Readonly<{ kind: 'unit'; unit: UnitId }>
   | Readonly<{ kind: 'token-series'; seriesId: number }>
   | Readonly<{ kind: 'token'; token: TokenId }>;
-export type SearchRequest = Readonly<{
-  scope: 'grade' | 'section' | 'skill';
-  target: SearchTarget;
-  deactivationKey: string | null;
-}>;
 export type TokenBoostTarget =
   | Readonly<{ kind: 'all' }>
   | Readonly<{ kind: 'member'; member: MemberId }>
@@ -248,7 +244,7 @@ type EffectShape =
   | Readonly<{ kind: 'search-token'; token: TokenId; count: number }>
   | Readonly<{
       kind: 'search';
-      scope: SearchRequest['scope'];
+      scope: LiveCardSearchScope;
       target: SearchTarget;
       count: number;
       deactivationKey?: string;

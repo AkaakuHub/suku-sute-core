@@ -1,3 +1,4 @@
+import { createLiveCardSearchState } from '../../src/runtime/cards/cardSearchState.ts';
 import { expect, test } from 'vite-plus/test';
 import {
   createLiveDeckBoardState,
@@ -44,7 +45,7 @@ test('文字列IDでも全確率0の再読み込みとint32カウンターを使
     ],
     nextCardInstanceId: 1,
     deckOutCount: 2_147_483_647,
-    skillCardSearchParams: [],
+    ...createLiveCardSearchState(),
   };
   expect(prepareLiveDeckDraw(board, ['a'], () => 0).deckOutCount).toBe(-2_147_483_648);
 });

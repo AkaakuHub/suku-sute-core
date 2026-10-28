@@ -1,4 +1,4 @@
-import type { LiveDeckCardSearchParam } from './deckBoardState.ts';
+import type { LiveDeckCardSearchParam } from './cardSearchState.ts';
 import { createLiveCardSearchEffect, createLiveReshuffleEffect } from './deckSkillActions.ts';
 import type { LiveSkillEffect } from '../skills/skillTypes.ts';
 

@@ -1,3 +1,4 @@
+import { registerSearch } from './cards/search.ts';
 import { liveBoardState } from '../runtime/cards/deckBoardState.ts';
 import { setCardSkillUseAtBoardState } from './cards/skillUseAtBoardState.ts';
 import { selectLiveBranchEffects } from '../runtime/skills/branchSkillActivation.ts';
@@ -206,20 +207,13 @@ function applyEffectInternal(
           : effect.kind === 'search-unit'
             ? { kind: 'unit' as const, unit: effect.unit }
             : { kind: 'token' as const, token: effect.token };
-      return {
-        ...state,
-        deckActions: {
-          ...state.deckActions,
-          searches: [
-            ...state.deckActions.searches,
-            ...Array.from({ length: effect.count }, () => ({
-              scope: effect.kind === 'search' ? effect.scope : ('skill' as const),
-              target,
-              deactivationKey: effect.kind === 'search' ? (effect.deactivationKey ?? null) : null,
-            })),
-          ],
-        },
-      };
+      return registerSearch(
+        state,
+        effect.kind === 'search' ? effect.scope : 'skill',
+        target,
+        effect.count,
+        effect.kind === 'search' ? effect.deactivationKey : undefined,
+      );
     }
     case 'use-hand':
       return state;

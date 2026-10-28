@@ -1,3 +1,9 @@
+import {
+  createLiveCardSearchState,
+  registerLiveCardSearchParam,
+  removeLiveCardSearchParam,
+  resetLiveCardSearchParams,
+} from '../../src/runtime/cards/cardSearchState.ts';
 import { prepareLiveDeckDraw } from '../../src/runtime/cards/deckDraw.ts';
 import { describe, expect, test } from 'vite-plus/test';
 import {
@@ -9,10 +15,7 @@ import {
   moveLiveHandCardToGraveyard,
   liveBoardState,
   liveDeckBoardCardInstanceIds,
-  registerLiveSkillCardSearchParam,
   reloadLiveDeckCards,
-  removeLiveSkillCardSearchParam,
-  resetLiveCardSearchParams,
   updateLiveCardSkillUseAtBoardState,
   setLiveCardSkillUseAtBoardState,
 } from '../../src/runtime/cards/deckBoardState.ts';
@@ -127,13 +130,14 @@ describe('Live deck board state', () => {
   test('keeps duplicate skill card search params and removes one registration at a time', () => {
     const initial = createLiveDeckBoardState([1001], [1001]);
     const param = { searchType: 'character-id' as const, searchId: 1021 };
-    const registered = registerLiveSkillCardSearchParam(
-      registerLiveSkillCardSearchParam(initial, param),
+    const registered = registerLiveCardSearchParam(
+      registerLiveCardSearchParam(initial, 'skill', param),
+      'skill',
       param,
     );
 
     expect(registered.skillCardSearchParams).toEqual([param, param]);
-    const removed = removeLiveSkillCardSearchParam(registered, param);
+    const removed = removeLiveCardSearchParam(registered, 'skill', param);
     expect(removed.skillCardSearchParams).toEqual([param]);
     expect(resetLiveCardSearchParams(removed).skillCardSearchParams).toEqual([]);
   });
@@ -195,7 +199,7 @@ test('文字列IDの盤面も使用中からProxyへの移動と保存先リセ�
     ],
     nextCardInstanceId: 1,
     deckOutCount: 0,
-    skillCardSearchParams: [],
+    ...createLiveCardSearchState<string>(),
   };
   const updated = updateLiveCardSkillUseAtBoardState(state, 'source');
   expect(updated.cards).toEqual([

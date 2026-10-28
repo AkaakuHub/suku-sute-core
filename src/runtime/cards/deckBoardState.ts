@@ -1,3 +1,4 @@
+import { createLiveCardSearchState, type LiveCardSearchState } from './cardSearchState.ts';
 export const liveBoardState = {
   deck: 1,
   hand: 2,
@@ -24,17 +25,13 @@ export type LiveDeckBoardCard<Id extends LiveCardIdentifier = number> = Readonly
   }
 >;
 
-export type LiveDeckCardSearchParam = Readonly<{
-  searchType: 'skill-main-effect' | 'character-id' | 'unit-id' | 'token-card-series';
-  searchId: number;
-}>;
-
-export type LiveDeckBoardState<Id extends LiveCardIdentifier = number> = Readonly<{
-  cards: readonly LiveDeckBoardCard<Id>[];
-  nextCardInstanceId: number;
-  deckOutCount: number;
-  skillCardSearchParams: readonly LiveDeckCardSearchParam[];
-}>;
+export type LiveDeckBoardState<Id extends LiveCardIdentifier = number> = Readonly<
+  LiveCardSearchState<Id> & {
+    cards: readonly LiveDeckBoardCard<Id>[];
+    nextCardInstanceId: number;
+    deckOutCount: number;
+  }
+>;
 
 export function createLiveDeckBoardState(
   deckCardDatasIds: readonly number[],
@@ -54,7 +51,7 @@ export function createLiveDeckBoardState(
     })),
     nextCardInstanceId,
     deckOutCount: 0,
-    skillCardSearchParams: [],
+    ...createLiveCardSearchState(),
   };
 }
 
@@ -84,43 +81,6 @@ export function addLiveDeckBoardCard(
     },
     cardInstanceId,
   };
-}
-
-export function registerLiveSkillCardSearchParam<Id extends LiveCardIdentifier>(
-  state: LiveDeckBoardState<Id>,
-  param: LiveDeckCardSearchParam,
-): LiveDeckBoardState<Id> {
-  validateCardSearchParam(param);
-  return {
-    ...state,
-    skillCardSearchParams: [...state.skillCardSearchParams, param],
-  };
-}
-
-export function removeLiveSkillCardSearchParam<Id extends LiveCardIdentifier>(
-  state: LiveDeckBoardState<Id>,
-  param: LiveDeckCardSearchParam,
-): LiveDeckBoardState<Id> {
-  validateCardSearchParam(param);
-  const index = state.skillCardSearchParams.findIndex(
-    (current) => current.searchType === param.searchType && current.searchId === param.searchId,
-  );
-  if (index < 0) {
-    throw new Error('Live skill card search param is not registered');
-  }
-  return {
-    ...state,
-    skillCardSearchParams: [
-      ...state.skillCardSearchParams.slice(0, index),
-      ...state.skillCardSearchParams.slice(index + 1),
-    ],
-  };
-}
-
-export function resetLiveCardSearchParams<Id extends LiveCardIdentifier>(
-  state: LiveDeckBoardState<Id>,
-): LiveDeckBoardState<Id> {
-  return { ...state, skillCardSearchParams: [] };
 }
 
 export function moveLiveHandCardToGraveyard<Id extends LiveCardIdentifier>(
@@ -315,12 +275,6 @@ function validateHandCards(
     handCardDatasIds.some((cardDatasId) => !deckCardDatasIds.includes(cardDatasId))
   ) {
     throw new Error('Live hand board cards are invalid');
-  }
-}
-
-function validateCardSearchParam(param: LiveDeckCardSearchParam): void {
-  if (!Number.isSafeInteger(param.searchId) || param.searchId < 1) {
-    throw new Error('Live skill card search param is invalid');
   }
 }
 
