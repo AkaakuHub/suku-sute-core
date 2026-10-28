@@ -1,6 +1,5 @@
 import { boardCardIds } from './deckBoard.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
-import { drawCandidate, drawWeight } from './drawLottery.ts';
 import type { Card, GameState, SearchRequest, SearchTarget } from '../model.ts';
 
 function matches(card: Card, target: SearchTarget): boolean {
@@ -28,8 +27,7 @@ function candidates(state: GameState, ids: readonly string[], target: SearchTarg
 
 export function consumeSearch(
   state: GameState,
-  randomIndex: (maximumExclusive: number) => number,
-): Readonly<{ state: GameState; selected: string | null }> {
+): Readonly<{ state: GameState; cardInstanceIds: readonly string[] }> {
   let next = state;
   for (const scope of ['grade', 'section', 'skill'] as const) {
     const index = next.deckActions.searches.findLastIndex((search) => search.scope === scope);
@@ -53,17 +51,10 @@ export function consumeSearch(
     if (matched.length === 0) continue;
     return {
       state: next,
-      selected: drawCandidate(
-        matched.map((id) => {
-          const card = next.deck.find((item) => item.id === id);
-          if (!card) throw new Error('検索対象のカードがありません。');
-          return { id, weight: drawWeight(card, next) };
-        }),
-        randomIndex,
-      ),
+      cardInstanceIds: matched,
     };
   }
-  return { state: next, selected: null };
+  return { state: next, cardInstanceIds: [] };
 }
 
 export function deactivateSearchRequests(state: GameState, deactivationKey: string): GameState {

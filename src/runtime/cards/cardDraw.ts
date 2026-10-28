@@ -1,8 +1,9 @@
+import type { LiveCardIdentifier } from './deckBoardState.ts';
 import type { LiveCardIdentity } from './cardIdentity.ts';
 import type { LiveSkillEffect } from '../skills/skillTypes.ts';
 
-export type LiveDrawCandidate = Readonly<{
-  cardInstanceId: number;
+export type LiveDrawCandidate<Id extends LiveCardIdentifier = number> = Readonly<{
+  cardInstanceId: Id;
   drawProbability: number;
 }>;
 
@@ -36,14 +37,15 @@ export function applyLiveOnDrawInduceAbility(
   return result;
 }
 
-export function selectLiveDrawCandidate(
-  candidates: readonly LiveDrawCandidate[],
+export function selectLiveDrawCandidate<Candidate extends LiveDrawCandidate<LiveCardIdentifier>>(
+  candidates: readonly Candidate[],
   randomRange: (maximumExclusive: number) => number,
-): LiveDrawCandidate | null {
+): Candidate | null {
   for (const candidate of candidates) {
     if (
-      !Number.isSafeInteger(candidate.cardInstanceId) ||
-      candidate.cardInstanceId <= 0 ||
+      (typeof candidate.cardInstanceId === 'number'
+        ? !Number.isSafeInteger(candidate.cardInstanceId) || candidate.cardInstanceId <= 0
+        : candidate.cardInstanceId.length === 0) ||
       !Number.isSafeInteger(candidate.drawProbability)
     ) {
       throw new Error('Live draw candidate is invalid');
@@ -66,6 +68,21 @@ export function selectLiveDrawCandidate(
     if (roll < cumulative) return candidate;
   }
   throw new Error('Live draw probability did not resolve');
+}
+
+export function selectLiveDeckDrawCandidate<
+  Candidate extends LiveDrawCandidate<LiveCardIdentifier>,
+>(
+  candidates: readonly Candidate[],
+  searchedCandidates: readonly Candidate[],
+  randomRange: (maximumExclusive: number) => number,
+): Candidate | null {
+  const selected =
+    selectLiveDrawCandidate(searchedCandidates, randomRange) ??
+    selectLiveDrawCandidate(candidates, randomRange);
+  if (selected !== null) return selected;
+  if (candidates.length === 0) return null;
+  return requireCandidate(candidates[requireRandomIndex(candidates.length, randomRange)]);
 }
 
 type OnDrawInduceValues = Readonly<{
@@ -230,7 +247,7 @@ function requireRandomIndex(
   return result;
 }
 
-function requireCandidate(candidate: LiveDrawCandidate | undefined): LiveDrawCandidate {
+function requireCandidate<Candidate>(candidate: Candidate | undefined): Candidate {
   if (candidate === undefined) {
     throw new Error('Live draw candidate is absent');
   }

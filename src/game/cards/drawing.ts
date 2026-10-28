@@ -1,3 +1,4 @@
+import { selectLiveDeckDrawCandidate } from '../../runtime/cards/cardDraw.ts';
 import { prepareLiveDeckDraw } from '../../runtime/cards/deckDraw.ts';
 import {
   boardCardIds,
@@ -7,7 +8,7 @@ import {
 } from './deckBoard.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import { createRangeRandom } from '../random.ts';
-import { drawCandidate, drawWeight } from './drawLottery.ts';
+import { drawWeight } from './drawLottery.ts';
 import { consumeSearch } from './search.ts';
 import { activateHandPermanentEffects, removeHandCardEffects } from './handEffects.ts';
 import { applyDrawAbility } from './drawAbilities.ts';
@@ -86,18 +87,17 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
     const available = next.deck.filter((card) => deckIds.has(card.id)).map((card) => card.id);
     const random = createRangeRandom(next.randomSeed);
     const randomIndex = (maximumExclusive: number) => Math.floor(random.range(0, maximumExclusive));
-    const searched = consumeSearch(next, randomIndex);
+    const searched = consumeSearch(next);
     next = searched.state;
-    const drawn =
-      searched.selected ??
-      drawCandidate(
-        available.map((id) => ({
-          id,
-          weight: probability(id),
-        })),
-        randomIndex,
-      ) ??
-      available[randomIndex(available.length)];
+    const candidate = (cardInstanceId: string) => ({
+      cardInstanceId,
+      drawProbability: probability(cardInstanceId),
+    });
+    const drawn = selectLiveDeckDrawCandidate(
+      available.map(candidate),
+      searched.cardInstanceIds.map(candidate),
+      randomIndex,
+    )?.cardInstanceId;
     if (!drawn) break;
     next = {
       ...next,
