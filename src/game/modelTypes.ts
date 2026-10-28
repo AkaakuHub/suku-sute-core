@@ -1,3 +1,4 @@
+import type { LiveApIncreaseSpeedChange } from '../runtime/skills/apIncreaseSpeedEffect.ts';
 import type { LiveCardSearchScope } from '../runtime/cards/cardSearchState.ts';
 import type { LiveChangeSkillCostValue } from '../runtime/skills/changeSkillCostValue.ts';
 import type { SkillCooldownEffectInput } from './skillCooldownTypes.ts';
@@ -254,17 +255,7 @@ type EffectShape =
   | InduceSkillEffectInput
   | Readonly<{ kind: 'ap-limit'; amount: number }>
   | Readonly<{ kind: 'ap-speed'; percent: number; duration: 'stage' | 'section' }>
-  | Readonly<{
-      kind: 'ap-speed-change';
-      calculationType: 1 | 2;
-      num: bigint;
-      bonusMoodTarget: 0 | 1 | 2 | 3;
-      bonusMoodValue: bigint;
-      displayTimeType: bigint;
-      displayTime: bigint;
-      invocationType?: number;
-      deactivationKey?: string;
-    }>
+  | (Readonly<{ kind: 'ap-speed-change' }> & LiveApIncreaseSpeedChange)
   | VoltageConvertEffect
   | MentalHeartInduceEffect
   | AdditionalHeartInduceEffect

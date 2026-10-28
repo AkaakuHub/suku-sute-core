@@ -1,18 +1,15 @@
-import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
 import {
+  activateLiveApIncreaseSpeed,
   resolveLiveApIncreaseIntervalSeconds,
   resolveLiveApIncreaseIntervalMilliseconds,
   advanceLiveApIncreaseSpeedState,
 } from '../../runtime/skills/apIncreaseSpeed.ts';
 import { rescaleLiveGaugeTimer } from '../../runtime/live/gaugeTiming.ts';
-import { observeLiveApIncreaseSpeedEffect } from '../../runtime/skills/apIncreaseSpeedObservation.ts';
 import type { Card, Effect, GameState } from '../model.ts';
-import { calculateLiveSkillMoodCorrection } from '../../runtime/live/skillMood.ts';
 import { moodValue } from '../projection.ts';
 import { skillValue } from './skillValue.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { absorbSkillEffect } from './proxySkill.ts';
-import { int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type ApSpeedChange = Extract<Effect, { kind: 'ap-speed-change' }>;
 
@@ -37,76 +34,34 @@ export function applyApSpeedChange(
   multiplier: number,
   addValue: number,
 ): GameState {
-  if (effect.displayTimeType === 2n && effect.displayTime === 0n)
-    throw new Error('Display section count is 0. (displayTimeType: SECTION, displayTime: 0)');
-  const displayTimeType = int32(effect.displayTimeType);
-  const correction =
-    effect.bonusMoodTarget === 0
-      ? 0
-      : calculateLiveSkillMoodCorrection(
-          effect.bonusMoodTarget,
-          moodValue(state),
-          Math.fround(int64ToFloat32(effect.bonusMoodValue) / 10_000),
-        );
-  let calculation: 'add' | 'multiply';
-  let value: number;
   let currentState = state;
-  let rate = Math.fround(
-    Math.fround(multiplier) *
-      Math.fround(
-        Math.fround(Math.fround(addValue * 100) + int32(10_000 - int32(effect.num))) -
-          Math.fround(correction * 10_000),
-      ),
-  );
-  if (rate > 0 && card) {
-    if (effect.calculationType === 2) {
-      const legacyBoosted = skillValue(currentState, rate, { kind: 'ap', amount: rate }, card);
-      const boosted = applyAction52SkillBoostForCard(currentState, card, legacyBoosted);
-      currentState = boosted.state;
-      if (boosted.value !== Number.POSITIVE_INFINITY) rate = int32(boosted.value);
-    } else {
-      currentState = applyAction52SkillBoostForCard(currentState, card, rate).state;
-    }
-  }
-  if (effect.calculationType === 2) {
-    value = Math.fround(Math.fround(10_000 - rate) / 10_000);
-    calculation = 'multiply';
-  } else {
-    value = Math.fround(
-      Math.fround(Math.fround(correction + int64ToFloat32(effect.num)) + Math.fround(addValue)) *
-        Math.fround(multiplier),
-    );
-    calculation = 'add';
-  }
-  if ((calculation === 'multiply' && value === 1) || (calculation === 'add' && value === 0))
-    return currentState;
-  const observation = observeLiveApIncreaseSpeedEffect(
-    calculation === 'multiply'
-      ? { kind: 'multiply', factor: value }
-      : { kind: 'add', milliseconds: value },
-    apIncreaseIntervalMilliseconds(state),
-  );
-  const absorption =
-    observation.absorptionAmount === null
-      ? null
-      : absorbSkillEffect(currentState, 21, BigInt(observation.absorptionAmount));
-  if (absorption?.absorbed) return absorption.state;
-  const suppressDuration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
-  const entry: GameState['apIncreaseSpeedEffects'][number] = {
+  const activated = activateLiveApIncreaseSpeed(state.apIncreaseSpeedEffects, effect, {
     effectId: effect.skillEffectId === undefined ? null : String(effect.skillEffectId),
-    calculation:
-      calculation === 'multiply'
-        ? { kind: 'multiply', factor: value }
-        : { kind: 'add', milliseconds: value },
-    duration: suppressDuration
-      ? { kind: 'full-end' }
-      : createLiveSkillEffectDuration(displayTimeType, effect.displayTime, 'AP increase speed'),
-    deactivationKey: effect.deactivationKey ?? null,
-  };
-  return updateApIncreaseSpeedEffects(currentState, [
-    ...currentState.apIncreaseSpeedEffects,
-    entry,
-  ]);
+    currentMoodValue: moodValue(state),
+    currentIncreaseIntervalMilliseconds: apIncreaseIntervalMilliseconds(state),
+    power: { addValue, multiplyFactor: multiplier, effectPower: 1 },
+    applySkillBoost: (value) => {
+      if (!card) return value;
+      const amount =
+        effect.calculationType === 2
+          ? skillValue(currentState, value, { kind: 'ap', amount: value }, card)
+          : value;
+      const boosted = applyAction52SkillBoostForCard(currentState, card, amount);
+      currentState = boosted.state;
+      return boosted.value;
+    },
+  });
+  if (
+    (activated.calculation.kind === 'multiply' && activated.calculation.factor === 1) ||
+    (activated.calculation.kind === 'add' && activated.calculation.milliseconds === 0)
+  )
+    return currentState;
+  const absorption =
+    activated.absorptionAmount === null
+      ? null
+      : absorbSkillEffect(currentState, 21, BigInt(activated.absorptionAmount));
+  if (absorption?.absorbed) return absorption.state;
+  return updateApIncreaseSpeedEffects(currentState, activated.state);
 }
 
 export function applyApSpeedPercent(
@@ -144,12 +99,6 @@ export function expireApSpeedSections(state: GameState): GameState {
       musicEnded: false,
     }),
   );
-}
-
-function int32(value: bigint | number): number {
-  if (typeof value === 'number' && !Number.isFinite(value)) return -2_147_483_648;
-  const integer = typeof value === 'bigint' ? value : BigInt(Math.trunc(value));
-  return Number(BigInt.asIntN(32, integer));
 }
 
 export function deactivateApSpeedEffects(state: GameState, deactivationKey: string): GameState {

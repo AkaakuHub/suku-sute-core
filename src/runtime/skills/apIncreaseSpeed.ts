@@ -1,7 +1,8 @@
 import { observeLiveApIncreaseSpeedEffect } from './apIncreaseSpeedObservation.ts';
 import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import { roundLiveGaugeIntervalSeconds } from '../live/gaugeTiming.ts';
-import type { LiveSkillEffect } from './skillTypes.ts';
+import type { LiveApIncreaseSpeedChange } from './apIncreaseSpeedEffect.ts';
+import { ceilToInt32, int64ToInt32, int64ToFloat32, isInt64 } from '../numeric.ts';
 import {
   advanceLiveSkillEffectDuration,
   createLiveSkillEffectDuration,
@@ -10,10 +11,6 @@ import {
 import type { LiveSkillEffectPower } from './skillEffectPower.ts';
 import { validateLiveSkillEffectPower } from './skillEffectPower.ts';
 import { calculateLiveSkillMoodCorrection } from '../live/skillMood.ts';
-import {
-  requireLiveSkillEffectDetails,
-  requireLiveSkillEffectDetailValue,
-} from './skillEffectValue.ts';
 
 const skillRate = 10_000;
 const factorRate = 100;
@@ -35,9 +32,9 @@ export function createLiveApIncreaseSpeedState(): LiveApIncreaseSpeedState {
 
 export function activateLiveApIncreaseSpeed(
   state: LiveApIncreaseSpeedState,
-  effect: LiveSkillEffect,
+  effect: LiveApIncreaseSpeedChange,
   input: Readonly<{
-    currentTimeSeconds: number;
+    effectId: string | null;
     currentMoodValue: number;
     currentIncreaseIntervalMilliseconds: number;
     power: LiveSkillEffectPower;
@@ -47,9 +44,13 @@ export function activateLiveApIncreaseSpeed(
   state: LiveApIncreaseSpeedState;
   effectAmount: number;
   absorptionAmount: number | null;
+  calculation: LiveApIncreaseSpeedEffect['calculation'];
 }> {
   if (
-    effect.actionType !== 21 ||
+    ![effect.num, effect.bonusMoodValue, effect.displayTimeType, effect.displayTime].every(
+      isInt64,
+    ) ||
+    (effect.calculationType !== 1 && effect.calculationType !== 2) ||
     !Number.isSafeInteger(input.currentMoodValue) ||
     !Number.isFinite(input.currentIncreaseIntervalMilliseconds) ||
     input.currentIncreaseIntervalMilliseconds <= 0
@@ -57,40 +58,29 @@ export function activateLiveApIncreaseSpeed(
     throw new Error('Live AP increase speed input is invalid');
   }
   validateLiveSkillEffectPower(input.power, 'AP increase speed');
-  const details = requireLiveSkillEffectDetails(
-    effect.details,
-    [
-      'CHANGE_AP_INCREASE_SPEED_CALC_TYPE',
-      'CHANGE_AP_INCREASE_SPEED_NUM',
-      'CHANGE_AP_INCREASE_SPEED_NUM_BONUS_MOOD',
-      'CHANGE_AP_INCREASE_SPEED_DISPLAY_TIME_TYPE',
-      'CHANGE_AP_INCREASE_SPEED_DISPLAY_TIME',
-    ],
-    'AP increase speed',
-  );
-  const value = requireValue(details, 'CHANGE_AP_INCREASE_SPEED_NUM');
-  const bonusMood = details.get('CHANGE_AP_INCREASE_SPEED_NUM_BONUS_MOOD');
-  if (bonusMood === undefined) {
-    throw new Error('Live AP increase speed bonus mood is absent');
-  }
+  const displayTimeType = int64ToInt32(effect.displayTimeType);
+  if (displayTimeType === 2 && effect.displayTime === 0n)
+    throw new Error('Live AP increase speed display time is invalid');
   const moodCorrection = calculateLiveSkillMoodCorrection(
-    bonusMood.targetMood,
+    effect.bonusMoodTarget,
     input.currentMoodValue,
-    bonusMood.effectValue / skillRate,
+    Math.fround(int64ToFloat32(effect.bonusMoodValue) / skillRate),
   );
   const speedIncrease = Math.fround(
-    Math.fround(Math.fround(skillRate - value) - Math.fround(moodCorrection * skillRate)) +
-      Math.fround(input.power.addValue * factorRate),
+    Math.fround(Math.fround(input.power.addValue) * factorRate) +
+      Math.fround(
+        int64ToFloat32(BigInt.asIntN(64, BigInt(skillRate) - effect.num)) -
+          Math.fround(moodCorrection * skillRate),
+      ),
   );
-  const poweredSpeedIncrease = Math.fround(speedIncrease * input.power.multiplyFactor);
+  const poweredSpeedIncrease = Math.fround(speedIncrease * Math.fround(input.power.multiplyFactor));
   const boostedSpeedIncrease =
     poweredSpeedIncrease > 0
-      ? Math.ceil(input.applySkillBoost(poweredSpeedIncrease))
+      ? Math.fround(ceilToInt32(Math.fround(input.applySkillBoost(poweredSpeedIncrease))))
       : poweredSpeedIncrease;
-  const calculationType = requireValue(details, 'CHANGE_AP_INCREASE_SPEED_CALC_TYPE');
   const calculation = resolveCalculation(
-    calculationType,
-    value,
+    effect.calculationType,
+    int64ToFloat32(effect.num),
     moodCorrection,
     boostedSpeedIncrease,
     input.power,
@@ -101,17 +91,21 @@ export function activateLiveApIncreaseSpeed(
   );
   return {
     ...observation,
+    calculation,
     state: [
       ...state,
       {
-        effectId: effect.id,
-        deactivationKey: null,
+        effectId: input.effectId,
+        deactivationKey: effect.deactivationKey ?? null,
         calculation,
-        duration: createLiveSkillEffectDuration(
-          requireValue(details, 'CHANGE_AP_INCREASE_SPEED_DISPLAY_TIME_TYPE'),
-          requireValue(details, 'CHANGE_AP_INCREASE_SPEED_DISPLAY_TIME'),
-          'AP increase speed',
-        ),
+        duration:
+          effect.invocationType === 0x388 || effect.invocationType === 0x38b
+            ? { kind: 'full-end' }
+            : createLiveSkillEffectDuration(
+                displayTimeType,
+                effect.displayTime,
+                'AP increase speed',
+              ),
       },
     ],
   };
@@ -185,11 +179,4 @@ function resolveCalculation(
     default:
       throw new Error('Live AP increase speed calculation type differs');
   }
-}
-
-function requireValue(
-  details: ReadonlyMap<string, LiveSkillEffect['details'][number]>,
-  name: string,
-): number {
-  return requireLiveSkillEffectDetailValue(details, name, 'AP increase speed');
 }

@@ -1,3 +1,4 @@
+import { readLiveApIncreaseSpeedChange } from '../../src/runtime/skills/apIncreaseSpeedEffect.ts';
 import { observeLiveApIncreaseSpeedEffect } from '../../src/runtime/skills/apIncreaseSpeedObservation.ts';
 import { expect, test } from 'vite-plus/test';
 import {
@@ -12,9 +13,9 @@ test('倍率型は短縮率へSkillBoostを適用してAP intervalを変更す�
   const boostedValues: number[] = [];
   const activated = activateLiveApIncreaseSpeed(
     createLiveApIncreaseSpeedState(),
-    effect('21001', 2, 8_600, 3, 0),
+    readLiveApIncreaseSpeedChange(effect('21001', 2, 8_600, 3, 0)),
     {
-      currentTimeSeconds: 0,
+      effectId: '21001',
       currentMoodValue: 0,
       currentIncreaseIntervalMilliseconds: 1000,
       power: { addValue: 0, multiplyFactor: 1, effectPower: 1 },
@@ -40,9 +41,9 @@ test('加算型はruntimeどおりSkillBoostを消費するが登録値には適
   let boostUseCount = 0;
   const activated = activateLiveApIncreaseSpeed(
     createLiveApIncreaseSpeedState(),
-    effect('21002', 1, -200, 1, 1_000),
+    readLiveApIncreaseSpeedChange(effect('21002', 1, -200, 1, 1_000)),
     {
-      currentTimeSeconds: 0,
+      effectId: '21002',
       currentMoodValue: 0,
       currentIncreaseIntervalMilliseconds: 1000,
       power: { addValue: 20, multiplyFactor: 2, effectPower: 1 },
@@ -207,4 +208,44 @@ test('同じ群の倍率差分はDoubleで合計してからFloat32に戻す', (
     calculation: { kind: 'multiply' as const, factor },
   }));
   expect(resolveLiveApIncreaseIntervalMilliseconds(1, state)).toBe(2000);
+});
+
+test.each([
+  [1.1, Math.fround(0.9998)],
+  [Number.POSITIVE_INFINITY, 214749.359375],
+  [2147483648, -214747.359375],
+])('AP速度の補正値%sを切り上げてsigned32へ変換する', (boosted, factor) => {
+  const activated = activateLiveApIncreaseSpeed(
+    [],
+    readLiveApIncreaseSpeedChange(effect('21', 2, 9999, 3, 0)),
+    {
+      effectId: '21',
+      currentMoodValue: 0,
+      currentIncreaseIntervalMilliseconds: 1000,
+      power: { addValue: 0, multiplyFactor: 1, effectPower: 1 },
+      applySkillBoost: () => boosted,
+    },
+  );
+  expect(activated.calculation).toEqual({ kind: 'multiply', factor });
+});
+
+test('AP速度のnumはsigned64差分をFloat32へ変換しsigned32へ縮めない', () => {
+  let boosts = 0;
+  const activated = activateLiveApIncreaseSpeed(
+    [],
+    readLiveApIncreaseSpeedChange(effect('21', 2, 4294974296, 3, 0)),
+    {
+      effectId: '21',
+      currentMoodValue: 0,
+      currentIncreaseIntervalMilliseconds: 1000,
+      power: { addValue: 0, multiplyFactor: 1, effectPower: 1 },
+      applySkillBoost: (value) => {
+        boosts++;
+        return value;
+      },
+    },
+  );
+  expect(boosts).toBe(0);
+  expect(activated.calculation).toEqual({ kind: 'multiply', factor: 429497.4375 });
+  expect(activated.absorptionAmount).toBeNull();
 });
