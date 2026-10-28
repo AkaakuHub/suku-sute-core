@@ -1,3 +1,4 @@
+import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import { boardCardIds } from './deckBoard.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import { applyAction52SkillBoost } from '../effects/action52SkillBoost.ts';
@@ -14,7 +15,9 @@ export function applyDeckSkillCostChange(
   const deckIds = new Set(boardCardIds(state, liveBoardState.deck));
   const candidates =
     effect.targetRange === 2
-      ? state.hand.flatMap((id) => state.deck.filter((card) => card.cardInstanceId === id))
+      ? liveCurrentHandCardInstanceIds(state).flatMap((id) =>
+          state.deck.filter((card) => card.cardInstanceId === id),
+        )
       : effect.targetRange === 3
         ? state.deck.filter((card) => deckIds.has(card.cardInstanceId))
         : state.deck;

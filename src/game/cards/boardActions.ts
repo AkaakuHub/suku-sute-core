@@ -1,3 +1,4 @@
+import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import { createLiveDeckDrawContextState } from '../../runtime/cards/cardDraw.ts';
 import { enqueueLiveReshuffle, flushLiveDeckActions } from '../../runtime/cards/deckActionQueue.ts';
 import { applyEffect } from '../effects.ts';
@@ -11,7 +12,7 @@ export function flushDeckActions(state: GameState): GameState {
     reshuffle: {
       activeHandCardInstanceIds: (current) => [
         ...(current.activation?.usedCards ?? []),
-        ...current.hand,
+        ...liveCurrentHandCardInstanceIds(current),
       ],
       draw: (current, action) => {
         const source =
@@ -34,7 +35,7 @@ export function flushDeckActions(state: GameState): GameState {
                 }
               : createLiveDeckDrawContextState(3),
           },
-          current.hand.length,
+          liveCurrentHandCardInstanceIds(current).length,
         );
       },
     },

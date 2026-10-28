@@ -1,3 +1,4 @@
+import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import { finalizeLiveSkillCost } from '../../runtime/skills/skillCostBuff.ts';
 import { calculateLiveAllHandSkillCost } from '../../runtime/cards/useAllHandSkill.ts';
 import type { Card, Effect, GameState } from '../model.ts';
@@ -16,7 +17,7 @@ export function cardCost(state: GameState, card: Card, activeAllHandSkill = fals
         skillCostDelta(state, card) +
         (state.onceSkillCostChanges[card.cardInstanceId] ?? 0),
     );
-  const cards = state.hand.map((id) => {
+  const cards = liveCurrentHandCardInstanceIds(state).map((id) => {
     const rawOther = state.deck.find((item) => item.cardInstanceId === id);
     if (!rawOther) throw new Error('手札のカードがありません。');
     const other = resolveModeSkill(rawOther, state.modes);

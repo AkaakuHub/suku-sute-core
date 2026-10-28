@@ -1,3 +1,4 @@
+import type { LiveDeckHandsState } from '../runtime/cards/liveHand.ts';
 import type { LiveDeckDrawContextState } from '../runtime/cards/cardDraw.ts';
 import type { LiveTokenCardDeckState } from '../runtime/cards/tokenCardDeck.ts';
 import type { LiveCardSkillLevel } from '../runtime/skills/skillTypes.ts';
@@ -142,7 +143,7 @@ export type GameState = Readonly<{
   track: Track;
   deck: readonly Card[];
   cardPool: readonly Card[];
-  hand: readonly string[];
+  liveHands: LiveDeckHandsState<string>;
   handEffectCardIds: readonly string[];
   activeHandPermanentCardIds: readonly string[];
   tokenCardDeck: LiveTokenCardDeckState<string>;

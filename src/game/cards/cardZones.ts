@@ -1,3 +1,5 @@
+import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
+import { setLiveCurrentHandCards } from '../../runtime/cards/liveHand.ts';
 import {
   enqueueLiveAllHandDraw,
   executeLiveAllHandDraw,
@@ -48,11 +50,11 @@ export function finishCardActivation(state: GameState): GameState {
     next = handReady;
   } else if (handCountChange < 0) {
     const target = Math.min(handCapacity(handReady), handReady.deck.length);
-    const removedCount = Math.max(0, handReady.hand.length + 1 - target);
+    const removedCount = Math.max(0, liveCurrentHandCardInstanceIds(handReady).length + 1 - target);
     next = {
       ...removeRandomHandCards(handReady, removedCount),
     };
-  } else if (handCapacity(handReady) < handReady.hand.length + 1) {
+  } else if (handCapacity(handReady) < liveCurrentHandCardInstanceIds(handReady).length + 1) {
     next = handReady;
   } else {
     next = fillHand(handReady);
@@ -133,6 +135,9 @@ function excludeCards(state: GameState, ids: readonly string[]): GameState {
     activeModeParameterChanges: state.activeModeParameterChanges.filter(
       (item) => !ids.includes(item.cardId),
     ),
-    hand: state.hand.filter((id) => !ids.includes(id)),
+    liveHands: setLiveCurrentHandCards(
+      state,
+      liveCurrentHandCardInstanceIds(state).filter((id) => !ids.includes(id)),
+    ).liveHands,
   };
 }

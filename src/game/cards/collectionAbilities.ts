@@ -1,3 +1,4 @@
+import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import type { Card, GameState } from '../model.ts';
 
 export function advanceHandCollectionAbilities(
@@ -7,7 +8,7 @@ export function advanceHandCollectionAbilities(
   const counts = { ...state.handHeartCollectCounts };
   const activationCounts = { ...state.handCollectionActivationCounts };
   const activated: Card[] = [];
-  for (const id of state.hand) {
+  for (const id of liveCurrentHandCardInstanceIds(state)) {
     const card = state.deck.find((item) => item.cardInstanceId === id);
     if (!card) throw new Error('手札のカードがありません。');
     const collectionEffects = card.collectionEffects;

@@ -1,3 +1,5 @@
+import { liveCurrentHandCardInstanceIds } from '../runtime/cards/liveHand.ts';
+import { removeLiveHandCard } from '../runtime/cards/liveHand.ts';
 import { beginLiveAllHandSkill } from '../runtime/cards/allHandDeckActions.ts';
 import { moveCardsToBoard } from './cards/deckBoard.ts';
 import { liveBoardState } from '../runtime/cards/deckBoardState.ts';
@@ -169,7 +171,9 @@ function useCard(state: GameState, index: number): GameState {
       pendingHandStatsDeactivationKeys: [],
     },
   };
-  return finishCardActivation(activateCard(activated, source, state.hand, false));
+  return finishCardActivation(
+    activateCard(activated, source, liveCurrentHandCardInstanceIds(state), false),
+  );
 }
 
 function activateCard(
@@ -247,7 +251,7 @@ function activateCard(
     )
       continue;
     next = beginLiveAllHandSkill({ ...next, modes: { ...next.modes, held: true } });
-    const children = [...next.hand];
+    const children = [...liveCurrentHandCardInstanceIds(next)];
     for (const id of children) {
       const child = next.deck.find((item) => item.cardInstanceId === id);
       if (child) next = activateCard(next, resolveModeSkill(child, next.modes), initialHand, true);
@@ -277,7 +281,14 @@ function retireCard(state: GameState, card: Card, allHand: boolean): GameState {
       [card.cardInstanceId],
       allHand ? liveBoardState.extra2 : liveBoardState.extra,
     ),
-    hand: state.hand.filter((id) => id !== card.cardInstanceId),
+    liveHands: {
+      ...state.liveHands,
+      [state.tokenCardDeck.currentDeck]: removeLiveHandCard(
+        state.liveHands[state.tokenCardDeck.currentDeck],
+        state.liveHands[state.tokenCardDeck.currentDeck].handCards.indexOf(card.cardInstanceId),
+        true,
+      ),
+    },
     relayUsed: state.relayUsed.filter((id) => id !== card.cardInstanceId),
     handHeartCollectCounts: Object.fromEntries(
       Object.entries(state.handHeartCollectCounts).filter(([id]) => id !== card.cardInstanceId),

@@ -1,3 +1,9 @@
+import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
+import {
+  addLiveHandCard,
+  removeLiveHandCard,
+  setLiveCurrentHandCards,
+} from '../../runtime/cards/liveHand.ts';
 import { createLiveDeckDrawContextState } from '../../runtime/cards/cardDraw.ts';
 import { flushLiveDeckActions } from '../../runtime/cards/deckActionQueue.ts';
 import { liveResetHandCardCount } from '../../runtime/cards/handCardCountReset.ts';
@@ -53,7 +59,7 @@ export function resetHandCardCount(state: GameState, adjustment: number): GameSt
   return adjustment > 0
     ? fillHandToCountRetainingOverflow(
         next,
-        liveResetHandCardCount(next, next.hand.length, adjustment),
+        liveResetHandCardCount(next, liveCurrentHandCardInstanceIds(next).length, adjustment),
       )
     : next;
 }
@@ -65,13 +71,24 @@ export function fillHandToCountRetainingOverflow(state: GameState, count: number
 export function removeRandomHandCards(state: GameState, count: number): GameState {
   let next = state;
   const removed: string[] = [];
-  while (removed.length < count && next.hand.length > 0) {
+  while (removed.length < count && liveCurrentHandCardInstanceIds(next).length > 0) {
     const random = createRangeRandom(next.randomSeed);
-    const index = Math.floor(random.range(0, next.hand.length));
-    const id = next.hand[index];
+    const index = Math.floor(random.range(0, liveCurrentHandCardInstanceIds(next).length));
+    const id = liveCurrentHandCardInstanceIds(next)[index];
     if (id === undefined) throw new Error('手札のカードがありません。');
     removed.push(id);
-    next = { ...next, randomSeed: random.seed, hand: next.hand.filter((cardId) => cardId !== id) };
+    next = {
+      ...next,
+      randomSeed: random.seed,
+      liveHands: {
+        ...next.liveHands,
+        [next.tokenCardDeck.currentDeck]: removeLiveHandCard(
+          next.liveHands[next.tokenCardDeck.currentDeck],
+          index,
+          true,
+        ),
+      },
+    };
   }
   next = removeHandCardEffects(next, removed);
   return {
@@ -87,7 +104,7 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
   let next = state;
   const drawnCards: Card[] = [];
 
-  while (next.hand.length < count) {
+  while (liveCurrentHandCardInstanceIds(next).length < count) {
     const probability = (id: string) => {
       const card = next.deck.find((item) => item.cardInstanceId === id);
       if (!card) throw new Error('山札のカードがありません。');
@@ -118,7 +135,14 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
     next = {
       ...next,
       randomSeed: random.seed,
-      hand: [...next.hand, drawn],
+      liveHands: {
+        ...next.liveHands,
+        [next.tokenCardDeck.currentDeck]: addLiveHandCard(
+          next.liveHands[next.tokenCardDeck.currentDeck],
+          next.liveHands[next.tokenCardDeck.currentDeck].handCount,
+          drawn,
+        ),
+      },
       deckBoard: moveCardsToBoard(next, [drawn], liveBoardState.hand).deckBoard,
       relayUsed: next.relayUsed.filter((id) => id !== drawn),
       handHeartCollectCounts: { ...next.handHeartCollectCounts, [drawn]: 0 },
@@ -144,15 +168,15 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
     next = activateModeAbilityEffects(next, card, applyEffect);
   }
   const maximum = handCapacity(next);
-  if (trimOverflow && next.hand.length > maximum) {
-    const ordered = [...next.hand].sort(
+  if (trimOverflow && liveCurrentHandCardInstanceIds(next).length > maximum) {
+    const ordered = [...liveCurrentHandCardInstanceIds(next)].sort(
       (left, right) =>
         Number(Boolean(next.deck.find((card) => card.cardInstanceId === right)?.passive)) -
         Number(Boolean(next.deck.find((card) => card.cardInstanceId === left)?.passive)),
     );
     next = {
       ...removeHandCardEffects(next, ordered.slice(maximum)),
-      hand: ordered.slice(0, maximum),
+      liveHands: setLiveCurrentHandCards(next, ordered.slice(0, maximum)).liveHands,
       deckBoard: moveCardsToBoard(next, ordered.slice(maximum), liveBoardState.graveyard).deckBoard,
     };
   }
@@ -160,12 +184,12 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
 }
 
 export function shuffleHand(state: GameState, options: HandShuffle): GameState {
-  let next = removeHandCardEffects(state, state.hand);
+  let next = removeHandCardEffects(state, liveCurrentHandCardInstanceIds(state));
   if (options.recoverDiscard) next = recoverCurrentDeckGraveyard(next);
   next = moveCardsToBoard(
     next,
-    state.hand,
+    liveCurrentHandCardInstanceIds(state),
     options.destination === 'draw' ? liveBoardState.deck : liveBoardState.graveyard,
   );
-  return { ...next, hand: [], relayUsed: [], handHeartCollectCounts: {} };
+  return { ...setLiveCurrentHandCards(next, []), relayUsed: [], handHeartCollectCounts: {} };
 }

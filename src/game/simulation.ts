@@ -1,3 +1,5 @@
+import { liveCurrentHandCardInstanceIds } from '../runtime/cards/liveHand.ts';
+import { createLiveDeckHandsState } from '../runtime/cards/liveHand.ts';
 import { createLiveDeckDrawContextState } from '../runtime/cards/cardDraw.ts';
 import { createLiveTokenCardDeckState } from '../runtime/cards/tokenCardDeck.ts';
 import { createLiveDeckActionQueueState } from '../runtime/cards/deckActionQueue.ts';
@@ -81,7 +83,7 @@ export function createGame(
     track,
     deck: [...resolvedDeck],
     cardPool: [...resolvedDeck],
-    hand: [lead.cardInstanceId],
+    liveHands: createLiveDeckHandsState([lead.cardInstanceId]),
     activeHandPermanentCardIds: [],
     handCardStats: {},
     skillCostChanges: [],
@@ -216,7 +218,10 @@ export function advanceTo(state: GameState, seconds: number): GameState {
   let next = state;
   while (next.tick < target) next = advanceTick(next);
   if (next.tick === endTick) {
-    const collected = collectHearts({ ...next, relayUsed: [...next.hand] });
+    const collected = collectHearts({
+      ...next,
+      relayUsed: [...liveCurrentHandCardInstanceIds(next)],
+    });
     return {
       ...finishGenesis(collected),
       scoreHistory: recordScoreHistory(collected.scoreHistory, {

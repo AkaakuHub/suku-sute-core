@@ -1,3 +1,4 @@
+import { liveCurrentHandCardInstanceIds } from '../runtime/cards/liveHand.ts';
 import { isLiveSkillCostOver } from '../runtime/live/skillCost.ts';
 import { calculateLiveBaseSkillCooldownSeconds } from '../runtime/live/skillActivation.ts';
 import { cardCost } from './cards/cost.ts';
@@ -26,7 +27,7 @@ export function durationSeconds(state: GameState): number {
 }
 
 export function cardAt(state: GameState, index: number): Card {
-  const id = state.hand[index];
+  const id = liveCurrentHandCardInstanceIds(state)[index];
   const card = state.deck.find((item) => item.cardInstanceId === id);
   if (!card) throw new Error('手札にカードがありません。');
   return resolveModeSkill(card, state.modes);
@@ -56,7 +57,7 @@ export function canUseCard(state: GameState, index: number): boolean {
     state.phase === 'playing' &&
     Number.isInteger(index) &&
     index >= 0 &&
-    index < state.hand.length &&
+    index < liveCurrentHandCardInstanceIds(state).length &&
     !state.mental.mentalDown &&
     state.tick - state.lastActionTick >= cardCooldownTicks(state) &&
     !isLiveSkillCostOver({

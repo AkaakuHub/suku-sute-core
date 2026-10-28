@@ -1,3 +1,9 @@
+import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
+import {
+  createLiveHandState,
+  liveHandCardInstanceIds,
+  setLiveCurrentHandCards,
+} from '../../runtime/cards/liveHand.ts';
 import { createLiveDeckDrawContextState } from '../../runtime/cards/cardDraw.ts';
 import { resetLivePendingHandCardCount } from '../../runtime/cards/handCardCountReset.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
@@ -24,13 +30,9 @@ import {
   removeRandomHandCards,
 } from '../cards/drawing.ts';
 import type { GameState } from '../model.ts';
-import type { TokenDeckSplit, TokenDeckHand } from '../tokenDeckSplitTypes.ts';
+import type { TokenDeckSplit } from '../tokenDeckSplitTypes.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
 import type { EffectApplier } from './induceSkillEffect.ts';
-
-function zones(state: GameState): TokenDeckHand {
-  return { hand: state.hand };
-}
 
 export function activateTokenDeckSplit(
   state: GameState,
@@ -46,12 +48,10 @@ export function activateTokenDeckSplit(
       .filter((card) => liveTokenCardMatchesSeries(card, seriesIds))
       .map((card) => card.cardInstanceId),
   );
-  const handCount = state.hand.length;
-  const main: TokenDeckHand = { hand: state.hand.filter((id) => !selected.has(id)) };
+  const handCount = liveCurrentHandCardInstanceIds(state).length;
+  const main = liveCurrentHandCardInstanceIds(state).filter((id) => !selected.has(id));
   const suppressExpiration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
   const split: TokenDeckSplit = {
-    main,
-    sub: { hand: [] },
     remainingSeconds:
       !suppressExpiration && effect.duration.kind === 'milliseconds'
         ? Math.fround(Math.fround(effect.duration.value) / Math.fround(1000))
@@ -62,7 +62,7 @@ export function activateTokenDeckSplit(
   };
   let next = removeHandCardEffects(
     state,
-    state.hand.filter((id) => selected.has(id)),
+    liveCurrentHandCardInstanceIds(state).filter((id) => selected.has(id)),
   );
   const partition = splitLiveTokenCardDeck(
     next.tokenCardDeck,
@@ -72,16 +72,15 @@ export function activateTokenDeckSplit(
   );
   next = {
     ...next,
-    hand: main.hand,
+    liveHands: setLiveCurrentHandCards(next, main).liveHands,
     deckBoard: partition.deckBoard,
     tokenCardDeck: partition.state,
     tokenDeckSplit: split,
   };
   next = fillHandToCount(next, handCount);
-  const activeMain = zones(next);
   let subState: GameState = {
     ...next,
-    hand: [],
+    liveHands: { ...next.liveHands, sub: createLiveHandState<string>([]) },
     tokenCardDeck: { ...next.tokenCardDeck, currentDeck: 'sub' },
     handEffectCardIds: [],
     deckDrawContext: createLiveDeckDrawContextState(2),
@@ -94,7 +93,7 @@ export function activateTokenDeckSplit(
     ),
   );
   const handCardStats = { ...subState.handCardStats };
-  for (const id of subState.hand) {
+  for (const id of liveCurrentHandCardInstanceIds(subState)) {
     const stats = handCardStats[id];
     if (stats) handCardStats[id] = { ...stats, isActive: false };
   }
@@ -108,7 +107,8 @@ export function activateTokenDeckSplit(
     handCardStats,
     deckDrawContext: createLiveDeckDrawContextState(3),
 
-    tokenDeckSplit: { ...split, main: activeMain, sub: zones(subState) },
+    liveHands: subState.liveHands,
+    tokenDeckSplit: split,
   };
   return completeDeckOutChecks(completed, applyEffect);
 }
@@ -116,7 +116,9 @@ export function activateTokenDeckSplit(
 function reconcileHand(state: GameState): GameState {
   const target = liveSwitchDeckHandCardCount(state.tokenCardDeck, state.deckBoard);
   const next =
-    state.hand.length > target ? removeRandomHandCards(state, state.hand.length - target) : state;
+    liveCurrentHandCardInstanceIds(state).length > target
+      ? removeRandomHandCards(state, liveCurrentHandCardInstanceIds(state).length - target)
+      : state;
   return fillHandToCountRetainingOverflow(next, target);
 }
 
@@ -124,22 +126,24 @@ export function switchTokenDeck(state: GameState, applyEffect: EffectApplier): G
   const ready = flushHandCardCountActions(state);
   const split = ready.tokenDeckSplit;
   if (!split) return ready;
-  const outgoingName = ready.tokenCardDeck.currentDeck;
-  const incomingName = outgoingName === 'main' ? 'sub' : 'main';
   let next = disposeHandEffects(
     { ...ready, tokenCardDeck: { ...ready.tokenCardDeck, isSwitchDeck: true } },
-    ready.hand,
+    liveCurrentHandCardInstanceIds(ready),
   );
   next = resetLivePendingHandCardCount(next, resetHandCardCount);
   const tokenCardDeck = switchLiveTokenCardDeck(next.tokenCardDeck, next.deckBoard);
   const physicalHand = new Set(
     liveCurrentDeckBoardCardInstanceIds(tokenCardDeck, next.deckBoard, liveBoardState.hand),
   );
-  const incoming = split[incomingName].hand.filter((id) => physicalHand.has(id));
-  const updated: TokenDeckSplit = { ...split, [outgoingName]: zones(next) };
-  next = { ...next, hand: incoming, tokenCardDeck, tokenDeckSplit: updated, handEffectCardIds: [] };
+  const incoming = liveHandCardInstanceIds(next.liveHands[tokenCardDeck.currentDeck]).filter((id) =>
+    physicalHand.has(id),
+  );
+  next = {
+    ...setLiveCurrentHandCards({ ...next, tokenCardDeck }, incoming),
+    handEffectCardIds: [],
+  };
   const handCardStats = { ...next.handCardStats };
-  for (const id of state.hand) {
+  for (const id of liveCurrentHandCardInstanceIds(state)) {
     const stats = handCardStats[id];
     if (stats) handCardStats[id] = { ...stats, isActive: false };
   }
@@ -159,7 +163,6 @@ export function switchTokenDeck(state: GameState, applyEffect: EffectApplier): G
     {
       ...next,
       tokenCardDeck: { ...next.tokenCardDeck, isSwitchDeck: false },
-      tokenDeckSplit: { ...updated, [incomingName]: zones(next) },
     },
     applyEffect,
   );
@@ -174,13 +177,17 @@ function mergeTokenDeck(state: GameState, applyEffect: EffectApplier): GameState
       : switchTokenDeck(state, applyEffect);
   const activeSplit = mainState.tokenDeckSplit;
   if (!activeSplit) throw new Error('統合する手札情報がありません。');
-  const removed = removeHandCardEffects(mainState, activeSplit.sub.hand);
+  const removed = removeHandCardEffects(
+    mainState,
+    liveHandCardInstanceIds(mainState.liveHands.sub),
+  );
   const merged = mergeLiveTokenCardDeck(removed.tokenCardDeck, removed.deckBoard);
   return {
     ...removed,
     deckBoard: merged.deckBoard,
     tokenCardDeck: merged.state,
     tokenDeckSplit: null,
+    liveHands: { ...removed.liveHands, sub: createLiveHandState<string>([]) },
   };
 }
 

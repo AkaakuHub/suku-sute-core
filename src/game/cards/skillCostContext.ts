@@ -1,3 +1,4 @@
+import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import type { LiveChangeSkillCostContext } from '../../runtime/skills/changeSkillCostCondition.ts';
 import { conditionContext } from '../conditions/gameContext.ts';
 import type { Card, GameState } from '../model.ts';
@@ -7,7 +8,7 @@ export function skillCostContext(state: GameState, source: Card): LiveChangeSkil
     ...conditionContext(state),
     useCount: state.cardUseCounts[source.cardInstanceId] ?? 0,
     handCardStats: state.handCardStats[source.cardInstanceId] ?? null,
-    handCards: state.hand.map((id) => {
+    handCards: liveCurrentHandCardInstanceIds(state).map((id) => {
       const card = state.deck.find((candidate) => candidate.cardInstanceId === id);
       if (!card) throw new Error('手札のカードがありません。');
       return card;
