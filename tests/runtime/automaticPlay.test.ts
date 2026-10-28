@@ -123,15 +123,17 @@ test('skill自動は非reshuffle手札の最低APをlist順で選ぶ', () => {
   expect(hasLiveTopPrioritySkillCandidate(skills)).toBe(true);
   expect(
     selectLiveTopPrioritySkill(skills, {
-      currentSkillPoint: 10,
-      skillMaxValue: 10,
+      currentAp: 10,
+      timerSeconds: 0,
+      maxAp: 10,
     }),
   ).toBe(skills[2]);
   expect(hasLiveTopPrioritySkillCandidate([{ ...skills[1] }])).toBe(false);
   expect(() =>
     selectLiveTopPrioritySkill([{ ...skills[1] }], {
-      currentSkillPoint: 10,
-      skillMaxValue: 10,
+      currentAp: 10,
+      timerSeconds: 0,
+      maxAp: 10,
     }),
   ).toThrow('Live automatic skill candidate is empty');
 });
@@ -154,8 +156,9 @@ test('skill自動はコスト超過中でもゲージ満タン以外なら候補
 
   expect(
     selectLiveTopPrioritySkill(skills, {
-      currentSkillPoint: 1,
-      skillMaxValue: 2,
+      currentAp: 1,
+      timerSeconds: 0,
+      maxAp: 2,
     }),
   ).toBe(skills[0]);
 });
@@ -184,8 +187,9 @@ test('skill自動はコスト超過中にゲージ満タンなら全手札の最
 
   expect(
     selectLiveTopPrioritySkill(skills, {
-      currentSkillPoint: 2,
-      skillMaxValue: 2,
+      currentAp: 2,
+      timerSeconds: 0,
+      maxAp: 2,
     }),
   ).toBe(skills[1]);
 });

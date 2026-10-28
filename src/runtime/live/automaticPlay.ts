@@ -1,3 +1,4 @@
+import type { LiveApGaugeState } from './apGauge.ts';
 export const liveAutoSkillIntervalSeconds = 0.5;
 export const liveAutoHeartCollectionSeconds = 0.3;
 export const liveAutomaticHeartCountSettings = {
@@ -30,11 +31,6 @@ export type LiveAutomaticSkill = Readonly<{
   skillCostValue: number;
   isReshuffleSkill: boolean;
   isSkillCostOver: boolean;
-}>;
-
-export type LiveAutomaticSkillGauge = Readonly<{
-  currentSkillPoint: number;
-  skillMaxValue: number;
 }>;
 
 export function isLiveAutomaticHeartCount(value: number): boolean {
@@ -112,11 +108,11 @@ export function isLiveAutoSkillIntervalReached(
 
 export function selectLiveTopPrioritySkill<Skill extends LiveAutomaticSkill>(
   handCards: readonly Skill[],
-  skillGauge: LiveAutomaticSkillGauge,
+  ap: LiveApGaugeState,
 ): Skill {
   const candidacyCards = handCards.filter(isLiveTopPrioritySkillCandidate);
   const selected = selectLowestSkillCost(candidacyCards);
-  if (!selected.isSkillCostOver || skillGauge.currentSkillPoint !== skillGauge.skillMaxValue) {
+  if (!selected.isSkillCostOver || ap.currentAp !== ap.maxAp) {
     return selected;
   }
   return selectLowestSkillCost(handCards);
