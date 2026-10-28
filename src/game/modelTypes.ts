@@ -74,7 +74,6 @@ type ResetSpecial = Readonly<{
     | Readonly<{ kind: 'unit'; unit: UnitId }>;
 }>;
 export type SearchTarget =
-  | Readonly<{ kind: 'skill-icon'; icon: number }>
   | Readonly<{ kind: 'main-effect'; actionType: number }>
   | Readonly<{ kind: 'member'; member: MemberId }>
   | Readonly<{ kind: 'unit'; unit: UnitId }>

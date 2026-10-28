@@ -4,8 +4,6 @@ import type { Card, GameState, SearchRequest, SearchTarget } from '../model.ts';
 
 function matches(card: Card, target: SearchTarget): boolean {
   switch (target.kind) {
-    case 'skill-icon':
-      return card.skillIcon === target.icon;
     case 'main-effect':
       return card.skillMainEffect === target.actionType;
     case 'member':

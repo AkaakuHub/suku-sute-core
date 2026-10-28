@@ -15,7 +15,7 @@ export function createCardSearchEffect(input: Input): Effect {
   let target: SearchTarget;
   switch (type) {
     case 1:
-      target = { kind: 'skill-icon', icon: id };
+      target = { kind: 'main-effect', actionType: id };
       break;
     case 2:
       target = { kind: 'member', member: memberId(id) };
