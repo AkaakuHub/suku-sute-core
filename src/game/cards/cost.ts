@@ -1,4 +1,5 @@
 import { finalizeLiveSkillCost } from '../../runtime/skills/skillCostBuff.ts';
+import { calculateLiveAllHandSkillCost } from '../../runtime/cards/useAllHandSkill.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { skillCostDelta } from './skillCostChanges.ts';
 import { resolveModeSkill } from '../live/modes.ts';
@@ -15,38 +16,28 @@ export function cardCost(state: GameState, card: Card, activeAllHandSkill = fals
         skillCostDelta(state, card) +
         (state.onceSkillCostChanges[card.id] ?? 0),
     );
-  const total = state.hand.reduce((sum, id) => {
+  const cards = state.hand.map((id) => {
     const rawOther = state.deck.find((item) => item.id === id);
-    if (!rawOther) return sum;
+    if (!rawOther) throw new Error('手札のカードがありません。');
     const other = resolveModeSkill(rawOther, state.modes);
-    return (
-      sum +
-      (other.id === card.id
-        ? card.cost + toInt32(useHand.addAp ?? 0)
-        : finalizeLiveSkillCost(
-            other.cost,
-            -(state.costReductions[other.id] ?? 0) +
-              skillCostDelta(state, other) +
-              (state.onceSkillCostChanges[other.id] ?? 0),
-          ))
-    );
-  }, 0);
+    return other.id === card.id
+      ? { kind: 'source' as const, baseCost: card.cost }
+      : { kind: 'other' as const, skillCost: cardCost(state, other, true) };
+  });
   const reduction = (card.allHandCost?.reductions ?? []).reduce(
     (sum, item) => sum + (state.deck.length >= item.minimumCards ? item.amount : 0),
     0,
   );
-  return Math.max(
-    1,
-    total -
+  return calculateLiveAllHandSkillCost(
+    cards,
+    useHand.addAp ?? 0,
+    (total) =>
+      total -
       reduction -
       (state.costReductions[card.id] ?? 0) +
       skillCostDelta(state, card) +
       (state.onceSkillCostChanges[card.id] ?? 0),
   );
-}
-
-function toInt32(value: number): number {
-  return Number(BigInt.asIntN(32, BigInt(Math.trunc(value))));
 }
 
 export function applyCostReduction(
