@@ -1,3 +1,10 @@
+import { createLiveDeckBoardState } from '../../src/runtime/cards/deckBoardState.ts';
+import { createLiveDeckActionQueueState } from '../../src/runtime/cards/deckActionQueue.ts';
+import {
+  notifyLiveHandCardCountReset,
+  flushLiveHandCardCountActions,
+} from '../../src/runtime/cards/handCardCountReset.ts';
+import type { LiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
 import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
 import { expect, test } from 'vite-plus/test';
 import type { LiveHandCardCountEffect } from '../../src/runtime/cards/deckActionTypes.ts';
@@ -50,7 +57,9 @@ test('期間終了時に対象効果だけを除いて手札枚数を復元す�
   });
 
   expect(liveHandCardCount(active.tokenCardDeck)).toBe(7);
-  expect(liveHandCardCount(ended.tokenCardDeck)).toBe(5);
+  expect(liveHandCardCount(ended.tokenCardDeck)).toBe(7);
+  expect(ended.resetNotifications).toEqual([-2]);
+  expect(liveHandCardCount(completeReset(ended))).toBe(5);
 });
 
 function effect(
@@ -92,7 +101,8 @@ test('同じ効果IDを持つ別カードを解除しない', () => {
   );
   const removed = deactivateLiveHandCardCountEffect(second.state, second.tokenCardDeck, 1, 'count');
   expect(removed.state.effects.map((entry) => entry.cardInstanceId)).toEqual([2]);
-  expect(removed.tokenCardDeck.handTargetCounts.current).toBe(3);
+  expect(removed.tokenCardDeck.handTargetCounts.current).toBe(2);
+  expect(completeReset(removed).handTargetCounts.current).toBe(3);
 });
 
 test('手札最大化中の枚数変更は保存した目標も更新し、解除後にその目標へ戻す', () => {
@@ -122,9 +132,10 @@ test('手札最大化中の枚数変更は保存した目標も更新し、解�
     3,
     'decrease',
   );
-  expect(reset.tokenCardDeck.handTargetCounts.current).toBe(8);
-  expect(reset.tokenCardDeck.handMaxCardSkillInfo?.targetHandCount).toBe(9);
-  const restored = deactivateLiveHandCardCountEffect(reset.state, reset.tokenCardDeck, 2, 'max');
+  const completed = completeReset(reset);
+  expect(completed.handTargetCounts.current).toBe(8);
+  expect(completed.handMaxCardSkillInfo?.targetHandCount).toBe(9);
+  const restored = deactivateLiveHandCardCountEffect(reset.state, completed, 2, 'max');
   expect(restored.tokenCardDeck.handTargetCounts.current).toBe(9);
   expect(restored.tokenCardDeck.handMaxCardSkillInfo).toBeNull();
   expect(restored.tokenCardDeck.maxHandSkillActiveCount).toBe(0);
@@ -156,3 +167,24 @@ test('重複した最大化は各発動時の現在目標を保存し、最後�
   );
   expect(last.tokenCardDeck.handTargetCounts.current).toBe(8);
 });
+
+function completeReset(
+  transition: Readonly<{
+    tokenCardDeck: LiveTokenCardDeckState<number>;
+    resetNotifications: readonly number[];
+  }>,
+): LiveTokenCardDeckState<number> {
+  const initial = {
+    tokenCardDeck: transition.tokenCardDeck,
+    deckActions: createLiveDeckActionQueueState(),
+    deckBoard: createLiveDeckBoardState(
+      Array.from({ length: 16 }, (_, i) => i + 1),
+      [],
+    ),
+  };
+  const queued = transition.resetNotifications.reduce(
+    (state, amount) => notifyLiveHandCardCountReset(state, amount),
+    initial,
+  );
+  return flushLiveHandCardCountActions(queued, (state) => state).tokenCardDeck;
+}

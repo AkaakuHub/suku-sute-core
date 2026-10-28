@@ -5,7 +5,6 @@ import {
   activateLiveHandCardMax,
   addLiveHandCardTargetCount,
   deactivateLiveHandCardMax,
-  resetLiveHandCardTargetCount,
 } from '../cards/handCardTarget.ts';
 import {
   advanceLiveSkillEffectDuration,
@@ -30,6 +29,7 @@ export type LiveHandCardCountState<Id extends LiveCardIdentifier = number> = Rea
 type HandCountTransition<Id extends LiveCardIdentifier> = Readonly<{
   state: LiveHandCardCountState<Id>;
   tokenCardDeck: LiveTokenCardDeckState<Id>;
+  resetNotifications: readonly number[];
 }>;
 
 export function createLiveHandCardCountState<
@@ -48,6 +48,7 @@ export function activateLiveHandCardCountEffect<Id extends LiveCardIdentifier>(
   return {
     state: { effects: [...state.effects, { ...effect, cardInstanceId, kind: 'count', amount }] },
     tokenCardDeck: addLiveHandCardTargetCount(tokenCardDeck, amount),
+    resetNotifications: [],
   };
 }
 
@@ -61,6 +62,7 @@ export function activateLiveHandCardMaxEffect<Id extends LiveCardIdentifier>(
   return {
     state: { effects: [...state.effects, { effectId, cardInstanceId, kind: 'max', duration }] },
     tokenCardDeck: activateLiveHandCardMax(tokenCardDeck),
+    resetNotifications: [],
   };
 }
 
@@ -111,13 +113,14 @@ function removeEffects<Id extends LiveCardIdentifier>(
   tokenCardDeck: LiveTokenCardDeckState<Id>,
 ): HandCountTransition<Id> {
   let next = tokenCardDeck;
-  let resetCount = 0;
+  const resetNotifications: number[] = [];
   for (const effect of removed) {
     if (effect.kind === 'max') next = deactivateLiveHandCardMax(next);
-    else resetCount = (resetCount - effect.amount) | 0;
+    else resetNotifications.push(-effect.amount | 0);
   }
   return {
     state: { effects: retained },
-    tokenCardDeck: resetLiveHandCardTargetCount(next, resetCount),
+    tokenCardDeck: next,
+    resetNotifications,
   };
 }

@@ -1,3 +1,4 @@
+import { resetLivePendingHandCardCount } from '../../runtime/cards/handCardCountReset.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import {
   liveCurrentDeckBoardCardInstanceIds,
@@ -16,6 +17,8 @@ import {
 import { activateModeAbilityEffects } from '../cards/modeAbility.ts';
 import {
   fillHandToCount,
+  flushHandCardCountActions,
+  resetHandCardCount,
   fillHandToCountRetainingOverflow,
   removeRandomHandCards,
 } from '../cards/drawing.ts';
@@ -120,17 +123,22 @@ function reconcileHand(state: GameState): GameState {
 }
 
 export function switchTokenDeck(state: GameState, applyEffect: EffectApplier): GameState {
-  const split = state.tokenDeckSplit;
-  if (!split) return state;
-  const outgoingName = state.tokenCardDeck.currentDeck;
+  const ready = flushHandCardCountActions(state);
+  const split = ready.tokenDeckSplit;
+  if (!split) return ready;
+  const outgoingName = ready.tokenCardDeck.currentDeck;
   const incomingName = outgoingName === 'main' ? 'sub' : 'main';
-  let next = disposeHandEffects(state, state.hand);
+  let next = disposeHandEffects(
+    { ...ready, tokenCardDeck: { ...ready.tokenCardDeck, isSwitchDeck: true } },
+    ready.hand,
+  );
+  next = resetLivePendingHandCardCount(next, resetHandCardCount);
   const tokenCardDeck = switchLiveTokenCardDeck(next.tokenCardDeck, next.deckBoard);
   const physicalHand = new Set(
     liveCurrentDeckBoardCardInstanceIds(tokenCardDeck, next.deckBoard, liveBoardState.hand),
   );
   const incoming = split[incomingName].hand.filter((id) => physicalHand.has(id));
-  const updated: TokenDeckSplit = { ...split, [outgoingName]: zones(state) };
+  const updated: TokenDeckSplit = { ...split, [outgoingName]: zones(next) };
   next = { ...next, hand: incoming, tokenCardDeck, tokenDeckSplit: updated, handEffectCardIds: [] };
   const handCardStats = { ...next.handCardStats };
   for (const id of state.hand) {
@@ -150,7 +158,11 @@ export function switchTokenDeck(state: GameState, applyEffect: EffectApplier): G
   }
   next = reconcileHand(next);
   return completeDeckOutChecks(
-    { ...next, tokenDeckSplit: { ...updated, [incomingName]: zones(next) } },
+    {
+      ...next,
+      tokenCardDeck: { ...next.tokenCardDeck, isSwitchDeck: false },
+      tokenDeckSplit: { ...updated, [incomingName]: zones(next) },
+    },
     applyEffect,
   );
 }

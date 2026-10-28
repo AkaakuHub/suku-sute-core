@@ -15,7 +15,7 @@ import { type Card, type GameState, type Track, rules } from './model.ts';
 import { durationSeconds, sectionAt, moodValue } from './projection.ts';
 import { finishGenesis } from './genesis.ts';
 import { createLiveGenesisState } from '../runtime/skills/genesisSkill.ts';
-import { fillHand, restoreHandLimitCount } from './cards/drawing.ts';
+import { fillHand, flushHandCardCountActions } from './cards/drawing.ts';
 import { advanceHandLimitEffects } from './effects/handLimit.ts';
 import { createStarGatherHeartRuntimeState } from './live/heartSpawn.ts';
 import { recordScoreHistory } from './scoreHistory.ts';
@@ -286,14 +286,11 @@ function advanceTick(state: GameState): GameState {
   });
   next = advanceSkillCooldownEffects(next, dt);
   next = advanceInducedSkillEffects(next, dt);
-  const elapsedHandLimit = advanceHandLimitEffects(next, dt);
-  next = elapsedHandLimit.state;
+  next = advanceHandLimitEffects(next, dt);
   next = advanceHeartLimitBuffs(next, dt);
   next = advanceVoltageIncreaseStops(next, dt);
   next = advanceAdditionalHeartInducers(next, dt);
-  if (elapsedHandLimit.handAdjustment > 0) {
-    next = restoreHandLimitCount(next, elapsedHandLimit.handAdjustment);
-  }
+  next = flushHandCardCountActions(next);
   const previousBeat = Math.floor((state.tick * state.track.bpm) / (60 * rules.ticksPerSecond));
   const beat = Math.floor((tick * state.track.bpm) / (60 * rules.ticksPerSecond));
   if (beat !== previousBeat && beat % 2 === 0) {

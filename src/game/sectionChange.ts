@@ -13,7 +13,7 @@ import { expireHeartLimitBuffSections } from './effects/heartLimit.ts';
 import { expireAdditionalHeartInducerSections } from './effects/additionalHeart.ts';
 import { advanceProxySkillSections } from './effects/proxySkill.ts';
 import { expireHandLimitSections } from './effects/handLimit.ts';
-import { restoreHandLimitCount } from './cards/drawing.ts';
+import { flushHandCardCountActions } from './cards/drawing.ts';
 import { expireGaugeInfinities } from './resources.ts';
 import { expireGaugeRegenerations } from './live/gaugeRegeneration.ts';
 import { expireMentalBarriers } from './live/mentalBarriers.ts';
@@ -33,10 +33,7 @@ export function advanceSectionChange(state: GameState, applyEffect: EffectApplie
   next = expireHeartLimitBuffSections(next);
   next = expireAdditionalHeartInducerSections(next);
   next = advanceProxySkillSections(next, applyEffect);
-  const expiredHandLimit = expireHandLimitSections(next);
-  next = expiredHandLimit.state;
-  if (expiredHandLimit.handAdjustment > 0)
-    next = restoreHandLimitCount(next, expiredHandLimit.handAdjustment);
+  next = flushHandCardCountActions(expireHandLimitSections(next));
   next = expireGaugeInfinities(next, 'sections', 1, applyEffect);
   next = expireGaugeRegenerations(next, 'sections');
   next = expireMentalBarriers(next, 'sections', 1);

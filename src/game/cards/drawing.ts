@@ -1,3 +1,7 @@
+import {
+  flushLiveHandCardCountActions,
+  liveResetHandCardCount,
+} from '../../runtime/cards/handCardCountReset.ts';
 import { selectLiveDeckDrawCandidate } from '../../runtime/cards/cardDraw.ts';
 import { prepareLiveDeckDraw } from '../../runtime/cards/deckDraw.ts';
 import {
@@ -38,12 +42,23 @@ export function fillHandToCount(state: GameState, count: number): GameState {
   return drawUntil(state, count, true);
 }
 
-export function restoreHandLimitCount(state: GameState, adjustment: number): GameState {
-  const target = Math.min(
-    state.deck.length,
-    Math.max(3, Math.min(8, state.hand.length + adjustment)),
-  );
-  return fillHandToCountRetainingOverflow(state, target);
+export function flushHandCardCountActions(state: GameState): GameState {
+  return flushLiveHandCardCountActions(state, resetHandCardCount);
+}
+
+export function resetHandCardCount(state: GameState, adjustment: number): GameState {
+  const next: GameState = {
+    ...state,
+    drawContext: 'idle',
+    usedCard: null,
+    lastUsedSkillIcon: null,
+  };
+  return adjustment > 0
+    ? fillHandToCountRetainingOverflow(
+        next,
+        liveResetHandCardCount(next, next.hand.length, adjustment),
+      )
+    : next;
 }
 
 export function fillHandToCountRetainingOverflow(state: GameState, count: number): GameState {

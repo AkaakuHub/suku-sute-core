@@ -28,7 +28,7 @@ import { deactivateHandMaxCardEffects } from './effects/handMaxCard.ts';
 import { deactivateApSpeedEffects } from './effects/apSpeed.ts';
 import { deactivateVoltageConversions } from './effects/voltageConversion.ts';
 import { deactivateAction52SkillBoosts } from './effects/action52SkillBoost.ts';
-import { restoreHandLimitCount } from './cards/drawing.ts';
+import { flushHandCardCountActions } from './cards/drawing.ts';
 import { deactivateMentalHeartInducers } from './effects/mentalHeartInduce.ts';
 import { deactivateComboInducer, notifyComboSkillPoint } from './effects/comboInduce.ts';
 import { deactivateHeartLimitBuffs } from './effects/heartLimit.ts';
@@ -82,12 +82,8 @@ function actInternal(state: GameState, action: Action): GameState {
       return deactivateTokenDeck(state, action.deactivationKey, applyEffect);
     case 'skip-ingame-mission':
       return skipIngameMission(state);
-    case 'deactivate-hand-limit': {
-      const expired = deactivateHandLimitEffects(state, action.deactivationKey);
-      return expired.handAdjustment > 0
-        ? restoreHandLimitCount(expired.state, expired.handAdjustment)
-        : expired.state;
-    }
+    case 'deactivate-hand-limit':
+      return flushHandCardCountActions(deactivateHandLimitEffects(state, action.deactivationKey));
     case 'deactivate-hand-max-card':
       return deactivateHandMaxCardEffects(state, action.deactivationKey);
     case 'deactivate-ap-speed':
