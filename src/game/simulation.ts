@@ -1,3 +1,4 @@
+import { createLiveDeckActionQueueState } from '../runtime/cards/deckActionQueue.ts';
 import { createCardDeckBoard } from './cards/deckBoard.ts';
 import { createModes } from './live/modes.ts';
 import { advanceAutomaticGauges } from './automaticGauges.ts';
@@ -89,8 +90,7 @@ export function createGame(
     handEffectCardIds: [lead.id],
     tokenDeckSplit: null,
     ingameMission: null,
-    deckOutCount: 0,
-    afterMentalDownEvents: 0,
+    afterDeckReloadEvents: 0,
     tokenCatalog: resolvedTokenCatalog,
     tokenGroups: [],
     tokenBoosts: [],
@@ -106,7 +106,7 @@ export function createGame(
     moodValueAdditionalBuffs: [],
     nextMoodValueAdditionalBuffId: 1,
     drawContext: 'initial',
-    deckActions: { shuffles: [], searches: [] },
+    deckActions: { ...createLiveDeckActionQueueState(), shuffles: [], searches: [] },
     usedCard: null,
     lastUsedSkillIcon: null,
     cardUseCounts: {},

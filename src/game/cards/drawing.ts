@@ -78,9 +78,10 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
         ...boardCardIds(next, liveBoardState.graveyard),
       ];
       if (!returned.length) break;
+      next = recoverCurrentDeckGraveyard(next);
       next = {
-        ...recoverCurrentDeckGraveyard(next),
-        deckOutCount: next.deckOutCount + 1,
+        ...next,
+        deckBoard: { ...next.deckBoard, deckOutCount: next.deckBoard.deckOutCount + 1 },
       };
     }
     const deckIds = new Set(boardCardIds(next, liveBoardState.deck));

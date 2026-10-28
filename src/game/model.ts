@@ -1,3 +1,4 @@
+import type { LiveDeckActionQueueState } from '../runtime/cards/deckActionQueue.ts';
 import type { LiveCardIdentity } from '../runtime/cards/cardIdentity.ts';
 import type { LiveDeckBoardState } from '../runtime/cards/deckBoardState.ts';
 import type { LiveHandCardStats } from '../runtime/cards/handCardStats.ts';
@@ -103,7 +104,7 @@ export type Track = Readonly<{
   sections: readonly Section[];
   moodKeys: readonly MoodKey[];
   ingameMissionGroups: readonly IngameMissionGroup[];
-  afterMentalDownEffects: readonly Effect[];
+  afterDeckReloadEffects: readonly Effect[];
 }>;
 
 export type CardUse = Readonly<{
@@ -145,8 +146,7 @@ export type GameState = Readonly<{
   activeHandPermanentCardIds: readonly string[];
   tokenDeckSplit: TokenDeckSplit | null;
   ingameMission: IngameMission | null;
-  deckOutCount: number;
-  afterMentalDownEvents: number;
+  afterDeckReloadEvents: number;
   tokenCatalog: readonly Card[];
   tokenGroups: readonly Readonly<{
     sourceId: string;
@@ -178,14 +178,16 @@ export type GameState = Readonly<{
   moodValueAdditionalBuffs: readonly MoodValueAdditionalBuff[];
   nextMoodValueAdditionalBuffId: number;
   drawContext: 'initial' | 'skill' | 'shuffle' | 'idle';
-  deckActions: Readonly<{
-    shuffles: readonly Readonly<{
-      sourceId: string | null;
-      options: HandShuffle;
-      skipSourceRefill: boolean;
-    }>[];
-    searches: readonly SearchRequest[];
-  }>;
+  deckActions: Readonly<
+    LiveDeckActionQueueState & {
+      shuffles: readonly Readonly<{
+        sourceId: string | null;
+        options: HandShuffle;
+        skipSourceRefill: boolean;
+      }>[];
+      searches: readonly SearchRequest[];
+    }
+  >;
   usedCard: LiveCardIdentity | null;
   lastUsedSkillIcon: number | null;
   cardUseCounts: Readonly<Record<string, number>>;
