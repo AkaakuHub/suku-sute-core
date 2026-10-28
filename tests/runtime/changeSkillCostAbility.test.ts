@@ -1,8 +1,8 @@
+import type { LiveChangeSkillCostContext } from '../../src/runtime/skills/changeSkillCostCondition.ts';
 import { expect, test } from 'vite-plus/test';
 import {
   activateLiveChangeSkillCostAbility,
   createLiveChangeSkillCostAbilityState,
-  type LiveChangeSkillCostContext,
   resolveLiveChangeSkillCost,
 } from '../../src/runtime/skills/changeSkillCostAbility.ts';
 import type { LiveChangeApEffect } from '../../src/runtime/cards/deckActionTypes.ts';
@@ -26,34 +26,19 @@ const context: LiveChangeSkillCostContext = {
   tokenCardSeriesCount: () => 0,
   memberFanLevelTotal: () => 0,
   beatHeartValue: 0,
-  sectionCount: 4,
-  deckCards: [
-    {
-      cardInstanceId: 1,
-      charactersId: 101,
-      skillIcon: 11,
-      skillMainEffect: 110,
-      styleType: 21,
-      unitIds: [31],
-    },
-    {
-      cardInstanceId: 2,
-      charactersId: 101,
-      skillIcon: 12,
-      skillMainEffect: 120,
-      styleType: 22,
-      unitIds: [31],
-    },
-    {
-      cardInstanceId: 3,
-      charactersId: 102,
-      skillIcon: 11,
-      skillMainEffect: 110,
-      styleType: 21,
-      unitIds: [32],
-    },
+  handCardStats: {
+    isActive: true,
+    initialSectionIndex: 0,
+    sectionCount: 4,
+    skillUseCountsByMember: { 101: 2, 102: 1 },
+    skillUseCountsByMainEffect: { 110: 2 },
+  },
+  handCards: [
+    { charactersId: 101, skillMainEffect: 110, styleType: 21, unitIds: [31] },
+    { charactersId: 102, skillMainEffect: 110, styleType: 21, unitIds: [32] },
   ],
-  handCardInstanceIds: [1, 3],
+  isUnitMember: (unitId, charactersId) =>
+    (unitId === 31 && charactersId === 101) || (unitId === 32 && charactersId === 102),
   loveUpEffect: 1.5,
   moodValue: -2,
   exclusionCount: 6,
@@ -67,7 +52,7 @@ test('runtimeの15条件を同じcost計算式へ投影する', () => {
     [4, 0, 0.5],
     [5, 0, 4],
     [6, 101, 2],
-    [7, 11, 2],
+    [7, 110, 2],
     [8, 110, 2],
     [9, 0, 1.5],
     [10, 21, 2],

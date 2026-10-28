@@ -115,13 +115,6 @@ export type HeartBoostState = Readonly<{
   remainingSections: number | null;
   deactivationKey: string | null;
 }>;
-export type HandCardStats = Readonly<{
-  isActive: boolean;
-  enteredSectionIndex: number;
-  skillUseCountsByMember: Readonly<Record<number, number>>;
-  skillUseCountsByIcon: Readonly<Record<number, number>>;
-  skillUseCountsByUnit: Readonly<Record<number, number>>;
-}>;
 export type SkillCostChange = Readonly<
   LiveChangeSkillCostValue & {
     sourceId: string;

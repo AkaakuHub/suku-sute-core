@@ -1,3 +1,8 @@
+import {
+  notifyLiveHandCardStatsSkillUse,
+  advanceLiveHandCardStatsSection,
+} from '../../runtime/cards/handCardStats.ts';
+import { sectionAt } from '../projection.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import type { HandUseTrigger } from './cardTypes.ts';
 import { handInducerStateKey } from './handInducer.ts';
@@ -31,30 +36,10 @@ function updateHandCardSkillUseStats(state: GameState, used: Card): GameState {
   const handCardStats = Object.fromEntries(
     Object.entries(state.handCardStats).map(([id, stats]) => [
       id,
-      stats.isActive
-        ? {
-            ...stats,
-            skillUseCountsByMember: incrementCount(stats.skillUseCountsByMember, used.member),
-            ...(used.skillIcon === undefined
-              ? {}
-              : {
-                  skillUseCountsByIcon: incrementCount(stats.skillUseCountsByIcon, used.skillIcon),
-                }),
-            ...(used.unit === null
-              ? {}
-              : { skillUseCountsByUnit: incrementCount(stats.skillUseCountsByUnit, used.unit) }),
-          }
-        : stats,
+      notifyLiveHandCardStatsSkillUse(stats, used.member, used.mainEffect ?? null),
     ]),
   );
   return { ...state, handCardStats };
-}
-
-function incrementCount(
-  counts: Readonly<Record<number, number>>,
-  key: number,
-): Readonly<Record<number, number>> {
-  return { ...counts, [key]: int32((counts[key] ?? 0) + 1) };
 }
 
 export function notifyHandCardBeforeUse(
@@ -120,7 +105,18 @@ export function notifyHandVoltageIncrease(
 }
 
 export function notifyHandSectionChange(state: GameState, apply: EffectApplier): GameState {
-  return activateHandInducers(state, apply, (trigger) => trigger.kind === 'section-change');
+  const currentSection = state.track.sections.indexOf(sectionAt(state));
+  const handCardStats = Object.fromEntries(
+    Object.entries(state.handCardStats).map(([id, stats]) => [
+      id,
+      advanceLiveHandCardStatsSection(stats, currentSection),
+    ]),
+  );
+  return activateHandInducers(
+    { ...state, handCardStats },
+    apply,
+    (trigger) => trigger.kind === 'section-change',
+  );
 }
 
 function activateHandInducers(

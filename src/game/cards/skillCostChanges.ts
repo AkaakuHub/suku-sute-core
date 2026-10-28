@@ -1,10 +1,8 @@
-import {
-  calculateLiveChangeSkillCostValue,
-  liveSkillCostMoodValue,
-} from '../../runtime/skills/changeSkillCostValue.ts';
-import { liveMentalRatio } from '../../runtime/live/mentalGauge.ts';
-import { voltageLevel } from '../live/voltageLevel.ts';
-import { sectionAt, moodValue } from '../projection.ts';
+import { createLiveHandCardStats } from '../../runtime/cards/handCardStats.ts';
+import { calculateLiveChangeSkillCostValue } from '../../runtime/skills/changeSkillCostValue.ts';
+import { liveChangeSkillCostConditionValue } from '../../runtime/skills/changeSkillCostCondition.ts';
+import { sectionAt } from '../projection.ts';
+import { skillCostContext } from './skillCostContext.ts';
 import { applyAction52SkillBoostForCard } from '../effects/action52SkillBoost.ts';
 import type { Card, GameState } from '../model.ts';
 import type { SkillCostChange, SkillCostChangeEffect } from '../modelTypes.ts';
@@ -62,7 +60,7 @@ export function skillCostDelta(state: GameState, card: Card): number {
   return state.skillCostChanges
     .filter((change) => change.sourceId === card.id)
     .reduce((total, change) => {
-      const value = conditionValue(state, card, change);
+      const value = liveChangeSkillCostConditionValue(change, skillCostContext(state, card));
       return total + calculateLiveChangeSkillCostValue(change, value);
     }, 0);
 }
@@ -71,58 +69,7 @@ export function initializeHandCardStats(state: GameState, ids: readonly string[]
   const sectionIndex = state.track.sections.indexOf(sectionAt(state));
   const handCardStats = { ...state.handCardStats };
   for (const id of ids) {
-    handCardStats[id] = {
-      isActive: true,
-      enteredSectionIndex: sectionIndex,
-      skillUseCountsByMember: {},
-      skillUseCountsByIcon: {},
-      skillUseCountsByUnit: {},
-    };
+    handCardStats[id] = createLiveHandCardStats(sectionIndex);
   }
   return { ...state, handCardStats };
-}
-
-function conditionValue(state: GameState, source: Card, change: SkillCostChange): number {
-  const stats = state.handCardStats[source.id];
-  const currentHand = state.hand.flatMap((id) => {
-    const card = state.deck.find((item) => item.id === id);
-    return card ? [card] : [];
-  });
-  switch (change.conditionType) {
-    case 1:
-      return 1;
-    case 2:
-      return state.cardUseCounts[source.id] ?? 0;
-    case 3:
-      return voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel);
-    case 4:
-      return Math.min(1, liveMentalRatio(state.mental, state.maximumMental));
-    case 5:
-      return stats ? state.track.sections.indexOf(sectionAt(state)) - stats.enteredSectionIndex : 0;
-    case 6:
-      return stats?.skillUseCountsByMember[change.conditionId] ?? 0;
-    case 7:
-      return stats?.skillUseCountsByIcon[change.conditionId] ?? 0;
-    case 8:
-      return currentHand.filter((card) => card.mainEffect === change.conditionId).length;
-    case 9:
-      return Math.fround(
-        state.boosts.reduce((sum, boost) => sum + boost.percent, 0) +
-          state.skillScoreUps.reduce((sum, boost) => sum + boost.percent, 0) +
-          state.temporaryScoreBoosts.reduce((sum, boost) => sum + boost.percent, 0),
-      );
-    case 10:
-      return currentHand.filter((card) => card.style === change.conditionId).length;
-    case 11:
-      return currentHand.filter((card) => card.member === change.conditionId).length;
-    case 12:
-      return liveSkillCostMoodValue(moodValue(state), change.conditionId);
-    case 13:
-      return stats?.skillUseCountsByUnit[change.conditionId] ?? 0;
-    case 14:
-      return currentHand.filter((card) => card.unit === change.conditionId).length;
-    case 15:
-      return state.cardPool.length - state.deck.length;
-  }
-  throw new Error('スキルコスト条件が正しくありません。');
 }

@@ -1,3 +1,4 @@
+import type { LiveHandCardStats } from '../runtime/cards/handCardStats.ts';
 import type { LiveVoltageGaugeState } from '../runtime/live/voltageGauge.ts';
 import type { SkillCooldownEffect } from './skillCooldownTypes.ts';
 import type {
@@ -36,7 +37,6 @@ import type {
   GaugeInfinity,
   GaugeRegeneration,
   HeartBoostState,
-  HandCardStats,
   MentalBarrier,
   SearchRequest,
   SkillCostChange,
@@ -193,7 +193,7 @@ export type GameState = Readonly<{
   lastUsedSkillIcon: number | null;
   cardUseCounts: Readonly<Record<string, number>>;
   skillActivationCounts: Readonly<Record<string, number>>;
-  handCardStats: Readonly<Record<string, HandCardStats>>;
+  handCardStats: Readonly<Record<string, LiveHandCardStats>>;
   skillCostChanges: readonly SkillCostChange[];
   parameterValueFactors: readonly ParameterValueFactor[];
   parameterValueChangeCounts: Readonly<Record<string, Readonly<Record<string, number>>>>;
@@ -206,7 +206,7 @@ export type GameState = Readonly<{
   activation: Readonly<{
     sourceId: string;
     usedCards: readonly string[];
-    handCardStatsAtUse: Readonly<Record<string, HandCardStats>>;
+    handCardStatsAtUse: Readonly<Record<string, LiveHandCardStats>>;
     allHand: boolean;
     skipSourceRefill?: boolean;
     recoverDiscard: boolean;
