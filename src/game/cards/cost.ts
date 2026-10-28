@@ -11,7 +11,7 @@ export function cardCost(state: GameState, card: Card, activeAllHandSkill = fals
   const useHand = useHandEffect ? resolveEffectParameterDetails(state, card, useHandEffect) : null;
   if (!useHand || useHand.kind !== 'use-hand' || activeAllHandSkill)
     return finalizeLiveSkillCost(
-      card.cost,
+      card.consumeAp,
       -(state.costReductions[card.id] ?? 0) +
         skillCostDelta(state, card) +
         (state.onceSkillCostChanges[card.id] ?? 0),
@@ -21,7 +21,7 @@ export function cardCost(state: GameState, card: Card, activeAllHandSkill = fals
     if (!rawOther) throw new Error('手札のカードがありません。');
     const other = resolveModeSkill(rawOther, state.modes);
     return other.id === card.id
-      ? { kind: 'source' as const, baseCost: card.cost }
+      ? { kind: 'source' as const, baseCost: card.consumeAp }
       : { kind: 'other' as const, skillCost: cardCost(state, other, true) };
   });
   const reduction = (card.allHandCost?.reductions ?? []).reduce(

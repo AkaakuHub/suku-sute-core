@@ -1,3 +1,4 @@
+import type { LiveCardSkillLevel } from '../runtime/skills/skillTypes.ts';
 import type { LiveDeckActionQueueState } from '../runtime/cards/deckActionQueue.ts';
 import type { LiveCardIdentity } from '../runtime/cards/cardIdentity.ts';
 import type { LiveDeckBoardState } from '../runtime/cards/deckBoardState.ts';
@@ -107,14 +108,15 @@ export type Track = Readonly<{
   afterDeckReloadEffects: readonly Effect[];
 }>;
 
-export type CardUse = Readonly<{
-  key: number;
-  card: Card;
-  tick: number;
-  handIndex: number;
-  handCount: number;
-  cost: number;
-}>;
+export type CardUse = Readonly<
+  Pick<LiveCardSkillLevel, 'consumeAp'> & {
+    key: number;
+    card: Card;
+    tick: number;
+    handIndex: number;
+    handCount: number;
+  }
+>;
 export type PlayStats = Readonly<{
   cardsUsed: number;
   heartsCollected: number;

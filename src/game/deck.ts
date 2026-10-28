@@ -20,8 +20,8 @@ export function validateCard(card: Card): void {
     (!card.tokenCard && !card.name.trim()) ||
     (card.costume !== null && !costumeIds.includes(card.costume)) ||
     (!card.tokenCard && (card.costume === null || card.performer === null)) ||
-    !Number.isInteger(card.cost) ||
-    card.cost < 0 ||
+    !Number.isInteger(card.consumeAp) ||
+    card.consumeAp < 0 ||
     (card.mainEffect !== undefined && !Number.isSafeInteger(card.mainEffect)) ||
     Object.values(card.appeal).some(
       (value) => !Number.isSafeInteger(value) || (card.tokenCard ? value < 0 : value <= 0),
@@ -61,7 +61,7 @@ export function validateCard(card: Card): void {
   ])
     validateEffect(effect);
   if (card.special) {
-    if (!Number.isSafeInteger(card.special.cost) || card.special.cost < 0)
+    if (!Number.isSafeInteger(card.special.consumeAp) || card.special.consumeAp < 0)
       throw new Error('共鳴の消費量が正しくありません。');
     for (const effect of card.special.effects) validateEffect(effect);
   }
@@ -69,20 +69,20 @@ export function validateCard(card: Card): void {
     if (
       !Number.isSafeInteger(card.modeSkillChanges.modeId) ||
       card.modeSkillChanges.modeId < 1 ||
-      !Number.isSafeInteger(card.modeSkillChanges.off.cost) ||
-      !Number.isSafeInteger(card.modeSkillChanges.on.cost) ||
-      card.modeSkillChanges.off.cost < 0 ||
-      card.modeSkillChanges.on.cost < 0 ||
+      !Number.isSafeInteger(card.modeSkillChanges.off.consumeAp) ||
+      !Number.isSafeInteger(card.modeSkillChanges.on.consumeAp) ||
+      card.modeSkillChanges.off.consumeAp < 0 ||
+      card.modeSkillChanges.on.consumeAp < 0 ||
       (card.modeSkillChanges.off.skillIcon !== null &&
         !Number.isSafeInteger(card.modeSkillChanges.off.skillIcon)) ||
       (card.modeSkillChanges.on.skillIcon !== null &&
         !Number.isSafeInteger(card.modeSkillChanges.on.skillIcon)) ||
       (card.modeSkillChanges.off.special !== null &&
-        (!Number.isSafeInteger(card.modeSkillChanges.off.special.cost) ||
-          card.modeSkillChanges.off.special.cost < 0)) ||
+        (!Number.isSafeInteger(card.modeSkillChanges.off.special.consumeAp) ||
+          card.modeSkillChanges.off.special.consumeAp < 0)) ||
       (card.modeSkillChanges.on.special !== null &&
-        (!Number.isSafeInteger(card.modeSkillChanges.on.special.cost) ||
-          card.modeSkillChanges.on.special.cost < 0))
+        (!Number.isSafeInteger(card.modeSkillChanges.on.special.consumeAp) ||
+          card.modeSkillChanges.on.special.consumeAp < 0))
     )
       throw new Error('スキルモードの設定が正しくありません。');
     for (const variant of [card.modeSkillChanges.off, card.modeSkillChanges.on]) {

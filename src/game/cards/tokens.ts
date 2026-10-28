@@ -187,7 +187,7 @@ function createActionTokenCard(
     charactersId: 0,
     unitIds: [],
     mainEffect: effect.skill.mainEffect,
-    cost: skill.cost,
+    consumeAp: skill.consumeAp,
     style: effect.style,
     mood: effect.mood,
     appeal: { smile: 0, pure: 0, cool: 0 },
@@ -215,7 +215,7 @@ function tokenCardId(resourceId: number, sequence: number): string {
 }
 
 function skillVariant(variant: ModeSkillVariant | ModeAbilityVariant): ModeSkillVariant {
-  if (!('cost' in variant)) throw new Error('追加カードのSkill variantが正しくありません。');
+  if (!('consumeAp' in variant)) throw new Error('追加カードのSkill variantが正しくありません。');
   return variant;
 }
 

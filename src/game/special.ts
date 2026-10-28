@@ -21,7 +21,7 @@ export function specialCards(state: GameState): readonly Card[] {
 
 export function specialCost(card: Card): number {
   if (!card.special) throw new Error('共鳴の効果がありません。');
-  return card.special.cost;
+  return card.special.consumeAp;
 }
 
 export function isGenesisSpecial(card: Card): boolean {

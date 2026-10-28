@@ -215,7 +215,7 @@ function activateCard(
         tick: state.tick,
         handIndex: initialHand.indexOf(card.id),
         handCount: initialHand.length,
-        cost: usedSkillCost,
+        consumeAp: usedSkillCost,
       },
     ],
   };

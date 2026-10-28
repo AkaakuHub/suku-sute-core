@@ -1,3 +1,4 @@
+import type { LiveCardSkillLevel } from '../../runtime/skills/skillTypes.ts';
 import type { LiveCardIdentity } from '../../runtime/cards/cardIdentity.ts';
 import type { DrawProbabilityRule } from './drawProbability.ts';
 import type { LiveCardAppealParameters } from '../../runtime/live/clientScoreInput.ts';
@@ -226,7 +227,6 @@ export type Card = Readonly<{
   performer: PerformerId | null;
   charactersId: MemberId;
   mainEffect?: number;
-  cost: number;
   style?: number;
   mood?: number;
   tokenCard?: true;
@@ -325,7 +325,9 @@ export type Card = Readonly<{
   relay?: Readonly<{ threshold: number; hearts: number; beats?: boolean; moodBonus?: MoodBonus }>;
   token?: TokenId;
   exhausts?: true;
-  special?: Readonly<{ cost: number; extra: boolean; effects: readonly Effect[] }>;
+  special?: Readonly<
+    Pick<LiveCardSkillLevel, 'consumeAp'> & { extra: boolean; effects: readonly Effect[] }
+  >;
   allHandCost?: Readonly<{
     reductions: readonly Readonly<{ minimumCards: number; amount: number }>[];
   }>;
@@ -360,4 +362,5 @@ export type Card = Readonly<{
   }>;
   collectionAbility?: 'rain-echo' | 'rain-pulse';
 }> &
-  LiveCardIdentity;
+  LiveCardIdentity &
+  Pick<LiveCardSkillLevel, 'consumeAp'>;

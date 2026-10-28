@@ -175,7 +175,7 @@ function resolveCardSkillVariant(
 }
 
 function modeSkillVariant(variant: ModeSkillVariant | ModeAbilityVariant): ModeSkillVariant {
-  if (!('cost' in variant)) throw new Error('モード切替SkillVariantが正しくありません。');
+  if (!('consumeAp' in variant)) throw new Error('モード切替SkillVariantが正しくありません。');
   return variant;
 }
 

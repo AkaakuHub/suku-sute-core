@@ -11,16 +11,18 @@ export type LiveSkillEffect = Readonly<{
   }>[];
 }>;
 
+export type LiveCardSkillLevel = Readonly<{
+  skillLevel: number;
+  consumeAp: number;
+  appearanceType: number;
+  description: string;
+  effects: readonly LiveSkillEffect[];
+}>;
+
 export type LiveCardSkillSeries = Readonly<{
   seriesId: number;
   name: string;
   mainEffect: number;
   skillIcon: number;
-  levels: readonly Readonly<{
-    skillLevel: number;
-    consumeAp: number;
-    appearanceType: number;
-    description: string;
-    effects: readonly LiveSkillEffect[];
-  }>[];
+  levels: readonly LiveCardSkillLevel[];
 }>;
