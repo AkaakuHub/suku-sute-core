@@ -15,7 +15,12 @@ import type { ProxySkillEffect } from '../modelTypes.ts';
 import type { EffectApplier } from './induceSkillEffect.ts';
 import { induceCardMoves } from './cardMoveInduce.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
-import { int64ToFloat32 } from '../../runtime/numeric.ts';
+import {
+  advanceLiveProxySkillPeriod,
+  checkLiveProxySkillEnd,
+  createLiveProxySkillPeriod,
+  type LiveProxySkillPeriodEvent,
+} from '../../runtime/skills/proxyLifecycle.ts';
 
 type ApplyProxyEffect = EffectApplier;
 
@@ -25,7 +30,12 @@ export function registerProxySkill(
   card: Card | undefined,
 ): GameState {
   if (!card) return state;
-  if (effect.periodType === 3 ? effect.induceTiming !== 1 : effect.periodParam < 1n) return state;
+  const period = createLiveProxySkillPeriod(
+    effect.periodType,
+    effect.periodParam,
+    effect.induceTiming,
+  );
+  if (period === null) return state;
   const common = {
     id: state.nextProxySkillId,
     ...createLiveProxyAbsorbInfo(
@@ -42,18 +52,7 @@ export function registerProxySkill(
     inducePowerParam: effect.inducePowerParam,
     inducedEffects: effect.effects,
   };
-  const absorption: GameState['proxySkills'][number] =
-    effect.periodType === 1
-      ? {
-          ...common,
-          periodType: 1,
-          remainingPeriod: Math.fround(int64ToFloat32(effect.periodParam) / Math.fround(1000)),
-        }
-      : {
-          ...common,
-          periodType: effect.periodType,
-          remainingPeriod: effect.periodParam,
-        };
+  const absorption: GameState['proxySkills'][number] = { ...common, ...period };
   return {
     ...state,
     proxySkills: [...state.proxySkills, absorption],
@@ -65,61 +64,41 @@ export function registerProxySkill(
 
 export function advanceProxySkillPeriods(
   state: GameState,
-  elapsedSeconds: number,
+  deltaTimeSeconds: number,
   apply: ApplyProxyEffect,
 ): GameState {
-  let next = state;
-  for (const initialAbsorption of state.proxySkills) {
-    const absorption = next.proxySkills.find((item) => item.id === initialAbsorption.id);
-    if (!absorption) continue;
-    if (absorption.isAbsorbEnd) continue;
-    if (absorption.periodType !== 1) continue;
-    const remainingPeriod = Math.fround(absorption.remainingPeriod - Math.fround(elapsedSeconds));
-    if (remainingPeriod <= 0 && absorption.induceTiming === 3)
-      next = endProxySkillState(next, absorption, apply);
-    else if (remainingPeriod <= 0) next = finishProxySkillState(next, absorption, apply);
-    else next = updateProxySkillStatePeriod(next, absorption, remainingPeriod);
-  }
-  return next;
+  return advanceProxySkillPeriodEvent(state, { kind: 'clock', deltaTimeSeconds }, apply);
 }
 
 export function advanceProxySkillSections(state: GameState, apply: ApplyProxyEffect): GameState {
-  let next = state;
-  for (const initialAbsorption of state.proxySkills) {
-    const absorption = next.proxySkills.find((item) => item.id === initialAbsorption.id);
-    if (!absorption) continue;
-    if (absorption.isAbsorbEnd) continue;
-    if (absorption.periodType !== 2) continue;
-    const remainingPeriod = absorption.remainingPeriod - 1n;
-    if (remainingPeriod <= 0n && absorption.induceTiming === 1)
-      next = endProxySkillState(next, absorption, apply);
-    else if (remainingPeriod <= 0n && absorption.induceTiming === 3)
-      next = endProxySkillState(next, absorption, apply);
-    else if (remainingPeriod <= 0n) next = finishProxySkillState(next, absorption, apply);
-    else next = updateProxySkillStatePeriod(next, absorption, remainingPeriod);
-  }
-  return next;
+  return advanceProxySkillPeriodEvent(state, { kind: 'section-change' }, apply);
 }
 
 export function advanceProxySkillUses(
   state: GameState,
-  usedSourceId: string,
-  skillCost: number,
+  cardInstanceId: string,
+  consumeAp: number,
+  apply: ApplyProxyEffect,
+): GameState {
+  return advanceProxySkillPeriodEvent(
+    state,
+    { kind: 'skill-activation', cardInstanceId, consumeAp },
+    apply,
+  );
+}
+
+function advanceProxySkillPeriodEvent(
+  state: GameState,
+  event: LiveProxySkillPeriodEvent,
   apply: ApplyProxyEffect,
 ): GameState {
   let next = state;
-  for (const initialAbsorption of state.proxySkills) {
-    const absorption = next.proxySkills.find((item) => item.id === initialAbsorption.id);
-    if (!absorption) continue;
-    if (absorption.isAbsorbEnd) continue;
-    if (absorption.cardInstanceId === usedSourceId) continue;
-    if (absorption.periodType !== 4 && absorption.periodType !== 5) continue;
-    const decrement = BigInt(absorption.periodType === 4 ? 1 : Math.trunc(skillCost));
-    const remainingPeriod = absorption.remainingPeriod - decrement;
-    if (remainingPeriod <= 0n && absorption.induceTiming === 3)
-      next = endProxySkillState(next, absorption, apply);
-    else if (remainingPeriod <= 0n) next = finishProxySkillState(next, absorption, apply);
-    else next = updateProxySkillStatePeriod(next, absorption, remainingPeriod);
+  for (const initial of state.proxySkills) {
+    const current = next.proxySkills.find((item) => item.id === initial.id);
+    if (!current) continue;
+    const advanced = advanceLiveProxySkillPeriod(current, event);
+    if (advanced.state !== current) next = updateProxySkillState(next, current, advanced.state);
+    if (advanced.periodEnded) next = finishProxySkillState(next, advanced.state, apply);
   }
   return next;
 }
@@ -183,15 +162,13 @@ function finishProxySkillState(
   absorption: GameState['proxySkills'][number],
   apply: ApplyProxyEffect,
 ): GameState {
-  const checkTargets = absorption.induceTiming === 1 || absorption.induceCondition === 2;
-  const allTargetsReached = absorption.effects.every((effect) =>
-    liveProxyTargetReached(effect, absorption.isAbsoluteAdd),
-  );
-  if (checkTargets && !allTargetsReached)
-    return releaseFailedProxySkillState(state, absorption, apply);
+  const checked = checkLiveProxySkillEnd(absorption, true);
+  let next =
+    checked.state === absorption ? state : updateProxySkillState(state, absorption, checked.state);
+  if (checked.result === 'release') return releaseFailedProxySkillState(next, checked.state, apply);
+  if (checked.result !== 'induce') return next;
   const card = state.cardPool.find((item) => item.cardInstanceId === absorption.cardInstanceId);
-  if (!card) return removeProxySkillState(state, absorption);
-  let next = updateProxySkillState(state, absorption, { ...absorption, isAbsorbEnd: true });
+  if (!card) return removeProxySkillState(next, absorption);
   next = absorption.inducedEffects.reduce((current, child) => {
     const power = liveProxyInducePower(
       absorption,
@@ -213,33 +190,6 @@ function applyProxyChild(
   apply: ApplyProxyEffect,
 ): GameState {
   return completeDeckOutChecks(apply(state, child.effect, card, multiplier, addValue), apply);
-}
-
-function endProxySkillState(
-  state: GameState,
-  absorption: GameState['proxySkills'][number],
-  apply: ApplyProxyEffect,
-): GameState {
-  const checkTargets = absorption.induceTiming === 1 || absorption.induceCondition === 2;
-  const allTargetsReached = absorption.effects.every((effect) =>
-    liveProxyTargetReached(effect, absorption.isAbsoluteAdd),
-  );
-  if (checkTargets && !allTargetsReached)
-    return releaseFailedProxySkillState(state, absorption, apply);
-  return updateProxySkillState(state, absorption, { ...absorption, isAbsorbEnd: true });
-}
-
-function updateProxySkillStatePeriod(
-  state: GameState,
-  current: GameState['proxySkills'][number],
-  remainingPeriod: number | bigint,
-): GameState {
-  if (current.periodType === 1) {
-    if (typeof remainingPeriod !== 'number') throw new Error('Proxyの期限値が正しくありません。');
-    return updateProxySkillState(state, current, { ...current, remainingPeriod });
-  }
-  if (typeof remainingPeriod !== 'bigint') throw new Error('Proxyの期限値が正しくありません。');
-  return updateProxySkillState(state, current, { ...current, remainingPeriod });
 }
 
 function updateProxySkillState(
