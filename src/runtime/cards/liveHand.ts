@@ -11,7 +11,7 @@ export type LiveDeckHandsState<Id extends LiveCardIdentifier = number> = Readonl
 }>;
 
 type HandOwner<Id extends LiveCardIdentifier> = Readonly<{
-  liveHands: LiveDeckHandsState<Id>;
+  liveHands: LiveDeckHandsState<Id> | null;
   tokenCardDeck: Readonly<{ currentDeck: 'main' | 'sub' }>;
 }>;
 
@@ -44,15 +44,17 @@ export function liveHandCardInstanceIds<Id extends LiveCardIdentifier>(
 export function liveCurrentHandCardInstanceIds<Id extends LiveCardIdentifier>(
   state: HandOwner<Id>,
 ): readonly Id[] {
+  if (state.liveHands === null) throw new Error('Live hand state is unresolved');
   return liveHandCardInstanceIds(state.liveHands[state.tokenCardDeck.currentDeck]);
 }
 
 export function setLiveCurrentHandCards<State extends HandOwner<LiveCardIdentifier>>(
   state: State,
   handCardInstanceIds: readonly NoInfer<
-    NonNullable<State['liveHands']['main']['handCards'][number]>
+    NonNullable<NonNullable<State['liveHands']>['main']['handCards'][number]>
   >[],
 ): State {
+  if (state.liveHands === null) throw new Error('Live hand state is unresolved');
   return {
     ...state,
     liveHands: {

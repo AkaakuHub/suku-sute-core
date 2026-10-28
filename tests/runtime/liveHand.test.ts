@@ -61,3 +61,9 @@ test('範囲外、空の削除、占有枠への追加、同一個体の二重�
   expect(() => createLiveHandState([1, 1])).toThrow();
   expect(() => createLiveHandState([1, 2, 3, 4, 5, 6, 7, 8, 9])).toThrow();
 });
+
+test('未確定の手札を空配列として読み書きしない', () => {
+  const state = { liveHands: null, tokenCardDeck: { currentDeck: 'main' as const } };
+  expect(() => liveCurrentHandCardInstanceIds(state)).toThrow('unresolved');
+  expect(() => setLiveCurrentHandCards(state, [])).toThrow('unresolved');
+});
