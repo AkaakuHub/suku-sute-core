@@ -1,9 +1,10 @@
+import { apSpeedRuntime } from './support/apIncreaseSpeed.ts';
+import { advanceLiveApIncreaseSpeedState } from '../../src/runtime/skills/apIncreaseSpeedRuntime.ts';
 import { readLiveApIncreaseSpeedChange } from '../../src/runtime/skills/apIncreaseSpeedEffect.ts';
 import { observeLiveApIncreaseSpeedEffect } from '../../src/runtime/skills/apIncreaseSpeedObservation.ts';
 import { expect, test } from 'vite-plus/test';
 import {
   activateLiveApIncreaseSpeed,
-  advanceLiveApIncreaseSpeedState,
   createLiveApIncreaseSpeedState,
   resolveLiveApIncreaseIntervalSeconds,
   resolveLiveApIncreaseIntervalMilliseconds,
@@ -64,11 +65,15 @@ test('加算型はruntimeどおりSkillBoostを消費するが登録値には適
   expect(activated.effectAmount).toBe(36);
   expect(resolveLiveApIncreaseIntervalSeconds(1, activated.state)).toBeCloseTo(0.64);
   expect(
-    advanceLiveApIncreaseSpeedState(activated.state, {
-      deltaTimeSeconds: 1,
-      sectionChangeCount: 0,
-      musicEnded: false,
-    }),
+    advanceLiveApIncreaseSpeedState(
+      apSpeedRuntime(activated.state),
+      {
+        deltaTimeSeconds: 1,
+        sectionChangeCount: 0,
+        musicEnded: false,
+      },
+      1,
+    ).apIncreaseSpeedEffects,
   ).toEqual([]);
 });
 
@@ -169,31 +174,47 @@ test('AP速度の時間・区間・終了期限は同じ状態で進み識別情
       duration: { kind: 'full-end' },
     },
   ] as const;
-  const timed = advanceLiveApIncreaseSpeedState(state, {
-    deltaTimeSeconds: 0.5,
-    sectionChangeCount: 0,
-    musicEnded: false,
-  });
+  const timed = advanceLiveApIncreaseSpeedState(
+    apSpeedRuntime(state),
+    {
+      deltaTimeSeconds: 0.5,
+      sectionChangeCount: 0,
+      musicEnded: false,
+    },
+    1,
+  ).apIncreaseSpeedEffects;
   expect(timed).toEqual(state.slice(1));
-  const section = advanceLiveApIncreaseSpeedState(timed, {
-    deltaTimeSeconds: 0,
-    sectionChangeCount: 1,
-    musicEnded: false,
-  });
+  const section = advanceLiveApIncreaseSpeedState(
+    apSpeedRuntime(timed),
+    {
+      deltaTimeSeconds: 0,
+      sectionChangeCount: 1,
+      musicEnded: false,
+    },
+    1,
+  ).apIncreaseSpeedEffects;
   expect(section[0]).toEqual({ ...state[1], duration: { kind: 'sections', remainingChanges: 1n } });
   expect(section[1]).toEqual(state[2]);
-  const next = advanceLiveApIncreaseSpeedState(section, {
-    deltaTimeSeconds: 0,
-    sectionChangeCount: 1,
-    musicEnded: false,
-  });
+  const next = advanceLiveApIncreaseSpeedState(
+    apSpeedRuntime(section),
+    {
+      deltaTimeSeconds: 0,
+      sectionChangeCount: 1,
+      musicEnded: false,
+    },
+    1,
+  ).apIncreaseSpeedEffects;
   expect(next).toEqual([state[2]]);
   expect(
-    advanceLiveApIncreaseSpeedState(next, {
-      deltaTimeSeconds: 0,
-      sectionChangeCount: 0,
-      musicEnded: true,
-    }),
+    advanceLiveApIncreaseSpeedState(
+      apSpeedRuntime(next),
+      {
+        deltaTimeSeconds: 0,
+        sectionChangeCount: 0,
+        musicEnded: true,
+      },
+      1,
+    ).apIncreaseSpeedEffects,
   ).toEqual([]);
 });
 

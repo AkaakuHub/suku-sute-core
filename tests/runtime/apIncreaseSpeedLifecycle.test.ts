@@ -1,9 +1,10 @@
-import { expect, test } from 'vite-plus/test';
+import { apSpeedRuntime } from './support/apIncreaseSpeed.ts';
 import {
-  activateLiveApIncreaseSpeed,
-  deactivateLiveApIncreaseSpeedEffects,
   advanceLiveApIncreaseSpeedState,
-} from '../../src/runtime/skills/apIncreaseSpeed.ts';
+  deactivateLiveApIncreaseSpeedEffects,
+} from '../../src/runtime/skills/apIncreaseSpeedRuntime.ts';
+import { expect, test } from 'vite-plus/test';
+import { activateLiveApIncreaseSpeed } from '../../src/runtime/skills/apIncreaseSpeed.ts';
 import type { LiveApIncreaseSpeedChange } from '../../src/runtime/skills/apIncreaseSpeedEffect.ts';
 
 const effect: LiveApIncreaseSpeedChange = {
@@ -51,11 +52,15 @@ test('ゼロ通知も吸収を判定し非吸収なら期限を登録せずBuff�
     },
   ]);
   expect(
-    advanceLiveApIncreaseSpeedState(activated.state, {
-      deltaTimeSeconds: 5,
-      sectionChangeCount: 3,
-      musicEnded: false,
-    }),
+    advanceLiveApIncreaseSpeedState(
+      apSpeedRuntime(activated.state),
+      {
+        deltaTimeSeconds: 5,
+        sectionChangeCount: 3,
+        musicEnded: false,
+      },
+      1,
+    ).apIncreaseSpeedEffects,
   ).toEqual(activated.state);
 });
 
@@ -102,12 +107,14 @@ test('解除は期限登録のある状態だけを対象とし同じ効果IDの
     { ...effect, num: 10000n },
     input([], false),
   );
-  expect(deactivateLiveApIncreaseSpeedEffects(zero.state, { effectId: '21' })).toEqual(
-    zero.state.slice(1),
-  );
-  expect(deactivateLiveApIncreaseSpeedEffects(zero.state, { deactivationKey: 'hand' })).toEqual(
-    zero.state.slice(1),
-  );
+  expect(
+    deactivateLiveApIncreaseSpeedEffects(apSpeedRuntime(zero.state), { effectId: '21' }, 1)
+      .apIncreaseSpeedEffects,
+  ).toEqual(zero.state.slice(1));
+  expect(
+    deactivateLiveApIncreaseSpeedEffects(apSpeedRuntime(zero.state), { deactivationKey: 'hand' }, 1)
+      .apIncreaseSpeedEffects,
+  ).toEqual(zero.state.slice(1));
 });
 
 test('非ゼロBuffでも通知がFloat32のゼロになる場合は期限を登録しない', () => {

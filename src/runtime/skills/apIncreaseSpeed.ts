@@ -1,10 +1,8 @@
 import { observeLiveApIncreaseSpeedEffect } from './apIncreaseSpeedObservation.ts';
-import type { LiveSkillEffectClock } from './skillEffectDuration.ts';
 import { roundLiveGaugeIntervalSeconds } from '../live/gaugeTiming.ts';
 import type { LiveApIncreaseSpeedChange } from './apIncreaseSpeedEffect.ts';
 import { ceilToInt32, int64ToInt32, int64ToFloat32, isInt64 } from '../numeric.ts';
 import {
-  advanceLiveSkillEffectDuration,
   createLiveSkillEffectDuration,
   type LiveSkillEffectDuration,
 } from './skillEffectDuration.ts';
@@ -118,30 +116,6 @@ export function activateLiveApIncreaseSpeed<Absorption extends Readonly<{ absorb
       },
     ],
   };
-}
-
-export function deactivateLiveApIncreaseSpeedEffects(
-  state: LiveApIncreaseSpeedState,
-  selector: Readonly<{ effectId: string }> | Readonly<{ deactivationKey: string }>,
-): LiveApIncreaseSpeedState {
-  return state.filter(
-    (effect) =>
-      effect.duration === null ||
-      ('effectId' in selector
-        ? effect.effectId !== selector.effectId
-        : effect.deactivationKey !== selector.deactivationKey),
-  );
-}
-
-export function advanceLiveApIncreaseSpeedState(
-  state: LiveApIncreaseSpeedState,
-  input: LiveSkillEffectClock,
-): LiveApIncreaseSpeedState {
-  return state.flatMap((effect) => {
-    if (effect.duration === null) return input.musicEnded ? [] : [effect];
-    const duration = advanceLiveSkillEffectDuration(effect.duration, input);
-    return duration === null ? [] : [{ ...effect, duration }];
-  });
 }
 
 export function resolveLiveApIncreaseIntervalSeconds(

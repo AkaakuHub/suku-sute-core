@@ -1,11 +1,13 @@
 import {
   activateLiveApIncreaseSpeed,
-  deactivateLiveApIncreaseSpeedEffects,
   resolveLiveApIncreaseIntervalSeconds,
   resolveLiveApIncreaseIntervalMilliseconds,
-  advanceLiveApIncreaseSpeedState,
 } from '../../runtime/skills/apIncreaseSpeed.ts';
-import { rescaleLiveGaugeTimer } from '../../runtime/live/gaugeTiming.ts';
+import {
+  changeLiveApIncreaseSpeedEffects,
+  deactivateLiveApIncreaseSpeedEffects,
+  advanceLiveApIncreaseSpeedState,
+} from '../../runtime/skills/apIncreaseSpeedRuntime.ts';
 import type { Card, Effect, GameState } from '../model.ts';
 import { moodValue } from '../projection.ts';
 import { skillValue } from './skillValue.ts';
@@ -77,47 +79,56 @@ export function applyApSpeedPercent(
 }
 
 export function advanceApSpeedEffects(state: GameState, elapsedSeconds: number): GameState {
-  return updateApIncreaseSpeedEffects(
-    state,
-    advanceLiveApIncreaseSpeedState(state.apIncreaseSpeedEffects, {
-      deltaTimeSeconds: elapsedSeconds,
-      sectionChangeCount: 0,
-      musicEnded: false,
-    }),
-  );
+  return {
+    ...state,
+    ...advanceLiveApIncreaseSpeedState(
+      state,
+      {
+        deltaTimeSeconds: elapsedSeconds,
+        sectionChangeCount: 0,
+        musicEnded: false,
+      },
+      state.track.stage.apIncreaseIntervalSeconds,
+    ),
+  };
 }
 
 export function expireApSpeedSections(state: GameState): GameState {
-  return updateApIncreaseSpeedEffects(
-    state,
-    advanceLiveApIncreaseSpeedState(state.apIncreaseSpeedEffects, {
-      deltaTimeSeconds: 0,
-      sectionChangeCount: 1,
-      musicEnded: false,
-    }),
-  );
+  return {
+    ...state,
+    ...advanceLiveApIncreaseSpeedState(
+      state,
+      {
+        deltaTimeSeconds: 0,
+        sectionChangeCount: 1,
+        musicEnded: false,
+      },
+      state.track.stage.apIncreaseIntervalSeconds,
+    ),
+  };
 }
 
 export function deactivateApSpeedEffects(state: GameState, deactivationKey: string): GameState {
-  return updateApIncreaseSpeedEffects(
-    state,
-    deactivateLiveApIncreaseSpeedEffects(state.apIncreaseSpeedEffects, { deactivationKey }),
-  );
+  return {
+    ...state,
+    ...deactivateLiveApIncreaseSpeedEffects(
+      state,
+      { deactivationKey },
+      state.track.stage.apIncreaseIntervalSeconds,
+    ),
+  };
 }
 
 function updateApIncreaseSpeedEffects(
   state: GameState,
-  apIncreaseSpeedEffects: GameState['apIncreaseSpeedEffects'],
+  effects: GameState['apIncreaseSpeedEffects'],
 ): GameState {
-  if (apIncreaseSpeedEffects === state.apIncreaseSpeedEffects) return state;
-  const before = apIncreaseIntervalSeconds(state);
-  const candidate = { ...state, apIncreaseSpeedEffects };
-  const after = apIncreaseIntervalSeconds(candidate);
   return {
-    ...candidate,
-    ap: {
-      ...candidate.ap,
-      timerSeconds: rescaleLiveGaugeTimer(state.ap.timerSeconds, before, after),
-    },
+    ...state,
+    ...changeLiveApIncreaseSpeedEffects(
+      state,
+      effects,
+      state.track.stage.apIncreaseIntervalSeconds,
+    ),
   };
 }
