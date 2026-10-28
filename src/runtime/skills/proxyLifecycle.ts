@@ -17,6 +17,15 @@ export type LiveProxySkillLifecycle<Id extends LiveCardIdentifier = LiveCardIden
   LiveProxyAbsorbInfo<Id> &
     LiveProxySkillPeriod &
     Readonly<{ induceTiming: 1 | 2 | 3; induceCondition: 1 | 2 }>;
+export type LiveProxySkillState<
+  Id extends LiveCardIdentifier,
+  Effect,
+> = LiveProxySkillLifecycle<Id> &
+  Readonly<{
+    inducePowerType: 1 | 2 | 3;
+    inducePowerParam: bigint;
+    induceEffects: readonly Effect[];
+  }>;
 export type LiveProxySkillEndResult = 'none' | 'release' | 'induce' | 'defer';
 
 export function createLiveProxySkillPeriod(

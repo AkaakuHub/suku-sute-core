@@ -1,7 +1,10 @@
 import {
+  forceLiveProxySkillActivation,
+  selectLiveProxySkillsForForcedActivation,
+} from '../../runtime/skills/proxyForcedActivation.ts';
+import {
   absorbLiveProxySkillEffect,
   createLiveProxyAbsorbInfo,
-  liveProxyTargetReached,
   liveProxyInducePower,
 } from '../../runtime/skills/proxyAbsorption.ts';
 import {
@@ -50,7 +53,7 @@ export function registerProxySkill(
     induceCondition: effect.induceCondition,
     inducePowerType: effect.inducePowerType,
     inducePowerParam: effect.inducePowerParam,
-    inducedEffects: effect.effects,
+    induceEffects: effect.effects,
   };
   const absorption: GameState['proxySkills'][number] = { ...common, ...period };
   return {
@@ -117,44 +120,18 @@ export function absorbSkillEffect(
 
 export function forceProxySkillActivation(
   state: GameState,
-  targetType: 1 | 2 | 3 | 4 | 5,
+  targetType: bigint,
+  apply: ApplyProxyEffect,
 ): GameState {
-  return {
-    ...state,
-    proxySkills: state.proxySkills.map((absorption) =>
-      matchesForcedActivationTarget(absorption, targetType)
-        ? { ...absorption, isAbsorbEnd: true }
-        : absorption,
-    ),
-  };
-}
-
-function matchesForcedActivationTarget(
-  absorption: GameState['proxySkills'][number],
-  targetType: 1 | 2 | 3 | 4 | 5,
-): boolean {
-  switch (targetType) {
-    case 1:
-      return true;
-    case 2:
-      return absorption.hasAbsorbLimit;
-    case 3:
-      return !absorption.hasAbsorbLimit;
-    case 4:
-      return (
-        absorption.effects.length > 0 &&
-        absorption.effects.every((effect) =>
-          liveProxyTargetReached(effect, absorption.isAbsoluteAdd),
-        )
-      );
-    case 5:
-      return !(
-        absorption.effects.length > 0 &&
-        absorption.effects.every((effect) =>
-          liveProxyTargetReached(effect, absorption.isAbsoluteAdd),
-        )
-      );
+  const targets = selectLiveProxySkillsForForcedActivation(state.proxySkills, targetType);
+  let next = state;
+  for (const target of targets) {
+    const current = next.proxySkills.find((entry) => entry.id === target.id);
+    const ended = forceLiveProxySkillActivation(current ?? target);
+    next = updateProxySkillState(next, target, ended);
+    next = induceProxySkillState(next, ended, apply);
   }
+  return next;
 }
 
 function finishProxySkillState(
@@ -165,11 +142,20 @@ function finishProxySkillState(
   const checked = checkLiveProxySkillEnd(absorption, true);
   let next =
     checked.state === absorption ? state : updateProxySkillState(state, absorption, checked.state);
-  if (checked.result === 'release') return releaseFailedProxySkillState(next, checked.state, apply);
+  if (checked.result === 'release') return releaseProxySkillState(next, checked.state, apply);
   if (checked.result !== 'induce') return next;
+  return induceProxySkillState(next, checked.state, apply);
+}
+
+function induceProxySkillState(
+  state: GameState,
+  absorption: GameState['proxySkills'][number],
+  apply: ApplyProxyEffect,
+): GameState {
+  let next = state;
   const card = state.cardPool.find((item) => item.cardInstanceId === absorption.cardInstanceId);
   if (!card) return removeProxySkillState(next, absorption);
-  next = absorption.inducedEffects.reduce((current, child) => {
+  next = absorption.induceEffects.reduce((current, child) => {
     const power = liveProxyInducePower(
       absorption,
       absorption.inducePowerType,
@@ -178,12 +164,12 @@ function finishProxySkillState(
     );
     return applyProxyChild(current, child, card, power.multiplyFactor, power.addValue, apply);
   }, next);
-  return removeProxySkillState(next, absorption);
+  return releaseProxySkillState(next, absorption, apply);
 }
 
 function applyProxyChild(
   state: GameState,
-  child: GameState['proxySkills'][number]['inducedEffects'][number],
+  child: GameState['proxySkills'][number]['induceEffects'][number],
   card: Card,
   multiplier: number,
   addValue: number,
@@ -219,7 +205,7 @@ function removeProxySkillState(
   return removed ? { ...state, proxySkills } : state;
 }
 
-function releaseFailedProxySkillState(
+function releaseProxySkillState(
   state: GameState,
   absorption: GameState['proxySkills'][number],
   apply: ApplyProxyEffect,

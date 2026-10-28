@@ -1,16 +1,14 @@
 import type {
-  LiveProxySkillLifecycle,
+  LiveProxySkillState,
   LiveProxySkillPeriodType,
 } from '../runtime/skills/proxyLifecycle.ts';
 import type { Effect } from './modelTypes.ts';
 
-export type ProxySkillState = LiveProxySkillLifecycle<string> &
-  Readonly<{
-    id: number;
-    inducePowerType: 1 | 2 | 3;
-    inducePowerParam: bigint;
-    inducedEffects: readonly Readonly<{ actionType: number; effect: Effect }>[];
-  }>;
+export type ProxySkillState = LiveProxySkillState<
+  string,
+  Readonly<{ actionType: number; effect: Effect }>
+> &
+  Readonly<{ id: number }>;
 
 export type ProxySkillEffect = Readonly<{
   kind: 'proxy-skill';

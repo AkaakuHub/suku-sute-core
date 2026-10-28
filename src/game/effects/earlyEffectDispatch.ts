@@ -31,23 +31,8 @@ export function dispatchEarlyEffect(
     return activateBranchInducer(state, effect, card);
   if (effect.kind === 'skill-score-up')
     return activateSkillScoreUp(state, effect, card, multiplier, addValue, effectPower);
-  if (effect.kind === 'proxy-skill-forced-activation') {
-    const targetType = Number(BigInt.asIntN(32, effect.targetType));
-    switch (targetType) {
-      case 1:
-        return forceProxySkillActivation(state, 1);
-      case 2:
-        return forceProxySkillActivation(state, 2);
-      case 3:
-        return forceProxySkillActivation(state, 3);
-      case 4:
-        return forceProxySkillActivation(state, 4);
-      case 5:
-        return forceProxySkillActivation(state, 5);
-      default:
-        return state;
-    }
-  }
+  if (effect.kind === 'proxy-skill-forced-activation')
+    return forceProxySkillActivation(state, effect.targetType, apply);
   if (effect.kind === 'proxy-skill') return registerProxySkill(state, effect, card);
   if (effect.kind === 'mood-change-skill')
     return activateMoodChangeSkill(state, effect, card, multiplier, addValue, effectPower);

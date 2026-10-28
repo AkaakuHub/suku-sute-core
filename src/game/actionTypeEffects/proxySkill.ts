@@ -1,7 +1,7 @@
 import type { ProxySkillEffect } from '../proxySkillTypes.ts';
 import type { ActionTypeDetail } from '../cards/actionTypeDetail.ts';
 import type { Effect } from '../model.ts';
-import { isInt64 } from '../../runtime/numeric.ts';
+import { int64ToInt32, isInt64 } from '../../runtime/numeric.ts';
 
 type Input = Readonly<{
   skillEffectId: bigint;
@@ -34,14 +34,14 @@ export function createProxySkillEffect(input: Input): Effect {
     if (!isInt64(actionType) || amount === undefined || !isInt64(amount))
       throw new Error('Proxyスキルの吸収対象が正しくありません。');
     return {
-      actionType: int32(actionType),
-      targetAmount: int32(amount),
+      actionType: int64ToInt32(actionType),
+      targetAmount: int64ToInt32(amount),
     };
   });
-  const periodType = int32(value(input.details, detailTypes.periodType, 1n));
-  const induceTiming = int32(value(input.details, detailTypes.induceTiming, 1n));
-  const induceCondition = int32(value(input.details, detailTypes.induceCondition, 1n));
-  const inducePowerType = int32(value(input.details, detailTypes.inducePowerType, 1n));
+  const periodType = int64ToInt32(value(input.details, detailTypes.periodType, 1n));
+  const induceTiming = int64ToInt32(value(input.details, detailTypes.induceTiming, 1n));
+  const induceCondition = int64ToInt32(value(input.details, detailTypes.induceCondition, 1n));
+  const inducePowerType = int64ToInt32(value(input.details, detailTypes.inducePowerType, 1n));
   if (![1, 2, 3, 4, 5].includes(periodType))
     throw new Error('Proxyスキルの期間種別が正しくありません。');
   if (![1, 2, 3].includes(induceTiming))
@@ -52,7 +52,7 @@ export function createProxySkillEffect(input: Input): Effect {
     throw new Error('Proxyスキルの威力種別が正しくありません。');
   const effect: ProxySkillEffect = {
     kind: 'proxy-skill',
-    absorbLimit: int32(value(input.details, detailTypes.absorbLimit, 1n)),
+    absorbLimit: int64ToInt32(value(input.details, detailTypes.absorbLimit, 1n)),
     periodType: periodType as ProxySkillEffect['periodType'],
     periodParam: value(input.details, detailTypes.periodParam, 0n),
     induceTiming: induceTiming as ProxySkillEffect['induceTiming'],
@@ -77,8 +77,4 @@ function params(details: readonly ActionTypeDetail[], type: string): readonly bi
   if (!detail) return null;
   if (!isInt64(detail.id) || !isInt64(detail.value)) throw new Error('詳細値が正しくありません。');
   return detail.paramValues ?? null;
-}
-
-function int32(value: bigint): number {
-  return Number(BigInt.asIntN(32, value));
 }
