@@ -225,17 +225,11 @@ function activateCard(
   next = beginTokenGeneration(retireCard(applyBeforeUseAbility(next, card), card), card.id);
   next = notifyComboSkillPoint(next, card, usedSkillCost);
   for (const effect of card.effects) {
-    if (effect.kind === 'use-hand') continue;
-    next = applyEffect(next, effect, card);
-  }
-  const tokenGeneration = finishTokenGeneration(next, card.id);
-  next = tokenGeneration.state;
-  next = registerMissionMember(notifyHandSkillUse(next, card, applyEffect), card.member);
-  const ability = resolveModeAbility(card, next.modes);
-  next = applyAbilityEffects(next, card, ability.ability893Effects ?? [], applyEffect);
-  next = applyAbilityEffects(next, card, ability.ability894Effects ?? [], applyEffect);
-  for (const effect of card.effects) {
-    if (effect.kind !== 'use-hand' || allHand) continue;
+    if (effect.kind !== 'use-hand') {
+      next = applyEffect(next, effect, card);
+      continue;
+    }
+    if (allHand) continue;
     next = { ...next, modes: { ...next.modes, held: true } };
     const children = [...next.hand];
     for (const id of children) {
@@ -244,6 +238,12 @@ function activateCard(
     }
     next = drainModeChanges({ ...next, modes: { ...next.modes, held: false } }, applyEffect);
   }
+  const tokenGeneration = finishTokenGeneration(next, card.id);
+  next = tokenGeneration.state;
+  next = registerMissionMember(notifyHandSkillUse(next, card, applyEffect), card.member);
+  const ability = resolveModeAbility(card, next.modes);
+  next = applyAbilityEffects(next, card, ability.ability893Effects ?? [], applyEffect);
+  next = applyAbilityEffects(next, card, ability.ability894Effects ?? [], applyEffect);
   next = advanceProxySkillUses(applyUseAbility(next, card), card.id, usedSkillCost, applyEffect);
   next = induceAdditionalHearts(next, card, usedSkillCost, applyEffect);
   return { ...next, currentSkillType: previousSkillType };
