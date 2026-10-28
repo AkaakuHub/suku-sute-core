@@ -102,29 +102,24 @@ export function advanceLiveAutomaticGaugeRuntime(
       addVoltage: control.addVoltage,
     },
   );
-  const mental = control.genesisSkillActive
-    ? {
-        state: state.mental,
-        gaugeDisplayValue: state.mental.currentMental,
-      }
-    : advanceLiveMentalGauge(
-        state.mental,
-        {
-          deltaTimeSeconds,
-          decreaseIntervalSeconds: Math.fround(
-            input.mentalDecreaseIntervalSeconds * control.mentalDecreaseIntervalFactor,
-          ),
-          recoveryMentalDownTimeSeconds: input.mentalRecoveryTimeSeconds,
-          recoveryValueFromMentalDown: input.mentalRecoveryValue,
-          mentalInfinity: false,
-          disableMentalDown: control.disableMentalDown,
-        },
-        {
-          setMental: (requestedMental) =>
-            Math.min(Math.max(requestedMental, 0), input.maximumMental),
-          subMentalOne: control.subMentalOne,
-        },
-      );
+  const mental = advanceLiveMentalGauge(
+    state.mental,
+    {
+      deltaTimeSeconds,
+      decreaseIntervalSeconds: Math.fround(
+        input.mentalDecreaseIntervalSeconds * control.mentalDecreaseIntervalFactor,
+      ),
+      recoveryMentalDownTimeSeconds: input.mentalRecoveryTimeSeconds,
+      recoveryValueFromMentalDown: input.mentalRecoveryValue,
+      mentalInfinity: false,
+      disableMentalDown: control.disableMentalDown,
+      genesisSkillActive: control.genesisSkillActive,
+    },
+    {
+      setMental: (requestedMental) => Math.min(Math.max(requestedMental, 0), input.maximumMental),
+      subMentalOne: control.subMentalOne,
+    },
+  );
   return {
     state: {
       ap: ap.state,

@@ -70,7 +70,7 @@ test('Voltage停止要求中は自動増加値とtimerを更新しない', () =>
   expect(frame.voltage.gaugeDisplayValue).toBeNull();
 });
 
-test('Genesis有効中はMentalのtimer、値、Down状態を更新しない', () => {
+test('GenesisとDisableMentalDownの併用中はMentalのtimer、値、Down状態を更新しない', () => {
   const state = {
     ...createLiveAutomaticGaugeRuntimeState(input),
     mental: {
@@ -83,6 +83,7 @@ test('Genesis有効中はMentalのtimer、値、Down状態を更新しない', (
   const frame = advanceLiveAutomaticGaugeRuntime(state, 2, input, {
     ...defaultControl,
     genesisSkillActive: true,
+    disableMentalDown: true,
   });
 
   expect(frame.state.mental).toEqual(state.mental);

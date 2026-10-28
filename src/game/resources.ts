@@ -84,10 +84,12 @@ export function changeResource(
     if (amount === 0n) return state;
   }
   if (resource === 'mental' && amount < 0n) {
-    const shielded = breakMentalShields(state, Number(-amount));
-    state = shielded.state;
-    amount = -BigInt(Math.trunc(shielded.remainingDamage));
-    if (amount === 0n) return state;
+    if (source === 'skill') {
+      const shielded = breakMentalShields(state, Number(-amount));
+      state = shielded.state;
+      amount = -BigInt(Math.trunc(shielded.remainingDamage));
+      if (amount === 0n) return state;
+    }
     if (
       state.gaugeInfinities.some(
         (infinity) => infinity.gauge === 'mental' && !infinity.suspended,

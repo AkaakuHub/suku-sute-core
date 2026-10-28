@@ -1,5 +1,6 @@
 import { calculateLiveMentalDownRecovery } from '../runtime/live/gaugeTiming.ts';
 import type { GameState } from './model.ts';
+import { advanceLiveMentalGauge } from '../runtime/live/mentalGauge.ts';
 import { advanceLiveApGauge } from '../runtime/live/apGauge.ts';
 import { changeResource, decreaseMentalNaturally } from './resources.ts';
 import { mentalDecreaseInterval } from './live/mentalBarriers.ts';
@@ -54,69 +55,45 @@ export function advanceAutomaticGauges(
       applyEffect,
     );
   }
-  if (next.genesis.effects.length > 0 && (next.mentalProtected || next.sectionMentalProtected))
-    return next;
-  let mentalTimerSeconds = Math.fround(Math.fround(next.mentalTimerSeconds) + Math.fround(dt));
-  const mentalDown =
-    !(
-      next.mentalProtected ||
-      next.sectionMentalProtected ||
-      next.disableMentalDownEffects.length > 0
-    ) &&
-    (next.mentalDown || next.currentMental <= 0);
-  if (mentalDown) {
-    const recovery = calculateLiveMentalDownRecovery(next.maximumMental, durationSeconds(next));
-    const currentMental = Math.min(
-      next.maximumMental,
-      Math.fround(
-        next.currentMental +
-          Math.fround(
-            Math.fround(recovery.recoveryMental * Math.fround(dt)) / recovery.recoveryTimeSeconds,
-          ),
+  const recovery = calculateLiveMentalDownRecovery(next.maximumMental, durationSeconds(next));
+  const mental = advanceLiveMentalGauge(
+    {
+      currentMental: next.currentMental,
+      timerSeconds: next.mentalTimerSeconds,
+      mentalDown: next.mentalDown,
+    },
+    {
+      deltaTimeSeconds: dt,
+      decreaseIntervalSeconds: mentalDecreaseInterval(next, stage.mentalDecreaseIntervalSeconds),
+      recoveryMentalDownTimeSeconds: recovery.recoveryTimeSeconds,
+      recoveryValueFromMentalDown: recovery.recoveryMental,
+      mentalInfinity: next.gaugeInfinities.some(
+        (infinity) => infinity.gauge === 'mental' && !infinity.suspended,
       ),
-    );
-    const recovered = {
-      ...next,
-      mentalTimerSeconds,
-      currentMental,
-      mentalDown: currentMental < recovery.recoveryMental,
-    };
-    const result =
-      currentMental !== next.currentMental
-        ? induceMentalHearts(recovered, Math.trunc(currentMental))
-        : recovered;
-    return !state.mentalDown ? registerMentalDownMission(result) : result;
-  }
-  const mentalInterval = mentalDecreaseInterval(next, stage.mentalDecreaseIntervalSeconds);
-  if (mentalInterval <= 0) {
-    if (next.genesis.effects.length === 0) {
-      next = changeResource(next, 'mental', -BigInt(Math.trunc(next.currentMental)), 'natural');
-      if (
-        next.currentMental <= 0 &&
-        !(
-          next.mentalProtected ||
-          next.sectionMentalProtected ||
-          next.disableMentalDownEffects.length > 0
-        )
-      ) {
-        next = { ...next, mentalDown: true };
-        mentalTimerSeconds = 0;
-      }
-    }
-  }
-  while (0 < mentalInterval && mentalInterval < mentalTimerSeconds) {
-    mentalTimerSeconds = Math.fround(mentalTimerSeconds - mentalInterval);
-    next = decreaseMentalNaturally(next);
-  }
-  const result: GameState = {
-    ...next,
-    mentalTimerSeconds,
-    mentalDown:
-      !(
+      disableMentalDown:
         next.mentalProtected ||
         next.sectionMentalProtected ||
-        next.disableMentalDownEffects.length > 0
-      ) && next.currentMental <= 0,
+        next.disableMentalDownEffects.length > 0,
+      genesisSkillActive: next.genesis.effects.length > 0,
+    },
+    {
+      setMental: (requestedMental) => {
+        const currentMental = Math.min(next.maximumMental, Math.max(0, requestedMental));
+        if (currentMental !== next.currentMental)
+          next = induceMentalHearts({ ...next, currentMental }, Math.trunc(currentMental));
+        return currentMental;
+      },
+      subMentalOne: (currentMental) => {
+        next = decreaseMentalNaturally({ ...next, currentMental });
+        return next.currentMental;
+      },
+    },
+  );
+  const result: GameState = {
+    ...next,
+    currentMental: mental.state.currentMental,
+    mentalTimerSeconds: mental.state.timerSeconds,
+    mentalDown: mental.state.mentalDown,
   };
   return !state.mentalDown && result.mentalDown ? registerMentalDownMission(result) : result;
 }

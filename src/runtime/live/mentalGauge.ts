@@ -40,11 +40,15 @@ export function advanceLiveMentalGauge(
     recoveryValueFromMentalDown: number;
     mentalInfinity: boolean;
     disableMentalDown: boolean;
+    genesisSkillActive: boolean;
   }>,
   ports: LiveMentalGaugePorts,
 ): LiveMentalGaugeFrame {
   validateState(state);
   validateInput(input);
+
+  if (input.genesisSkillActive && input.disableMentalDown)
+    return { state, gaugeDisplayValue: state.currentMental };
 
   let currentMental = Math.fround(state.currentMental);
   let mentalDown = state.mentalDown;
@@ -55,27 +59,33 @@ export function advanceLiveMentalGauge(
   if (!mentalDown) {
     const decreaseIntervalSeconds = Math.fround(input.decreaseIntervalSeconds);
     if (decreaseIntervalSeconds <= 0) {
-      currentMental = applyMentalResult(ports.setMental(0));
+      currentMental =
+        input.genesisSkillActive || input.mentalInfinity
+          ? currentMental
+          : applyMentalResult(ports.setMental(0));
     } else {
       while (decreaseIntervalSeconds < timerSeconds) {
         timerSeconds = Math.fround(timerSeconds - decreaseIntervalSeconds);
-        currentMental = applyMentalResult(ports.subMentalOne(currentMental));
+        const decreased = applyMentalResult(ports.subMentalOne(currentMental));
+        if (!input.genesisSkillActive) currentMental = decreased;
+        enterMentalDown();
       }
     }
-    if (currentMental <= 0 && !input.disableMentalDown) {
-      mentalDown = true;
-    }
+    enterMentalDown();
   } else {
     const recoveredMental = Math.fround(
       currentMental +
         Math.fround(
-          (Math.fround(input.recoveryValueFromMentalDown) * Math.fround(input.deltaTimeSeconds)) /
-            Math.fround(input.recoveryMentalDownTimeSeconds),
+          Math.fround(
+            Math.fround(input.recoveryValueFromMentalDown) * Math.fround(input.deltaTimeSeconds),
+          ) / Math.fround(input.recoveryMentalDownTimeSeconds),
         ),
     );
-    currentMental = applyMentalResult(ports.setMental(recoveredMental));
+    if (!input.genesisSkillActive)
+      currentMental = applyMentalResult(ports.setMental(recoveredMental));
     if (Math.fround(input.recoveryValueFromMentalDown) <= currentMental) {
       mentalDown = false;
+      timerSeconds = 0;
     }
   }
 
@@ -84,6 +94,18 @@ export function advanceLiveMentalGauge(
     state: nextState,
     gaugeDisplayValue: input.mentalInfinity ? null : currentMental,
   };
+
+  function enterMentalDown(): void {
+    if (
+      currentMental <= 0 &&
+      !mentalDown &&
+      !input.disableMentalDown &&
+      !input.genesisSkillActive
+    ) {
+      mentalDown = true;
+      timerSeconds = 0;
+    }
+  }
 }
 
 function applyMentalResult(value: number): number {

@@ -1,9 +1,9 @@
+import { applyLiveMentalBarrierDamage } from '../../src/runtime/skills/mentalBarrierDamage.ts';
 import { expect, test } from 'vite-plus/test';
 import {
   activateLiveMentalBarrier,
   activateLiveMentalBarrierAdditionalBuff,
   advanceLiveMentalBarrierState,
-  applyLiveMentalBarrierDamage,
   createLiveMentalBarrierState,
 } from '../../src/runtime/skills/mentalBarrier.ts';
 import type { LiveSkillEffect } from '../../src/runtime/skills/skillTypes.ts';
