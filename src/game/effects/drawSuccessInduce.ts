@@ -12,8 +12,7 @@ export function activateDrawSuccessInduce(
   apply: EffectApplier,
 ): GameState {
   if (!card) return state;
-  const handCardStats =
-    state.activation?.handCardStatsAtUse[card.id] ?? state.handCardStats[card.id];
+  const handCardStats = state.handCardStats[card.id];
   if (!handCardStats) return state;
   const condition = isLiveDrawSuccessConditionSatisfied(
     effect,

@@ -1,5 +1,9 @@
 import type { Card } from '../cards/cardTypes.ts';
-import { activateHandPermanentEffects, disposeHandEffects } from '../cards/handEffects.ts';
+import {
+  activateHandPermanentEffects,
+  disposeHandEffects,
+  removeHandCardEffects,
+} from '../cards/handEffects.ts';
 import { fillHandToCount } from '../cards/drawing.ts';
 import type { GameState } from '../model.ts';
 import type { TokenDeckSplit, TokenDeckZones } from '../tokenDeckSplitTypes.ts';
@@ -55,7 +59,7 @@ export function activateTokenDeckSplit(
       !suppressExpiration && effect.duration.kind === 'sections' ? effect.duration.value : null,
     deactivationKey: effect.deactivationKey ?? null,
   };
-  let next = disposeHandEffects(
+  let next = removeHandCardEffects(
     state,
     state.hand.filter((id) => selected.has(id)),
   );
@@ -135,7 +139,7 @@ function mergeTokenDeck(state: GameState, applyEffect: EffectApplier): GameState
       ...sub.discard.filter((id) => !activeSplit.main.discard.includes(id)),
     ],
   };
-  return { ...withZones(mainState, merged), tokenDeckSplit: null };
+  return { ...withZones(removeHandCardEffects(mainState, sub.hand), merged), tokenDeckSplit: null };
 }
 
 export function deactivateTokenDeck(

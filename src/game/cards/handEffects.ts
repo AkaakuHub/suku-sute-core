@@ -116,3 +116,13 @@ export function disposeHandEffects(state: GameState, ids: readonly string[]): Ga
     ),
   };
 }
+
+export function removeHandCardEffects(state: GameState, ids: readonly string[]): GameState {
+  const next = disposeHandEffects(state, ids);
+  return {
+    ...next,
+    handCardStats: Object.fromEntries(
+      Object.entries(next.handCardStats).filter(([id]) => !ids.includes(id)),
+    ),
+  };
+}

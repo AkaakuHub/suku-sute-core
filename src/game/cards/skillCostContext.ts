@@ -6,8 +6,7 @@ export function skillCostContext(state: GameState, source: Card): LiveChangeSkil
   return {
     ...conditionContext(state),
     useCount: state.cardUseCounts[source.id] ?? 0,
-    handCardStats:
-      state.handCardStats[source.id] ?? state.activation?.handCardStatsAtUse[source.id] ?? null,
+    handCardStats: state.handCardStats[source.id] ?? null,
     handCards: state.hand.map((id) => {
       const card = state.deck.find((candidate) => candidate.id === id);
       if (!card) throw new Error('手札のカードがありません。');

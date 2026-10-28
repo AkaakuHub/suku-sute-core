@@ -164,7 +164,6 @@ function useCard(state: GameState, index: number): GameState {
     activation: {
       sourceId: source.id,
       usedCards: [],
-      handCardStatsAtUse: {},
       allHand: source.effects.some((effect) => effect.kind === 'use-hand'),
       skipSourceRefill: false,
       recoverDiscard: false,
@@ -186,9 +185,6 @@ function activateCard(
   if (!state.activation) throw new Error('カードの使用処理がありません。');
   const previousSkillType = state.currentSkillType;
   const usedSkillCost = cardCost(state, card, allHand);
-  const handCardStatsAtUse = { ...state.activation.handCardStatsAtUse };
-  const handCardStats = state.handCardStats[card.id];
-  if (handCardStats) handCardStatsAtUse[card.id] = handCardStats;
   let next: GameState = {
     ...state,
     currentSkillType: 2,
@@ -198,7 +194,6 @@ function activateCard(
     activation: {
       ...state.activation,
       usedCards: [...state.activation.usedCards, card.id],
-      handCardStatsAtUse,
     },
     lastActionTick: state.tick,
     lastPerformer: card.performer,
@@ -268,9 +263,6 @@ function retireCard(state: GameState, card: Card): GameState {
   return {
     ...state,
     hand: state.hand.filter((id) => id !== card.id),
-    handCardStats: Object.fromEntries(
-      Object.entries(state.handCardStats).filter(([id]) => id !== card.id),
-    ),
     drawPile: state.drawPile.filter((id) => id !== card.id),
     discard: state.discard.filter((id) => id !== card.id),
     relayUsed: state.relayUsed.filter((id) => id !== card.id),

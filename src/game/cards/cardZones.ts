@@ -1,5 +1,5 @@
 import type { GameState } from '../model.ts';
-import { disposeHandEffects } from './handEffects.ts';
+import { removeHandCardEffects } from './handEffects.ts';
 import { flushDeckActions } from './boardActions.ts';
 import { fillHand, handCapacity, removeRandomHandCards } from './drawing.ts';
 import { deactivateInducedEffects } from '../effects/effectInduce.ts';
@@ -23,7 +23,7 @@ export function finishCardActivation(state: GameState): GameState {
   ]);
   const handStatsCompleted = (activation.pendingHandStatsDeactivationKeys ?? []).reduce(
     (current, key) => deactivateInducedEffects(current, key),
-    disposeHandEffects(state, children),
+    removeHandCardEffects(state, activation.usedCards),
   );
   let next = excludeCards(
     handStatsCompleted,
@@ -75,7 +75,6 @@ export function finishCardActivation(state: GameState): GameState {
   } else {
     next = fillHand(handReady);
   }
-  next = disposeHandEffects(next, [source.id]);
   next = proxyIds.has(source.id)
     ? next
     : excludedIds.has(source.id)

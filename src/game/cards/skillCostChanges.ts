@@ -1,7 +1,5 @@
-import { createLiveHandCardStats } from '../../runtime/cards/handCardStats.ts';
 import { calculateLiveChangeSkillCostValue } from '../../runtime/skills/changeSkillCostValue.ts';
 import { liveChangeSkillCostConditionValue } from '../../runtime/skills/changeSkillCostCondition.ts';
-import { sectionAt } from '../projection.ts';
 import { skillCostContext } from './skillCostContext.ts';
 import { applyAction52SkillBoostForCard } from '../effects/action52SkillBoost.ts';
 import type { Card, GameState } from '../model.ts';
@@ -63,13 +61,4 @@ export function skillCostDelta(state: GameState, card: Card): number {
       const value = liveChangeSkillCostConditionValue(change, skillCostContext(state, card));
       return total + calculateLiveChangeSkillCostValue(change, value);
     }, 0);
-}
-
-export function initializeHandCardStats(state: GameState, ids: readonly string[]): GameState {
-  const sectionIndex = state.track.sections.indexOf(sectionAt(state));
-  const handCardStats = { ...state.handCardStats };
-  for (const id of ids) {
-    handCardStats[id] = createLiveHandCardStats(sectionIndex);
-  }
-  return { ...state, handCardStats };
 }

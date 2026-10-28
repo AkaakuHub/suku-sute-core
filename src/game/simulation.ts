@@ -24,7 +24,7 @@ import { advanceMentalHeartInducers } from './effects/mentalHeartInduce.ts';
 import { advanceGaugeRegenerations, expireGaugeRegenerations } from './live/gaugeRegeneration.ts';
 import { expireMentalBarriers, removeExhaustedMentalBarriers } from './live/mentalBarriers.ts';
 import { advanceHeartBoosts } from './live/heartBoosts.ts';
-import { initializeHandCardStats } from './cards/skillCostChanges.ts';
+import { initializeHandCardStats } from './cards/handCardStats.ts';
 import { initializeParameterValueFactors } from './parameters/parameterValueChange.ts';
 import { advanceProxySkillPeriods } from './effects/proxySkill.ts';
 import { applyEffect } from './effects.ts';

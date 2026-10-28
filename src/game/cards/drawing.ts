@@ -1,10 +1,10 @@
 import { createRangeRandom } from '../random.ts';
 import { drawCandidate, drawWeight } from './drawLottery.ts';
 import { consumeSearch } from './search.ts';
-import { activateHandPermanentEffects, disposeHandEffects } from './handEffects.ts';
+import { activateHandPermanentEffects, removeHandCardEffects } from './handEffects.ts';
 import { applyDrawAbility } from './drawAbilities.ts';
 import type { Card, GameState, HandShuffle } from '../model.ts';
-import { initializeHandCardStats } from './skillCostChanges.ts';
+import { initializeHandCardStats } from './handCardStats.ts';
 import { activateModeAbilityEffects } from './modeAbility.ts';
 import { applyEffect } from '../effects.ts';
 import { applyAbilityEffects } from './useAbilities.ts';
@@ -50,12 +50,9 @@ export function removeRandomHandCards(state: GameState, count: number): GameStat
     removed.push(id);
     next = { ...next, randomSeed: random.seed, hand: next.hand.filter((cardId) => cardId !== id) };
   }
-  next = disposeHandEffects(next, removed);
+  next = removeHandCardEffects(next, removed);
   return {
     ...next,
-    handCardStats: Object.fromEntries(
-      Object.entries(next.handCardStats).filter(([id]) => !removed.includes(id)),
-    ),
     discard: [...next.discard, ...removed],
     handHeartCollectCounts: Object.fromEntries(
       Object.entries(next.handHeartCollectCounts).filter(([id]) => !removed.includes(id)),
@@ -134,11 +131,8 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
         Number(Boolean(next.deck.find((card) => card.id === left)?.passive)),
     );
     next = {
-      ...disposeHandEffects(next, ordered.slice(maximum)),
+      ...removeHandCardEffects(next, ordered.slice(maximum)),
       hand: ordered.slice(0, maximum),
-      handCardStats: Object.fromEntries(
-        Object.entries(next.handCardStats).filter(([id]) => ordered.slice(0, maximum).includes(id)),
-      ),
       discard: [...next.discard, ...ordered.slice(maximum)],
     };
   }
@@ -146,14 +140,13 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
 }
 
 export function shuffleHand(state: GameState, options: HandShuffle): GameState {
-  const withoutHandEffects = disposeHandEffects(state, state.hand);
+  const withoutHandEffects = removeHandCardEffects(state, state.hand);
   const recovered = options.recoverDiscard ? state.discard : [];
   const returned = options.destination === 'draw' ? state.hand : [];
   const returnedIds = [...state.drawPile, ...recovered, ...returned];
   return {
     ...withoutHandEffects,
     hand: [],
-    handCardStats: {},
     drawPile: state.deck.filter((card) => returnedIds.includes(card.id)).map((card) => card.id),
     discard: [
       ...(options.recoverDiscard ? [] : state.discard),
