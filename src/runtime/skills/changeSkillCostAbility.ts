@@ -14,6 +14,7 @@ export type LiveChangeSkillCostCard = Readonly<{
   cardInstanceId: number;
   charactersId: number;
   skillIcon: number;
+  skillMainEffect: number;
   styleType: number;
   unitIds: readonly number[];
 }>;
@@ -114,7 +115,7 @@ function resolveConditionValue(
     case 7:
       return count(context.deckCards, (card) => card.skillIcon === effect.conditionId);
     case 8:
-      return count(handCards, (card) => card.skillIcon === effect.conditionId);
+      return count(handCards, (card) => card.skillMainEffect === effect.conditionId);
     case 9:
       return context.loveUpEffect;
     case 10:
