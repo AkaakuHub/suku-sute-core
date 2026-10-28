@@ -1,3 +1,4 @@
+import type { LiveApIncreaseSpeedState } from '../runtime/skills/apIncreaseSpeed.ts';
 import type { LiveDeckHandsState } from '../runtime/cards/liveHand.ts';
 import type { LiveDeckDrawContextState } from '../runtime/cards/cardDraw.ts';
 import type { LiveTokenCardDeckState } from '../runtime/cards/tokenCardDeck.ts';
@@ -200,13 +201,7 @@ export type GameState = Readonly<{
   maximumMental: number;
   fixedParameterExtends: readonly FixedParameterExtend[];
   nextFixedParameterExtendId: number;
-  apTimeEffects: readonly Readonly<{
-    calculation: 'add' | 'multiply';
-    value: number;
-    remainingSeconds: number | null;
-    remainingSections: bigint | null;
-    deactivationKey: string | null;
-  }>[];
+  apIncreaseSpeedEffects: LiveApIncreaseSpeedState;
   voltageConversions: readonly VoltageConversion[];
   action52Buffs: readonly Action52Buff[];
   mentalHeartInducers: readonly MentalHeartInducer[];

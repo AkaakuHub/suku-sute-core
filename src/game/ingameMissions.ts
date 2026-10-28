@@ -70,8 +70,8 @@ export function missionActionEffect(
   if (actionType === null) return state;
   const handCountAction = state.deckActions.queue[before.deckActions.queue.length];
   const apSpeedEffect =
-    state.apTimeEffects.length > before.apTimeEffects.length
-      ? state.apTimeEffects.at(-1)
+    state.apIncreaseSpeedEffects.length > before.apIncreaseSpeedEffects.length
+      ? state.apIncreaseSpeedEffects.at(-1)
       : undefined;
   const amount =
     actionType === 1
@@ -105,9 +105,7 @@ export function missionActionEffect(
                     : effect.kind === 'ap-speed-change'
                       ? apSpeedEffect
                         ? observeLiveApIncreaseSpeedEffect(
-                            apSpeedEffect.calculation === 'multiply'
-                              ? { kind: 'multiply', factor: apSpeedEffect.value }
-                              : { kind: 'add', milliseconds: apSpeedEffect.value },
+                            apSpeedEffect.calculation,
                             apIncreaseIntervalMilliseconds(before),
                           ).effectAmount
                         : 0

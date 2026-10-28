@@ -143,3 +143,52 @@ test('AP間隔は基準の10%を下限とし、ミリ秒単位で丸める', () 
     ]),
   ).toBeCloseTo(1.175);
 });
+
+test('AP速度の時間・区間・終了期限は同じ状態で進み識別情報を保持する', () => {
+  const state = [
+    {
+      effectId: 'timed',
+      deactivationKey: 'hand',
+      calculation: { kind: 'multiply', factor: 0.8 },
+      duration: { kind: 'milliseconds', remainingSeconds: 0.5 },
+    },
+    {
+      effectId: 'section',
+      deactivationKey: null,
+      calculation: { kind: 'add', milliseconds: 100 },
+      duration: { kind: 'sections', remainingChanges: 2n },
+    },
+    {
+      effectId: null,
+      deactivationKey: 'passive',
+      calculation: { kind: 'multiply', factor: 0.9 },
+      duration: { kind: 'full-end' },
+    },
+  ] as const;
+  const timed = advanceLiveApIncreaseSpeedState(state, {
+    deltaTimeSeconds: 0.5,
+    sectionChangeCount: 0,
+    musicEnded: false,
+  });
+  expect(timed).toEqual(state.slice(1));
+  const section = advanceLiveApIncreaseSpeedState(timed, {
+    deltaTimeSeconds: 0,
+    sectionChangeCount: 1,
+    musicEnded: false,
+  });
+  expect(section[0]).toEqual({ ...state[1], duration: { kind: 'sections', remainingChanges: 1n } });
+  expect(section[1]).toEqual(state[2]);
+  const next = advanceLiveApIncreaseSpeedState(section, {
+    deltaTimeSeconds: 0,
+    sectionChangeCount: 1,
+    musicEnded: false,
+  });
+  expect(next).toEqual([state[2]]);
+  expect(
+    advanceLiveApIncreaseSpeedState(next, {
+      deltaTimeSeconds: 0,
+      sectionChangeCount: 0,
+      musicEnded: true,
+    }),
+  ).toEqual([]);
+});

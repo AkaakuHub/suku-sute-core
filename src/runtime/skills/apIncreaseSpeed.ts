@@ -19,7 +19,8 @@ const skillRate = 10_000;
 const factorRate = 100;
 
 export type LiveApIncreaseSpeedEffect = Readonly<{
-  effectId: string;
+  effectId: string | null;
+  deactivationKey: string | null;
   calculation:
     | Readonly<{ kind: 'add'; milliseconds: number }>
     | Readonly<{ kind: 'multiply'; factor: number }>;
@@ -104,6 +105,7 @@ export function activateLiveApIncreaseSpeed(
       ...state,
       {
         effectId: effect.id,
+        deactivationKey: null,
         calculation,
         duration: createLiveSkillEffectDuration(
           requireValue(details, 'CHANGE_AP_INCREASE_SPEED_DISPLAY_TIME_TYPE'),

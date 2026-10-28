@@ -118,7 +118,7 @@ export function createGame(
     activation: null,
     randomSeed: seed,
     ...createInitialEffectState(track),
-    apTimeEffects: [],
+    apIncreaseSpeedEffects: [],
     voltageConversions: [],
     action52Buffs: [],
     mentalHeartInducers: [],

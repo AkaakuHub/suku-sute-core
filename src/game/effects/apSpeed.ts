@@ -1,6 +1,8 @@
+import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
 import {
   resolveLiveApIncreaseIntervalSeconds,
   resolveLiveApIncreaseIntervalMilliseconds,
+  advanceLiveApIncreaseSpeedState,
 } from '../../runtime/skills/apIncreaseSpeed.ts';
 import { rescaleLiveGaugeTimer } from '../../runtime/live/gaugeTiming.ts';
 import { observeLiveApIncreaseSpeedEffect } from '../../runtime/skills/apIncreaseSpeedObservation.ts';
@@ -17,24 +19,15 @@ type ApSpeedChange = Extract<Effect, { kind: 'ap-speed-change' }>;
 export function apIncreaseIntervalSeconds(state: GameState): number {
   return resolveLiveApIncreaseIntervalSeconds(
     state.track.stage.apIncreaseIntervalSeconds,
-    apSpeedCalculations(state),
+    state.apIncreaseSpeedEffects,
   );
 }
 
 export function apIncreaseIntervalMilliseconds(state: GameState): number {
   return resolveLiveApIncreaseIntervalMilliseconds(
     state.track.stage.apIncreaseIntervalSeconds,
-    apSpeedCalculations(state),
+    state.apIncreaseSpeedEffects,
   );
-}
-
-function apSpeedCalculations(state: GameState) {
-  return state.apTimeEffects.map((effect) => ({
-    calculation:
-      effect.calculation === 'multiply'
-        ? { kind: 'multiply' as const, factor: effect.value }
-        : { kind: 'add' as const, milliseconds: effect.value },
-  }));
 }
 
 export function applyApSpeedChange(
@@ -99,17 +92,21 @@ export function applyApSpeedChange(
       : absorbSkillEffect(currentState, 21, BigInt(observation.absorptionAmount));
   if (absorption?.absorbed) return absorption.state;
   const suppressDuration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
-  const entry: GameState['apTimeEffects'][number] = {
-    calculation,
-    value,
-    remainingSeconds:
-      suppressDuration || displayTimeType !== 1
-        ? null
-        : Math.fround(int64ToFloat32(effect.displayTime) / 1000),
-    remainingSections: suppressDuration || displayTimeType !== 2 ? null : effect.displayTime,
+  const entry: GameState['apIncreaseSpeedEffects'][number] = {
+    effectId: effect.skillEffectId === undefined ? null : String(effect.skillEffectId),
+    calculation:
+      calculation === 'multiply'
+        ? { kind: 'multiply', factor: value }
+        : { kind: 'add', milliseconds: value },
+    duration: suppressDuration
+      ? { kind: 'full-end' }
+      : createLiveSkillEffectDuration(displayTimeType, effect.displayTime, 'AP increase speed'),
     deactivationKey: effect.deactivationKey ?? null,
   };
-  return updateApTimeEffects(currentState, [...currentState.apTimeEffects, entry]);
+  return updateApIncreaseSpeedEffects(currentState, [
+    ...currentState.apIncreaseSpeedEffects,
+    entry,
+  ]);
 }
 
 export function applyApSpeedPercent(
@@ -117,32 +114,36 @@ export function applyApSpeedPercent(
   percent: number,
   duration: 'stage' | 'section',
 ): GameState {
-  const entry: GameState['apTimeEffects'][number] = {
-    calculation: 'multiply',
-    value: Math.fround(1 - Math.fround(percent / 100)),
-    remainingSeconds: null,
-    remainingSections: duration === 'section' ? 1n : null,
+  const entry: GameState['apIncreaseSpeedEffects'][number] = {
+    effectId: null,
+    calculation: { kind: 'multiply', factor: Math.fround(1 - Math.fround(percent / 100)) },
+    duration:
+      duration === 'section' ? { kind: 'sections', remainingChanges: 1n } : { kind: 'full-end' },
     deactivationKey: null,
   };
-  return updateApTimeEffects(state, [...state.apTimeEffects, entry]);
+  return updateApIncreaseSpeedEffects(state, [...state.apIncreaseSpeedEffects, entry]);
 }
 
 export function advanceApSpeedEffects(state: GameState, elapsedSeconds: number): GameState {
-  const effects = state.apTimeEffects.flatMap((effect) => {
-    if (effect.remainingSeconds === null) return [effect];
-    const remainingSeconds = Math.fround(effect.remainingSeconds - Math.fround(elapsedSeconds));
-    return remainingSeconds > 0 ? [{ ...effect, remainingSeconds }] : [];
-  });
-  return updateApTimeEffects(state, effects);
+  return updateApIncreaseSpeedEffects(
+    state,
+    advanceLiveApIncreaseSpeedState(state.apIncreaseSpeedEffects, {
+      deltaTimeSeconds: elapsedSeconds,
+      sectionChangeCount: 0,
+      musicEnded: false,
+    }),
+  );
 }
 
 export function expireApSpeedSections(state: GameState): GameState {
-  const effects = state.apTimeEffects.flatMap((effect) => {
-    if (effect.remainingSections === null) return [effect];
-    const remainingSections = effect.remainingSections - 1n;
-    return remainingSections > 0n ? [{ ...effect, remainingSections }] : [];
-  });
-  return updateApTimeEffects(state, effects);
+  return updateApIncreaseSpeedEffects(
+    state,
+    advanceLiveApIncreaseSpeedState(state.apIncreaseSpeedEffects, {
+      deltaTimeSeconds: 0,
+      sectionChangeCount: 1,
+      musicEnded: false,
+    }),
+  );
 }
 
 function int32(value: bigint | number): number {
@@ -152,19 +153,19 @@ function int32(value: bigint | number): number {
 }
 
 export function deactivateApSpeedEffects(state: GameState, deactivationKey: string): GameState {
-  return updateApTimeEffects(
+  return updateApIncreaseSpeedEffects(
     state,
-    state.apTimeEffects.filter((effect) => effect.deactivationKey !== deactivationKey),
+    state.apIncreaseSpeedEffects.filter((effect) => effect.deactivationKey !== deactivationKey),
   );
 }
 
-function updateApTimeEffects(
+function updateApIncreaseSpeedEffects(
   state: GameState,
-  apTimeEffects: GameState['apTimeEffects'],
+  apIncreaseSpeedEffects: GameState['apIncreaseSpeedEffects'],
 ): GameState {
-  if (apTimeEffects === state.apTimeEffects) return state;
+  if (apIncreaseSpeedEffects === state.apIncreaseSpeedEffects) return state;
   const before = apIncreaseIntervalSeconds(state);
-  const candidate = { ...state, apTimeEffects };
+  const candidate = { ...state, apIncreaseSpeedEffects };
   const after = apIncreaseIntervalSeconds(candidate);
   return {
     ...candidate,
