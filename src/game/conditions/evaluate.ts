@@ -30,6 +30,8 @@ export function evaluateCondition(condition: GameCondition, context: ConditionCo
       return context.partNumber === condition.number;
     case 'cards':
       return context.cardCounts[condition.zone] >= condition.minimum;
+    case 'card-count-parity':
+      return context.cardCounts[condition.zone] % 2 === (condition.parity === 'even' ? 0 : 1);
     case 'token-series':
       return (
         context.tokenSeries.filter((series) => condition.series.some((id) => series.includes(id)))

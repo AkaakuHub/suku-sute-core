@@ -11,6 +11,11 @@ export type GameCondition =
   | Readonly<{ kind: 'weather'; minimum: number }>
   | Readonly<{ kind: 'part-from' | 'part'; number: number }>
   | Readonly<{ kind: 'cards'; zone: 'all' | 'draw' | 'discard' | 'excluded'; minimum: number }>
+  | Readonly<{
+      kind: 'card-count-parity';
+      zone: 'all' | 'draw' | 'discard' | 'excluded';
+      parity: 'even' | 'odd';
+    }>
   | Readonly<{ kind: 'token-series'; series: readonly number[]; minimum: number }>
   | Readonly<{ kind: 'support-level'; members: readonly number[]; minimum: number }>
   | Readonly<{ kind: 'natural-stars'; minimum: number }>
