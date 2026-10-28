@@ -1,5 +1,6 @@
+import { applyApRecovery } from './effects/apRecovery.ts';
 import { enqueueHandShuffle } from './cards/boardActions.ts';
-import { changeResource, setVoltageValue } from './resources.ts';
+import { setVoltageValue } from './resources.ts';
 import { evaluateCondition } from './conditions/evaluate.ts';
 import { conditionContext } from './conditions/gameContext.ts';
 import { addModeReaction, changeMode } from './effects/modeChange.ts';
@@ -225,11 +226,12 @@ function applyEffectInternal(
         skillUseDestinations: { ...state.skillUseDestinations, [card.id]: effect.destination },
       };
     }
-    case 'ap': {
-      const base = Math.fround(value(effect.amount) * effectPower);
-      const boosted = applyAction52SkillBoostForCard(state, card, base);
-      return changeResource(boosted.state, 'ap', BigInt(Math.trunc(boosted.value)));
-    }
+    case 'ap':
+      return applyApRecovery(state, effect, card, {
+        addValue,
+        multiplyFactor: multiplier,
+        effectPower,
+      });
     case 'ap-limit':
       return changeFixedParameterBase(state, 'ap', effect.amount);
     case 'reset-special':

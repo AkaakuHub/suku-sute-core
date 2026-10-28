@@ -1,9 +1,12 @@
 import {
-  calculateLiveSkillEffectValue,
   type LiveSkillEffectDetail,
   requireLiveSkillEffectDetails,
   requireLiveSkillEffectDetailValue,
 } from './skillEffectValue.ts';
+import { calculateLiveSkillMoodCorrection } from '../live/skillMood.ts';
+import { calculateLiveApRecoveryValue } from '../live/apRecovery.ts';
+import { int64ToFloat32 } from '../numeric.ts';
+import type { LiveSkillEffectPower } from './skillEffectPower.ts';
 
 export function calculateLiveRecoverApSkillValue(
   effect: Readonly<{
@@ -11,7 +14,11 @@ export function calculateLiveRecoverApSkillValue(
     actionType: number;
     details: readonly LiveSkillEffectDetail[];
   }>,
-  currentMoodValue: number,
+  input: Readonly<{
+    currentMoodValue: number;
+    power: LiveSkillEffectPower;
+    applySkillBoost: (value: number) => number;
+  }>,
 ): number {
   if (!/^[1-9]\d*$/.test(effect.id) || effect.actionType !== 14) {
     throw new Error('Live AP recovery skill effect contract differs');
@@ -25,11 +32,15 @@ export function calculateLiveRecoverApSkillValue(
   if (bonusMood === undefined) {
     throw new Error('Live AP recovery bonus mood detail is absent');
   }
-  return Math.trunc(
-    calculateLiveSkillEffectValue(
-      requireLiveSkillEffectDetailValue(details, 'RECOVER_AP_NUM_BASE', 'AP recovery'),
-      bonusMood,
-      currentMoodValue,
-    ),
+  const base = Math.fround(
+    int64ToFloat32(
+      BigInt(requireLiveSkillEffectDetailValue(details, 'RECOVER_AP_NUM_BASE', 'AP recovery')),
+    ) / 10000,
   );
+  const mood = calculateLiveSkillMoodCorrection(
+    bonusMood.targetMood,
+    input.currentMoodValue,
+    Math.fround(int64ToFloat32(BigInt(bonusMood.effectValue)) / 10000),
+  );
+  return calculateLiveApRecoveryValue(Math.fround(base + mood), input.power, input.applySkillBoost);
 }
