@@ -1,5 +1,6 @@
 import {
   activateLiveApIncreaseSpeed,
+  deactivateLiveApIncreaseSpeedEffects,
   resolveLiveApIncreaseIntervalSeconds,
   resolveLiveApIncreaseIntervalMilliseconds,
   advanceLiveApIncreaseSpeedState,
@@ -50,17 +51,13 @@ export function applyApSpeedChange(
       currentState = boosted.state;
       return boosted.value;
     },
+    absorbSkillEffect: (amount) => {
+      const absorbed = absorbSkillEffect(currentState, 21, BigInt(amount));
+      currentState = absorbed.state;
+      return absorbed;
+    },
   });
-  if (
-    (activated.calculation.kind === 'multiply' && activated.calculation.factor === 1) ||
-    (activated.calculation.kind === 'add' && activated.calculation.milliseconds === 0)
-  )
-    return currentState;
-  const absorption =
-    activated.absorptionAmount === null
-      ? null
-      : absorbSkillEffect(currentState, 21, BigInt(activated.absorptionAmount));
-  if (absorption?.absorbed) return absorption.state;
+  if (activated.absorption?.absorbed) return currentState;
   return updateApIncreaseSpeedEffects(currentState, activated.state);
 }
 
@@ -104,7 +101,7 @@ export function expireApSpeedSections(state: GameState): GameState {
 export function deactivateApSpeedEffects(state: GameState, deactivationKey: string): GameState {
   return updateApIncreaseSpeedEffects(
     state,
-    state.apIncreaseSpeedEffects.filter((effect) => effect.deactivationKey !== deactivationKey),
+    deactivateLiveApIncreaseSpeedEffects(state.apIncreaseSpeedEffects, { deactivationKey }),
   );
 }
 

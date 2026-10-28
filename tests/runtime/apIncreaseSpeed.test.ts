@@ -18,6 +18,7 @@ test('倍率型は短縮率へSkillBoostを適用してAP intervalを変更す�
       effectId: '21001',
       currentMoodValue: 0,
       currentIncreaseIntervalMilliseconds: 1000,
+      absorbSkillEffect: () => ({ absorbed: false }),
       power: { addValue: 0, multiplyFactor: 1, effectPower: 1 },
       applySkillBoost: (value) => {
         boostedValues.push(value);
@@ -46,6 +47,7 @@ test('加算型はruntimeどおりSkillBoostを消費するが登録値には適
       effectId: '21002',
       currentMoodValue: 0,
       currentIncreaseIntervalMilliseconds: 1000,
+      absorbSkillEffect: () => ({ absorbed: false }),
       power: { addValue: 20, multiplyFactor: 2, effectPower: 1 },
       applySkillBoost: (value) => {
         boostUseCount += 1;
@@ -222,6 +224,7 @@ test.each([
       effectId: '21',
       currentMoodValue: 0,
       currentIncreaseIntervalMilliseconds: 1000,
+      absorbSkillEffect: () => ({ absorbed: false }),
       power: { addValue: 0, multiplyFactor: 1, effectPower: 1 },
       applySkillBoost: () => boosted,
     },
@@ -238,6 +241,7 @@ test('AP速度のnumはsigned64差分をFloat32へ変換しsigned32へ縮めな�
       effectId: '21',
       currentMoodValue: 0,
       currentIncreaseIntervalMilliseconds: 1000,
+      absorbSkillEffect: () => ({ absorbed: false }),
       power: { addValue: 0, multiplyFactor: 1, effectPower: 1 },
       applySkillBoost: (value) => {
         boosts++;
@@ -247,5 +251,5 @@ test('AP速度のnumはsigned64差分をFloat32へ変換しsigned32へ縮めな�
   );
   expect(boosts).toBe(0);
   expect(activated.calculation).toEqual({ kind: 'multiply', factor: 429497.4375 });
-  expect(activated.absorptionAmount).toBeNull();
+  expect(activated.absorption).toBeNull();
 });

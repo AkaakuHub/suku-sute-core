@@ -21,7 +21,7 @@ export type LiveApIncreaseSpeedEffect = Readonly<{
   calculation:
     | Readonly<{ kind: 'add'; milliseconds: number }>
     | Readonly<{ kind: 'multiply'; factor: number }>;
-  duration: LiveSkillEffectDuration;
+  duration: LiveSkillEffectDuration | null;
 }>;
 
 export type LiveApIncreaseSpeedState = readonly LiveApIncreaseSpeedEffect[];
@@ -30,7 +30,7 @@ export function createLiveApIncreaseSpeedState(): LiveApIncreaseSpeedState {
   return [];
 }
 
-export function activateLiveApIncreaseSpeed(
+export function activateLiveApIncreaseSpeed<Absorption extends Readonly<{ absorbed: boolean }>>(
   state: LiveApIncreaseSpeedState,
   effect: LiveApIncreaseSpeedChange,
   input: Readonly<{
@@ -39,11 +39,12 @@ export function activateLiveApIncreaseSpeed(
     currentIncreaseIntervalMilliseconds: number;
     power: LiveSkillEffectPower;
     applySkillBoost: (value: number) => number;
+    absorbSkillEffect: (amount: number) => Absorption;
   }>,
 ): Readonly<{
   state: LiveApIncreaseSpeedState;
   effectAmount: number;
-  absorptionAmount: number | null;
+  absorption: Absorption | null;
   calculation: LiveApIncreaseSpeedEffect['calculation'];
 }> {
   if (
@@ -89,17 +90,25 @@ export function activateLiveApIncreaseSpeed(
     calculation,
     input.currentIncreaseIntervalMilliseconds,
   );
+  const absorption =
+    observation.absorptionAmount === null
+      ? null
+      : input.absorbSkillEffect(observation.absorptionAmount);
+  if (absorption?.absorbed) return { state, calculation, absorption, effectAmount: 0 };
+  const hasEndEffect = observation.effectAmount !== 0;
   return {
-    ...observation,
+    effectAmount: observation.effectAmount,
     calculation,
+    absorption,
     state: [
       ...state,
       {
         effectId: input.effectId,
-        deactivationKey: effect.deactivationKey ?? null,
+        deactivationKey: hasEndEffect ? (effect.deactivationKey ?? null) : null,
         calculation,
-        duration:
-          effect.invocationType === 0x388 || effect.invocationType === 0x38b
+        duration: !hasEndEffect
+          ? null
+          : effect.invocationType === 0x388 || effect.invocationType === 0x38b
             ? { kind: 'full-end' }
             : createLiveSkillEffectDuration(
                 displayTimeType,
@@ -111,11 +120,25 @@ export function activateLiveApIncreaseSpeed(
   };
 }
 
+export function deactivateLiveApIncreaseSpeedEffects(
+  state: LiveApIncreaseSpeedState,
+  selector: Readonly<{ effectId: string }> | Readonly<{ deactivationKey: string }>,
+): LiveApIncreaseSpeedState {
+  return state.filter(
+    (effect) =>
+      effect.duration === null ||
+      ('effectId' in selector
+        ? effect.effectId !== selector.effectId
+        : effect.deactivationKey !== selector.deactivationKey),
+  );
+}
+
 export function advanceLiveApIncreaseSpeedState(
   state: LiveApIncreaseSpeedState,
   input: LiveSkillEffectClock,
 ): LiveApIncreaseSpeedState {
   return state.flatMap((effect) => {
+    if (effect.duration === null) return input.musicEnded ? [] : [effect];
     const duration = advanceLiveSkillEffectDuration(effect.duration, input);
     return duration === null ? [] : [{ ...effect, duration }];
   });
