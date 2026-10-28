@@ -1,6 +1,9 @@
 import { expect, test } from 'vite-plus/test';
 import { advanceLiveApGauge } from '../../src/runtime/live/apGauge.ts';
-import { setLiveApGaugeValue } from '../../src/runtime/live/apGaugeChange.ts';
+import {
+  consumeLiveApGaugeValue,
+  setLiveApGaugeValue,
+} from '../../src/runtime/live/apGaugeChange.ts';
 import {
   activateLiveGenesisEffect,
   createLiveGenesisState,
@@ -25,6 +28,34 @@ function active(currentAp = 10) {
     ),
   };
 }
+
+test('AP消費は上限時だけタイマーをリセットし、0消費でも実行する', () => {
+  const capped = { ...initial(20), ap: { currentAp: 20, maxAp: 20, timerSeconds: 0.75 } };
+  expect(consumeLiveApGaugeValue(capped, 3, false).ap).toEqual({
+    currentAp: 17,
+    maxAp: 20,
+    timerSeconds: 0,
+  });
+  expect(consumeLiveApGaugeValue(capped, 0, false).ap.timerSeconds).toBe(0);
+  const partial = { ...initial(10), ap: { ...capped.ap, currentAp: 10 } };
+  expect(consumeLiveApGaugeValue(partial, 3, false).ap.timerSeconds).toBe(0.75);
+});
+
+test('Infinity中も上限時の消費でタイマーを戻し、AP値は保持する', () => {
+  const state = { ...initial(20), ap: { currentAp: 20, maxAp: 20, timerSeconds: 0.75 } };
+  expect(consumeLiveApGaugeValue(state, 3, true).ap).toEqual({ ...state.ap, timerSeconds: 0 });
+});
+
+test('Genesis中の消費はInfinityより先に変換し、AP値を保持する', () => {
+  const state = active(20);
+  const next = consumeLiveApGaugeValue(
+    { ...state, ap: { ...state.ap, timerSeconds: 0.75 } },
+    3,
+    true,
+  );
+  expect(next.ap).toEqual({ currentAp: 20, maxAp: 20, timerSeconds: 0 });
+  expect(next.genesis.currentGauge).toBe(state.genesis.currentGauge - 13);
+});
 
 test('通常のAP設定はint32へ変換してから0と上限の間に制限する', () => {
   const state = initial();

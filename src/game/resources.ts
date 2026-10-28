@@ -1,4 +1,4 @@
-import { setLiveApGaugeValue } from '../runtime/live/apGaugeChange.ts';
+import { consumeLiveApGaugeValue, setLiveApGaugeValue } from '../runtime/live/apGaugeChange.ts';
 import type { GameState } from './model.ts';
 import { voltageLevel, voltageThreshold } from './live/voltageLevel.ts';
 import { changeGenesisGauge, changeGenesisResource } from './genesis.ts';
@@ -217,12 +217,10 @@ export function decreaseMentalNaturally(state: GameState): GameState {
 }
 
 export function spendAp(state: GameState, amount: number): GameState {
-  return changeResource(
-    state.ap.currentAp >= state.ap.maxAp
-      ? { ...state, ap: { ...state.ap, timerSeconds: 0 } }
-      : state,
-    'ap',
-    -BigInt(amount),
+  return consumeLiveApGaugeValue(
+    state,
+    amount,
+    state.gaugeInfinities.some((infinity) => infinity.gauge === 'ap' && !infinity.suspended),
   );
 }
 
