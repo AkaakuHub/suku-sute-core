@@ -5,6 +5,7 @@ import { skillValue } from './skillValue.ts';
 import { isProxyTargetReached } from './proxySkill.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { ceilToInt32, int64ToFloat32 } from '../../runtime/numeric.ts';
+import { calculateLiveHandCardCountAmount } from '../../runtime/skills/handCardCount.ts';
 
 type HandLimitEffect = Extract<Effect, { kind: 'hand-limit' }>;
 
@@ -18,9 +19,11 @@ export function applyHandLimit(
   const baseAmount = effect.amount;
   if (effect.displayTimeType === 2 && effect.displayTime === 0n)
     throw new Error('Display section count is 0. (displayTimeType: SECTION, displayTime: 0)');
-  const scaledAmount = ceilToInt32(
-    Math.fround(Math.fround(baseAmount + Math.fround(addValue)) * Math.fround(multiplier)),
-  );
+  const scaledAmount = calculateLiveHandCardCountAmount(baseAmount, {
+    addValue,
+    multiplyFactor: multiplier,
+    effectPower: 1,
+  });
   const skillBoosted = skillValue(state, scaledAmount, effect, card);
   const action52 = applyAction52SkillBoostForCard(state, card, skillBoosted);
   const amount = ceilToInt32(action52.value);

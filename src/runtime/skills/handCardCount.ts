@@ -1,6 +1,8 @@
 import type { LiveHandCardCountEffect } from '../cards/deckActionTypes.ts';
 import type { LiveCardIdentifier } from '../cards/deckBoardState.ts';
 import type { LiveTokenCardDeckState } from '../cards/tokenCardDeck.ts';
+import { ceilToInt32 } from '../numeric.ts';
+import type { LiveSkillEffectPower } from './skillEffectPower.ts';
 import {
   activateLiveHandCardMax,
   addLiveHandCardTargetCount,
@@ -14,6 +16,20 @@ import {
 export const liveMinimumHandCardCount = 3;
 export const liveDefaultHandCardCount = 5;
 export const liveMaximumHandCardCount = 8;
+
+export function calculateLiveHandCardCountAmount(
+  amount: number,
+  power: LiveSkillEffectPower,
+): number {
+  return ceilToInt32(
+    Math.fround(
+      Math.fround(
+        Math.fround(Math.fround(amount) + Math.fround(power.addValue)) *
+          Math.fround(power.multiplyFactor),
+      ) * Math.fround(power.effectPower),
+    ),
+  );
+}
 
 type HandCountEffect<Id extends LiveCardIdentifier> = Readonly<{
   effectId: string;
