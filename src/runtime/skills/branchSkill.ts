@@ -66,7 +66,6 @@ export function resolveLiveBranchEffect(
   branch: LiveBranchSkill,
   input: LiveConditionContext,
 ): LiveSkillEffect | null {
-  validateInput(input);
   return isLiveBranchConditionSatisfied(branch, input) ? branch.trueEffect : branch.falseEffect;
 }
 
@@ -102,10 +101,11 @@ export function liveBranchEmbeddedSkillEffectIds(
   );
 }
 
-function isLiveBranchConditionSatisfied(
+export function isLiveBranchConditionSatisfied(
   branch: LiveBranchSkill,
   input: LiveConditionContext,
 ): boolean {
+  validateInput(input);
   switch (branch.branchType) {
     case 1:
       return liveConditionVoltageLevel(input) >= branch.branchValue;

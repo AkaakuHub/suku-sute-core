@@ -1,3 +1,8 @@
+import { activateLiveBranchSkill } from '../../src/runtime/skills/branchSkillActivation.ts';
+import {
+  activateLiveGenesisEffect,
+  createLiveGenesisState,
+} from '../../src/runtime/skills/genesisSkill.ts';
 import type { LiveConditionContext } from '../../src/runtime/live/conditionContext.ts';
 import { describe, expect, test } from 'vite-plus/test';
 import {
@@ -121,6 +126,85 @@ describe('Live Branch skill', () => {
     expect(() =>
       resolveLiveBranchLeafEffect(root, [root, ...effects.slice(1)], conditionInput()),
     ).toThrow('Live Branch effect cycle detected:1001');
+  });
+});
+
+describe('通常分岐の発動', () => {
+  const activeGenesis = () =>
+    activateLiveGenesisEffect(
+      createLiveGenesisState(),
+      { effectId: '1', effectValue: 1, duration: { kind: 'full-end' } },
+      { currentAp: 0, currentMental: 100, currentVoltage: 0n, currentVoltageLevel: 1 },
+    );
+  const state = (active: boolean) => ({
+    context: conditionInput(),
+    genesis: active ? activeGenesis() : createLiveGenesisState(),
+    appliedEffectIds: [] as readonly string[],
+  });
+  type State = ReturnType<typeof state>;
+  const ports = {
+    conditionContext: (current: State) => current.context,
+    genesis: (current: State) => current.genesis,
+    applyEffect: (current: State, effect: LiveSkillEffect): State => ({
+      ...current,
+      appliedEffectIds: [...current.appliedEffectIds, effect.id],
+    }),
+  };
+  test.each([
+    [1, 5, ['1002', '1003']],
+    [2, 500_000, ['1002', '1003']],
+    [3, 1, ['1003']],
+  ] as const)('Genesis中の条件種別%dはAPKの子effectを順に発動する', (type, value, expected) => {
+    const effects = branchEffects(type, value);
+    expect(
+      activateLiveBranchSkill(state(true), effects[0], effects, ports).appliedEffectIds,
+    ).toEqual(expected);
+  });
+  test('true側の状態変更後にfalse側の入れ子の条件を判定する', () => {
+    const root = {
+      ...branchEffects(1, 5)[0],
+      details: branchEffects(1, 5)[0].details.map((detail) =>
+        detail.detailType === 'BRANCH_EFFECT_ID2' ? { ...detail, effectValue: 2001 } : detail,
+      ),
+    };
+    const nested = {
+      ...branchEffects(3, 10)[0],
+      id: '2001',
+      details: branchEffects(3, 10)[0].details.map((detail) =>
+        detail.detailType === 'BRANCH_EFFECT_ID1'
+          ? { ...detail, effectValue: 1003 }
+          : detail.detailType === 'BRANCH_EFFECT_ID2'
+            ? { ...detail, effectValue: 1004 }
+            : detail,
+      ),
+    };
+    const effects = [root, nested, leafEffect('1002'), leafEffect('1003'), leafEffect('1004')];
+    const result = activateLiveBranchSkill(state(true), root, effects, {
+      ...ports,
+      applyEffect: (current, effect) => ({
+        ...ports.applyEffect(current, effect),
+        context: {
+          ...current.context,
+          moodValue: effect.id === '1002' ? 20 : current.context.moodValue,
+        },
+      }),
+    });
+    expect(result.appliedEffectIds).toEqual(['1002', '1003']);
+  });
+  test('通常時に通らない循環もGenesisでfalse側へ進む場合は拒否する', () => {
+    const root = {
+      ...branchEffects(1, 4)[0],
+      details: branchEffects(1, 4)[0].details.map((detail) =>
+        detail.detailType === 'BRANCH_EFFECT_ID2' ? { ...detail, effectValue: 1001 } : detail,
+      ),
+    };
+    const effects = [root, leafEffect('1002')];
+    expect(activateLiveBranchSkill(state(false), root, effects, ports).appliedEffectIds).toEqual([
+      '1002',
+    ]);
+    expect(() => activateLiveBranchSkill(state(true), root, effects, ports)).toThrow(
+      'Live Branch effect cycle detected:1001',
+    );
   });
 });
 

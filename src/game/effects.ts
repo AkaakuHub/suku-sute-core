@@ -1,3 +1,4 @@
+import { selectLiveBranchEffects } from '../runtime/skills/branchSkillActivation.ts';
 import { applyApRecovery } from './effects/apRecovery.ts';
 import { enqueueHandShuffle } from './cards/boardActions.ts';
 import { setVoltageValue } from './resources.ts';
@@ -111,17 +112,17 @@ function applyEffectInternal(
   switch (effect.kind) {
     case 'branch': {
       const context = conditionContext(state);
-      const bothGenesisBranches =
-        state.genesis.effects.length > 0 &&
-        (effect.condition.kind === 'mental-at-most' ||
-          effect.condition.kind === 'voltage-level-at-most');
-      const alwaysTrueBranch =
-        effect.condition.kind === 'heat' || effect.condition.kind === 'mental';
-      const effects = bothGenesisBranches
-        ? [...effect.whenTrue, ...effect.whenFalse]
-        : alwaysTrueBranch || evaluateCondition(effect.condition, context)
-          ? effect.whenTrue
-          : effect.whenFalse;
+      const effects = selectLiveBranchEffects({
+        genesis: state.genesis,
+        gaugeCondition:
+          effect.condition.kind === 'mental-at-most' ||
+          effect.condition.kind === 'voltage-level-at-most' ||
+          effect.condition.kind === 'heat' ||
+          effect.condition.kind === 'mental',
+        condition: () => evaluateCondition(effect.condition, context),
+        whenTrue: effect.whenTrue,
+        whenFalse: effect.whenFalse,
+      });
       return effects.reduce(
         (next, child) => applyEffect(next, child, card, multiplier, addValue, effectPower),
         state,
