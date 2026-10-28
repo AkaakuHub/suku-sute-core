@@ -223,8 +223,9 @@ function validateOnDrawContext(context: LiveOnDrawInduceContext): void {
     }
   }
   if (
-    (context.currentDrawType === 1) !==
-    (context.usedCard !== null && context.usedSkillMainEffect !== null)
+    context.currentDrawType === 1
+      ? context.usedCard === null
+      : context.usedCard !== null || context.usedSkillMainEffect !== null
   ) {
     throw new Error('Live draw context differs from draw type');
   }
