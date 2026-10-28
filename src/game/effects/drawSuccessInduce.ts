@@ -1,49 +1,9 @@
-import { sectionAt, sectionNumber, moodValue } from '../projection.ts';
-import { voltageLevel } from '../live/voltageLevel.ts';
 import type { Card, GameState } from '../model.ts';
 import type { DrawSuccessInduceEffect } from '../drawSuccessInduceTypes.ts';
 import type { EffectApplier } from './induceSkillEffect.ts';
 import { deactivateInducedEffects, withDeactivationKey } from './effectInduce.ts';
-import { int64ToFloat32 } from '../../runtime/numeric.ts';
-
-function numToValue(value: bigint): number {
-  return Math.fround(int64ToFloat32(value) / Math.fround(10_000));
-}
-
-export function evaluateDrawSuccessInduce(
-  state: GameState,
-  isActive: boolean,
-  branchTypeValue: bigint,
-  branchValue: bigint,
-): boolean {
-  const branchType = int32(branchTypeValue);
-  if (branchType === 1 || branchType === 3 || (isActive && (branchType === 2 || branchType === 5)))
-    return true;
-  switch (branchType) {
-    case 2: {
-      const factor = Math.fround(numToValue(branchValue) / Math.fround(100));
-      const currentPercent = Math.fround(
-        Math.fround(Math.trunc(state.mental.currentMental)) / Math.fround(state.maximumMental),
-      );
-      return currentPercent <= factor;
-    }
-    case 4: {
-      return Math.fround(moodValue(state)) <= numToValue(branchValue);
-    }
-    case 5: {
-      return (
-        voltageLevel(state.voltage.currentVoltage, state.maximumVoltageLevel) <=
-        numToValue(branchValue)
-      );
-    }
-    case 6:
-      return BigInt(state.track.sections.indexOf(sectionAt(state)) + 1) <= branchValue;
-    case 7:
-      return BigInt(sectionNumber(state)) === branchValue;
-    default:
-      return false;
-  }
-}
+import { conditionContext } from '../conditions/gameContext.ts';
+import { isLiveDrawSuccessConditionSatisfied } from '../../runtime/skills/drawSuccessCondition.ts';
 
 export function activateDrawSuccessInduce(
   state: GameState,
@@ -55,11 +15,10 @@ export function activateDrawSuccessInduce(
   const handCardStats =
     state.activation?.handCardStatsAtUse[card.id] ?? state.handCardStats[card.id];
   if (!handCardStats) return state;
-  const condition = evaluateDrawSuccessInduce(
-    state,
-    handCardStats.isActive,
-    effect.branchType,
-    effect.branchValue,
+  const condition = isLiveDrawSuccessConditionSatisfied(
+    effect,
+    conditionContext(state),
+    state.genesis,
   );
   const selected = condition ? effect.whenTrue : effect.whenFalse;
   if (selected.length === 0) return state;

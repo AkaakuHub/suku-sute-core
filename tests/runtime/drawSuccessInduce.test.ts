@@ -1,3 +1,8 @@
+import type { LiveConditionContext } from '../../src/runtime/live/conditionContext.ts';
+import {
+  activateLiveGenesisEffect,
+  createLiveGenesisState,
+} from '../../src/runtime/skills/genesisSkill.ts';
 import { describe, expect, test } from 'vite-plus/test';
 import {
   createLiveDrawSuccessInduce,
@@ -9,11 +14,26 @@ describe('DrawSuccessInduce', () => {
   test('Mental割合以下でtrue effectを選び、Genesis中は常にtrueを選ぶ', () => {
     const effects = [root(2, 500_000), embedded('11'), embedded('12')];
     const induce = createLiveDrawSuccessInduce(effects[0]!, effects);
-    expect(resolveLiveDrawSuccessInduceEffect(induce, input({ mentalRatio: 0.5 }))?.id).toBe('11');
-    expect(resolveLiveDrawSuccessInduceEffect(induce, input({ mentalRatio: 0.6 }))?.id).toBe('12');
     expect(
-      resolveLiveDrawSuccessInduceEffect(induce, input({ genesisActive: true, mentalRatio: 0.9 }))
-        ?.id,
+      resolveLiveDrawSuccessInduceEffect(
+        induce,
+        input({ mental: { currentMental: 50, timerSeconds: 0, mentalDown: false } }),
+        createLiveGenesisState(),
+      )?.id,
+    ).toBe('11');
+    expect(
+      resolveLiveDrawSuccessInduceEffect(
+        induce,
+        input({ mental: { currentMental: 60, timerSeconds: 0, mentalDown: false } }),
+        createLiveGenesisState(),
+      )?.id,
+    ).toBe('12');
+    expect(
+      resolveLiveDrawSuccessInduceEffect(
+        induce,
+        input({ mental: { currentMental: 90, timerSeconds: 0, mentalDown: false } }),
+        activeGenesis(),
+      )?.id,
     ).toBe('11');
   });
 
@@ -23,12 +43,19 @@ describe('DrawSuccessInduce', () => {
       embedded('11'),
       embedded('12'),
     ]);
-    expect(resolveLiveDrawSuccessInduceEffect(voltage, input({ voltageLevel: 7 }))?.id).toBe('11');
+    expect(
+      resolveLiveDrawSuccessInduceEffect(
+        voltage,
+        input({ voltage: { currentVoltage: 7n, timerSeconds: 0 } }),
+        createLiveGenesisState(),
+      )?.id,
+    ).toBe('11');
     const rangeEffects = [root(6, 3), embedded('11'), embedded('12')];
     expect(
       resolveLiveDrawSuccessInduceEffect(
         createLiveDrawSuccessInduce(rangeEffects[0]!, rangeEffects),
         input({ currentSection: 3 }),
+        createLiveGenesisState(),
       )?.id,
     ).toBe('12');
     const sectionEffects = [root(7, 2), embedded('11'), embedded('12')];
@@ -36,8 +63,39 @@ describe('DrawSuccessInduce', () => {
       resolveLiveDrawSuccessInduceEffect(
         createLiveDrawSuccessInduce(sectionEffects[0]!, sectionEffects),
         input({ currentSection: 2, feverSection: 1 }),
+        createLiveGenesisState(),
       )?.id,
     ).toBe('11');
+  });
+
+  test.each([
+    [
+      2,
+      500_000,
+      { mental: { currentMental: 1.9, timerSeconds: 0, mentalDown: false }, maximumMental: 3 },
+      '11',
+    ],
+    [
+      2,
+      5,
+      {
+        mental: { currentMental: 5, timerSeconds: 0, mentalDown: false },
+        maximumMental: 1_000_000,
+      },
+      '11',
+    ],
+    [4, 10_000, { moodValue: 2 }, '12'],
+    [4, 10_000, { moodValue: 1 }, '11'],
+    [7, 3, { currentSection: 2, feverSection: null }, '11'],
+  ] as const)('条件種別%dはAPKの数値変換と実状態を使う', (type, value, override, expected) => {
+    const effects = [root(type, value), embedded('11'), embedded('12')];
+    expect(
+      resolveLiveDrawSuccessInduceEffect(
+        createLiveDrawSuccessInduce(effects[0]!, effects),
+        input(override),
+        createLiveGenesisState(),
+      )?.id,
+    ).toBe(expected);
   });
 
   test('解除種別未指定はcontinuous branchだけ継続になる', () => {
@@ -50,18 +108,40 @@ describe('DrawSuccessInduce', () => {
   });
 });
 
-function input(
-  overrides: Partial<Parameters<typeof resolveLiveDrawSuccessInduceEffect>[1]>,
-): Parameters<typeof resolveLiveDrawSuccessInduceEffect>[1] {
+function input(overrides: Partial<LiveConditionContext>): LiveConditionContext {
   return {
-    genesisActive: false,
-    mentalRatio: 1,
+    mental: { currentMental: 100, timerSeconds: 0, mentalDown: false },
+    maximumMental: 100,
     moodValue: 0,
-    voltageLevel: 1,
+    voltage: { currentVoltage: 1n, timerSeconds: 0 },
+    voltageThresholds: Array.from({ length: 11 }, (_, level) => ({
+      voltageLevel: level + 1,
+      requiredVoltagePoint: BigInt(level + 1),
+    })),
+    maximumVoltageLevel: 10,
     currentSection: 0,
     feverSection: 4,
+    cardTotal: 1,
+    deckCount: 1,
+    graveyardCount: 0,
+    exclusionCount: 0,
+    tokenCardSeriesCount: () => 0,
+    memberFanLevelTotal: () => 0,
+    beatHeartValue: 0,
     ...overrides,
   };
+}
+
+function activeGenesis() {
+  return activateLiveGenesisEffect(
+    createLiveGenesisState(),
+    {
+      effectId: 'genesis',
+      effectValue: 1,
+      duration: { kind: 'full-end' },
+    },
+    { currentAp: 0, currentMental: 100, currentVoltage: 1n, currentVoltageLevel: 1 },
+  );
 }
 
 function root(branchType: number, branchValue: number): LiveSkillEffect {
