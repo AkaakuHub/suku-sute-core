@@ -1,3 +1,4 @@
+import { prepareLiveDeckDraw } from '../../src/runtime/cards/deckDraw.ts';
 import { describe, expect, test } from 'vite-plus/test';
 import {
   addLiveDeckBoardCard,
@@ -6,7 +7,6 @@ import {
   moveLiveHandCardsToBoardState,
   moveLiveHandCardToExtra,
   moveLiveHandCardToGraveyard,
-  prepareLiveDeckDraw,
   liveBoardState,
   liveDeckBoardCardInstanceIds,
   registerLiveSkillCardSearchParam,
@@ -74,7 +74,7 @@ describe('Live deck board state', () => {
     const initial = createLiveDeckBoardState([1001, 1002], [1001, 1002]);
     const usedFirst = moveLiveHandCardToGraveyard(initial, 1001);
     const usedSecond = moveLiveHandCardToGraveyard(usedFirst, 1002);
-    const reloaded = prepareLiveDeckDraw(usedSecond);
+    const reloaded = prepareLiveDeckDraw(usedSecond, [1001, 1002], () => 10_000);
     expect(reloaded.deckOutCount).toBe(1);
     expect(liveDeckBoardCardInstanceIds(reloaded, liveBoardState.deck)).toEqual([1001, 1002]);
   });
@@ -212,5 +212,5 @@ test('墓地回収は蓄積済みのDeckOutCountを保持する', () => {
 
 test('候補も墓地もないドローはDeckOutCountを増やさない', () => {
   const initial = createLiveDeckBoardState([1001], [1001]);
-  expect(prepareLiveDeckDraw(initial).deckOutCount).toBe(0);
+  expect(prepareLiveDeckDraw(initial, [1001], () => 10_000).deckOutCount).toBe(0);
 });

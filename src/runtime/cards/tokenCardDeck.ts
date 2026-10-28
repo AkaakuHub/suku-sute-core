@@ -1,3 +1,4 @@
+import { prepareLiveDeckDraw } from './deckDraw.ts';
 import {
   type LiveBoardState,
   type LiveDeckBoardState,
@@ -188,17 +189,14 @@ export function liveCurrentDeckCardCount(
 export function prepareLiveCurrentDeckDraw(
   state: LiveTokenCardDeckState,
   deckBoard: LiveDeckBoardState,
+  drawProbability: (cardInstanceId: number) => number,
 ): LiveDeckBoardState {
   validateState(state, deckBoard);
-  if (liveCurrentDeckBoardCardInstanceIds(state, deckBoard, liveBoardState.deck).length > 0) {
-    return deckBoard;
-  }
-  const graveyardIds = new Set(
-    liveCurrentDeckBoardCardInstanceIds(state, deckBoard, liveBoardState.graveyard),
+  return prepareLiveDeckDraw(
+    deckBoard,
+    liveDeckCardInstanceIds(state, deckBoard, state.currentDeck),
+    drawProbability,
   );
-  if (graveyardIds.size === 0) return deckBoard;
-  const reloaded = reloadLiveCurrentDeckCards(state, deckBoard);
-  return { ...reloaded, deckOutCount: reloaded.deckOutCount + 1 };
 }
 
 export function reloadLiveCurrentDeckCards(

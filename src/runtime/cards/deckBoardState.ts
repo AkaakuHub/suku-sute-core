@@ -226,18 +226,6 @@ export function updateLiveCardSkillUseAtBoardState<Id extends LiveCardIdentifier
   };
 }
 
-export function prepareLiveDeckDraw<Id extends LiveCardIdentifier>(
-  state: LiveDeckBoardState<Id>,
-): LiveDeckBoardState<Id> {
-  if (liveDeckBoardCardInstanceIds(state, liveBoardState.deck).length > 0) {
-    return state;
-  }
-  const hasGraveyard = liveDeckBoardCardInstanceIds(state, liveBoardState.graveyard).length > 0;
-  if (!hasGraveyard) return state;
-  const reloaded = reloadLiveDeckCards(state);
-  return { ...reloaded, deckOutCount: reloaded.deckOutCount + 1 };
-}
-
 export function reloadLiveDeckCards<Id extends LiveCardIdentifier>(
   state: LiveDeckBoardState<Id>,
 ): LiveDeckBoardState<Id> {

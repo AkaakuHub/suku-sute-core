@@ -76,7 +76,7 @@ test('current sub deckのDeckが空ならsub deckのGraveyardだけをreloadす�
     1002,
   );
   const used = moveLiveHandCardToGraveyard(moveLiveDeckCardToHand(firstUsed, 1003), 1003);
-  const reloaded = prepareLiveCurrentDeckDraw(switched, used);
+  const reloaded = prepareLiveCurrentDeckDraw(switched, used, () => 10_000);
 
   expect(reloaded.deckOutCount).toBe(1);
   expect(reloaded.cards[0]?.boardState).toBe(liveBoardState.hand);

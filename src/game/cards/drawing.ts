@@ -1,4 +1,10 @@
-import { boardCardIds, moveCardsToBoard, recoverCurrentDeckGraveyard } from './deckBoard.ts';
+import { prepareLiveDeckDraw } from '../../runtime/cards/deckDraw.ts';
+import {
+  boardCardIds,
+  currentDeckCardIds,
+  moveCardsToBoard,
+  recoverCurrentDeckGraveyard,
+} from './deckBoard.ts';
 import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import { createRangeRandom } from '../random.ts';
 import { drawCandidate, drawWeight } from './drawLottery.ts';
@@ -72,18 +78,10 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
       if (!card) throw new Error('山札のカードがありません。');
       return drawWeight(card, next);
     };
-    if (boardCardIds(next, liveBoardState.deck).every((id) => probability(id) === 0)) {
-      const returned = [
-        ...boardCardIds(next, liveBoardState.deck),
-        ...boardCardIds(next, liveBoardState.graveyard),
-      ];
-      if (!returned.length) break;
-      next = recoverCurrentDeckGraveyard(next);
-      next = {
-        ...next,
-        deckBoard: { ...next.deckBoard, deckOutCount: next.deckBoard.deckOutCount + 1 },
-      };
-    }
+    next = {
+      ...next,
+      deckBoard: prepareLiveDeckDraw(next.deckBoard, currentDeckCardIds(next), probability),
+    };
     const deckIds = new Set(boardCardIds(next, liveBoardState.deck));
     const available = next.deck.filter((card) => deckIds.has(card.id)).map((card) => card.id);
     const random = createRangeRandom(next.randomSeed);
