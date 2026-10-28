@@ -15,19 +15,12 @@ export function advanceLiveApGauge(
     deltaTimeSeconds: number;
     mentalDown: boolean;
     increaseIntervalSeconds: number;
-    boundaryToleranceSeconds: number | null;
   }>,
 ): LiveApGaugeFrame {
   validateState(state);
   validateFiniteNonNegative(input.deltaTimeSeconds, 'delta time');
   if (!Number.isFinite(input.increaseIntervalSeconds)) {
     throw new Error('Live AP increase interval is invalid');
-  }
-  if (
-    input.boundaryToleranceSeconds !== null &&
-    (!Number.isFinite(input.boundaryToleranceSeconds) || input.boundaryToleranceSeconds < 0)
-  ) {
-    throw new Error('Live AP boundary tolerance is invalid');
   }
   if (state.currentAp >= state.maxAp || input.mentalDown) {
     return { state, gaugeDisplayValue: null };
@@ -41,12 +34,8 @@ export function advanceLiveApGauge(
   if (increaseIntervalSeconds <= 0) {
     currentAp = state.maxAp;
   } else {
-    while (
-      input.boundaryToleranceSeconds === null
-        ? increaseIntervalSeconds < timerSeconds
-        : increaseIntervalSeconds <= timerSeconds + input.boundaryToleranceSeconds
-    ) {
-      timerSeconds = Math.max(0, Math.fround(timerSeconds - increaseIntervalSeconds));
+    while (increaseIntervalSeconds < timerSeconds) {
+      timerSeconds = Math.fround(timerSeconds - increaseIntervalSeconds);
       currentAp = Math.min(currentAp + 1, state.maxAp);
     }
   }

@@ -25,7 +25,6 @@ export function advanceAutomaticGauges(
       deltaTimeSeconds: dt,
       mentalDown: state.mentalDown,
       increaseIntervalSeconds: apIncreaseIntervalSeconds(state),
-      boundaryToleranceSeconds: 0.000001,
     },
   ).state;
   let next = changeResource(state, 'ap', BigInt(ap.currentAp - Math.floor(state.currentAp)));

@@ -8,7 +8,6 @@ test('Live APはmax未満かつMental Downでないframeだけ厳密なinterval�
       deltaTimeSeconds: 1,
       mentalDown: false,
       increaseIntervalSeconds: 1,
-      boundaryToleranceSeconds: null,
     },
   );
   expect(equalInterval).toEqual({
@@ -20,7 +19,6 @@ test('Live APはmax未満かつMental Downでないframeだけ厳密なinterval�
     deltaTimeSeconds: 2.5,
     mentalDown: false,
     increaseIntervalSeconds: 1,
-    boundaryToleranceSeconds: null,
   });
   expect(multipleIntervals).toEqual({
     state: { currentAp: 5, maxAp: 5, timerSeconds: 0.5 },
@@ -33,7 +31,6 @@ test('Live APはmax未満かつMental Downでないframeだけ厳密なinterval�
       deltaTimeSeconds: 4,
       mentalDown: true,
       increaseIntervalSeconds: 1,
-      boundaryToleranceSeconds: null,
     },
   );
   expect(mentalDown).toEqual({
@@ -50,7 +47,6 @@ test('Live APはintervalが0以下ならmaxへ設定する', () => {
         deltaTimeSeconds: 0.5,
         mentalDown: false,
         increaseIntervalSeconds: 0,
-        boundaryToleranceSeconds: null,
       },
     ),
   ).toEqual({
@@ -59,22 +55,16 @@ test('Live APはintervalが0以下ならmaxへ設定する', () => {
   });
 });
 
-test('固定刻みのAP更新は指定した誤差以内の境界でだけ回復する', () => {
+test('APはFloat32の間隔の直前・一致では増えず、直後だけ増える', () => {
   const state = { currentAp: 2, maxAp: 5, timerSeconds: 0 };
-  const input = {
-    mentalDown: false,
-    increaseIntervalSeconds: 1,
-    boundaryToleranceSeconds: 0.000001,
-  };
-  const before = advanceLiveApGauge(state, { ...input, deltaTimeSeconds: 0.999998 });
-  expect(before.state.currentAp).toBe(2);
-  const boundary = advanceLiveApGauge(state, { ...input, deltaTimeSeconds: 0.9999995 });
-  expect(boundary.state.currentAp).toBe(3);
-  expect(boundary.state.timerSeconds).toBe(0);
-  const strict = advanceLiveApGauge(state, {
-    ...input,
-    deltaTimeSeconds: 1,
-    boundaryToleranceSeconds: null,
-  });
-  expect(strict.state.currentAp).toBe(2);
+  const input = { mentalDown: false, increaseIntervalSeconds: 1 };
+  for (const deltaTimeSeconds of [0.9999995, 1]) {
+    const frame = advanceLiveApGauge(state, { ...input, deltaTimeSeconds });
+    expect(frame.state.currentAp).toBe(2);
+    expect(frame.state.timerSeconds).toBe(Math.fround(deltaTimeSeconds));
+  }
+  const deltaTimeSeconds = 1 + 2 ** -23;
+  const frame = advanceLiveApGauge(state, { ...input, deltaTimeSeconds });
+  expect(frame.state.currentAp).toBe(3);
+  expect(frame.state.timerSeconds).toBe(2 ** -23);
 });

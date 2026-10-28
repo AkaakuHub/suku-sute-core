@@ -82,7 +82,6 @@ export function advanceLiveAutomaticGaugeRuntime(
         deltaTimeSeconds,
         mentalDown: state.mental.mentalDown,
         increaseIntervalSeconds: input.apIncreaseIntervalSeconds,
-        boundaryToleranceSeconds: null,
       });
   const maximumVoltageThreshold = input.voltageThresholds[input.voltageThresholds.length - 1];
   if (maximumVoltageThreshold === undefined) {

@@ -67,7 +67,6 @@ function projectAp(
         deltaTimeSeconds: currentTimeSeconds,
         mentalDown: runtimeState.mentalDown.value,
         increaseIntervalSeconds: runtimeState.increaseIntervalSeconds.value,
-        boundaryToleranceSeconds: null,
       },
     ),
   };
