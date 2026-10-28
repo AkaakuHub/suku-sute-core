@@ -1,13 +1,12 @@
-export type TokenDeckZones = Readonly<{
+export type TokenDeckHand = Readonly<{
   hand: readonly string[];
-  drawPile: readonly string[];
-  discard: readonly string[];
 }>;
 
 export type TokenDeckSplit = Readonly<{
   seriesIds: readonly number[] | null;
-  main: TokenDeckZones;
-  sub: TokenDeckZones;
+  subDeckCardInstanceIds: readonly string[];
+  main: TokenDeckHand;
+  sub: TokenDeckHand;
   active: 'main' | 'sub';
   remainingSeconds: number | null;
   remainingSections: bigint | null;

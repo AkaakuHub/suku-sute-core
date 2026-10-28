@@ -1,4 +1,8 @@
-import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
+import {
+  updateLiveCardSkillUseAtBoardState,
+  liveDeckBoardCardInstanceIds,
+  liveBoardState,
+} from '../../runtime/cards/deckBoardState.ts';
 import { setCardSkillUseAtBoardState } from '../cards/skillUseAtBoardState.ts';
 import type { Card, GameState } from '../model.ts';
 import type { ProxySkillEffect } from '../modelTypes.ts';
@@ -49,8 +53,7 @@ export function registerProxySkill(
     ...state,
     proxyAbsorptions: [...state.proxyAbsorptions, absorption],
     nextProxyAbsorptionId: state.nextProxyAbsorptionId + 1,
-    cardSkillUseStates: setCardSkillUseAtBoardState(state, card.id, liveBoardState.proxy)
-      .cardSkillUseStates,
+    deckBoard: setCardSkillUseAtBoardState(state, card.id, liveBoardState.proxy).deckBoard,
   };
 }
 
@@ -310,15 +313,19 @@ function releaseFailedProxyAbsorption(
   apply: ApplyProxyEffect,
 ): GameState {
   let next = removeProxyAbsorption(state, absorption);
-  if (!state.proxyCards.includes(absorption.sourceId)) return next;
-  if (next.proxyCards.includes(absorption.sourceId))
+  if (
+    !liveDeckBoardCardInstanceIds(state.deckBoard, liveBoardState.proxy).includes(
+      absorption.sourceId,
+    )
+  )
+    return next;
+  if (
+    liveDeckBoardCardInstanceIds(next.deckBoard, liveBoardState.proxy).includes(absorption.sourceId)
+  )
     next = induceCardMoves(next, new Set([absorption.sourceId]), apply);
   return {
     ...next,
-    proxyCards: next.proxyCards.filter((id) => id !== absorption.sourceId),
-    discard: next.discard.includes(absorption.sourceId)
-      ? next.discard
-      : [...next.discard, absorption.sourceId],
+    deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, absorption.sourceId),
   };
 }
 

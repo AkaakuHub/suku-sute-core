@@ -1,3 +1,5 @@
+import { moveCardsToBoard } from './cards/deckBoard.ts';
+import { liveBoardState } from '../runtime/cards/deckBoardState.ts';
 import {
   canActivateLiveSkillEffect,
   createLiveSkillEffectActivationState,
@@ -218,7 +220,10 @@ function activateCard(
     ],
   };
   next = notifyHandCardBeforeUse(next, card, 2, applyEffect);
-  next = beginTokenGeneration(retireCard(applyBeforeUseAbility(next, card), card), card.id);
+  next = beginTokenGeneration(
+    retireCard(applyBeforeUseAbility(next, card), card, allHand),
+    card.id,
+  );
   next = notifyComboSkillPoint(next, card, usedSkillCost);
   const effectIdentities = card.effects.map((effect, index) => ({
     id: String(index),
@@ -256,12 +261,10 @@ function activateCard(
   return { ...next, currentSkillType: previousSkillType };
 }
 
-function retireCard(state: GameState, card: Card): GameState {
+function retireCard(state: GameState, card: Card, allHand: boolean): GameState {
   return {
-    ...state,
+    ...moveCardsToBoard(state, [card.id], allHand ? liveBoardState.extra2 : liveBoardState.extra),
     hand: state.hand.filter((id) => id !== card.id),
-    drawPile: state.drawPile.filter((id) => id !== card.id),
-    discard: state.discard.filter((id) => id !== card.id),
     relayUsed: state.relayUsed.filter((id) => id !== card.id),
     handHeartCollectCounts: Object.fromEntries(
       Object.entries(state.handHeartCollectCounts).filter(([id]) => id !== card.id),

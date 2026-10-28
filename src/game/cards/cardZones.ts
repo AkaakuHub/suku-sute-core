@@ -1,5 +1,9 @@
-import { cardSkillUseState, resetCardSkillUseAtBoardStates } from './skillUseAtBoardState.ts';
-import { type LiveBoardState, liveBoardState } from '../../runtime/cards/deckBoardState.ts';
+import { cardSkillUseState } from './skillUseAtBoardState.ts';
+import { recoverCurrentDeckGraveyard } from './deckBoard.ts';
+import {
+  updateLiveCardSkillUseAtBoardState,
+  liveBoardState,
+} from '../../runtime/cards/deckBoardState.ts';
 import type { GameState } from '../model.ts';
 import { removeHandCardEffects } from './handEffects.ts';
 import { flushDeckActions } from './boardActions.ts';
@@ -12,46 +16,19 @@ export function finishCardActivation(state: GameState): GameState {
   const source = state.deck.find((card) => card.id === activation.sourceId);
   if (!source) throw new Error('使用したカードがありません。');
   const children = activation.usedCards.filter((id) => id !== source.id);
-  const targetIds = (boardState: LiveBoardState) =>
-    new Set(
-      activation.usedCards.filter(
-        (id) => cardSkillUseState(state, id).skillUseAtBoardState === boardState,
-      ),
-    );
-  const excludedIds = targetIds(liveBoardState.exclusion);
-  const proxyIds = targetIds(liveBoardState.proxy);
-  const returnToDrawIds = targetIds(liveBoardState.deck);
   const handStatsCompleted = (activation.pendingHandStatsDeactivationKeys ?? []).reduce(
     (current, key) => deactivateInducedEffects(current, key),
     removeHandCardEffects(state, activation.usedCards),
   );
-  let next = excludeCards(
-    handStatsCompleted,
-    [...excludedIds].filter((id) => id !== source.id),
-  );
-  const activeChildren = children.filter((id) => next.deck.some((card) => card.id === id));
-  next = {
-    ...next,
-    drawPile: [
-      ...next.drawPile,
-      ...(activation.recoverDiscard ? next.discard : []),
-      ...activeChildren.filter((id) => returnToDrawIds.has(id)),
-    ],
-    discard: [
-      ...(activation.recoverDiscard ? [] : next.discard),
-      ...activeChildren.filter((id) => !returnToDrawIds.has(id)),
-    ],
-  };
-  next = flushDeckActions(next);
-  if (proxyIds.size > 0) {
-    next = {
-      ...next,
-      hand: next.hand.filter((id) => !proxyIds.has(id)),
-      drawPile: next.drawPile.filter((id) => !proxyIds.has(id)),
-      discard: next.discard.filter((id) => !proxyIds.has(id)),
-      proxyCards: [...new Set([...next.proxyCards, ...proxyIds])],
-    };
+  let next = activation.recoverDiscard
+    ? recoverCurrentDeckGraveyard(handStatsCompleted)
+    : handStatsCompleted;
+  for (const id of children) {
+    next = { ...next, deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, id) };
+    if (cardSkillUseState(next, id).boardState === liveBoardState.exclusion)
+      next = excludeCards(next, [id]);
   }
+  next = flushDeckActions(next);
   const handCountChange = activation.handCountChanges[source.id] ?? 0;
   const handReady: GameState = {
     ...next,
@@ -74,14 +51,10 @@ export function finishCardActivation(state: GameState): GameState {
   } else {
     next = fillHand(handReady);
   }
-  next = proxyIds.has(source.id)
-    ? next
-    : excludedIds.has(source.id)
-      ? excludeCards(next, [source.id])
-      : returnToDrawIds.has(source.id)
-        ? { ...next, drawPile: [...next.drawPile, source.id] }
-        : { ...next, discard: [...next.discard, source.id] };
-  return { ...resetCardSkillUseAtBoardStates(next, activation.usedCards), activation: null };
+  next = { ...next, deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, source.id) };
+  if (cardSkillUseState(next, source.id).boardState === liveBoardState.exclusion)
+    next = excludeCards(next, [source.id]);
+  return { ...next, activation: null };
 }
 
 function excludeCards(state: GameState, ids: readonly string[]): GameState {
@@ -97,9 +70,6 @@ function excludeCards(state: GameState, ids: readonly string[]): GameState {
     activeModeParameterChanges: state.activeModeParameterChanges.filter(
       (item) => !ids.includes(item.cardId),
     ),
-    proxyCards: state.proxyCards.filter((id) => !ids.includes(id)),
     hand: state.hand.filter((id) => !ids.includes(id)),
-    drawPile: state.drawPile.filter((id) => !ids.includes(id)),
-    discard: state.discard.filter((id) => !ids.includes(id)),
   };
 }

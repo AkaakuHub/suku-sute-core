@@ -1,3 +1,5 @@
+import { boardCardIds } from './deckBoard.ts';
+import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import { applyAction52SkillBoost } from '../effects/action52SkillBoost.ts';
 import type { Card, GameState } from '../model.ts';
 import type { DeckSkillCostChangeEffect } from '../skillCostChangeTypes.ts';
@@ -13,13 +15,9 @@ export function applyDeckSkillCostChange(
     effect.targetRange === 2
       ? state.hand.flatMap((id) => state.deck.filter((card) => card.id === id))
       : effect.targetRange === 3
-        ? state.deck.filter((card) => state.drawPile.includes(card.id))
-        : [
-            ...state.deck,
-            ...state.proxyCards.flatMap((id) => state.cardPool.filter((card) => card.id === id)),
-          ];
-  const uniqueCandidates = [...new Map(candidates.map((card) => [card.id, card])).values()];
-  const targets = uniqueCandidates.filter((card) => {
+        ? state.deck.filter((card) => boardCardIds(state, liveBoardState.deck).includes(card.id))
+        : state.deck;
+  const targets = candidates.filter((card) => {
     switch (effect.target) {
       case 'all':
         return true;

@@ -1,3 +1,4 @@
+import { createCardDeckBoard } from './cards/deckBoard.ts';
 import { createModes } from './live/modes.ts';
 import { advanceAutomaticGauges } from './automaticGauges.ts';
 import { advanceSectionChange } from './sectionChange.ts';
@@ -79,24 +80,18 @@ export function createGame(
     cardPool: [...resolvedDeck],
     hand: [lead.id],
     activeHandPermanentCardIds: [],
-    proxyCards: [],
     handCardStats: {},
     skillCostChanges: [],
     parameterValueFactors: [],
     parameterValueChangeCounts: {},
     activeModeParameterChanges: [],
-    cardSkillUseStates: Object.fromEntries(
-      resolvedDeck.map((card) => [card.id, { skillUseAtBoardState: 3 as const }]),
-    ),
+    deckBoard: createCardDeckBoard(resolvedDeck, [lead.id]),
     handEffectCardIds: [lead.id],
-    drawPile: resolvedDeck.filter((card) => card.id !== lead.id).map((card) => card.id),
     tokenDeckSplit: null,
     ingameMission: null,
     deckOutCount: 0,
     afterMentalDownEvents: 0,
-    discard: [],
     tokenCatalog: resolvedTokenCatalog,
-    nextTokenId: 1,
     tokenGroups: [],
     tokenBoosts: [],
     handLimit: rules.handSize,

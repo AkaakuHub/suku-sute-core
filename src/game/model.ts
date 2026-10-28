@@ -1,5 +1,5 @@
 import type { LiveCardIdentity } from '../runtime/cards/cardIdentity.ts';
-import type { LiveSkillUseAtBoardState } from '../runtime/cards/deckBoardState.ts';
+import type { LiveDeckBoardState } from '../runtime/cards/deckBoardState.ts';
 import type { LiveHandCardStats } from '../runtime/cards/handCardStats.ts';
 import type { LiveVoltageGaugeState } from '../runtime/live/voltageGauge.ts';
 import type { SkillCooldownEffect } from './skillCooldownTypes.ts';
@@ -143,15 +143,11 @@ export type GameState = Readonly<{
   hand: readonly string[];
   handEffectCardIds: readonly string[];
   activeHandPermanentCardIds: readonly string[];
-  proxyCards: readonly string[];
-  drawPile: readonly string[];
   tokenDeckSplit: TokenDeckSplit | null;
   ingameMission: IngameMission | null;
   deckOutCount: number;
   afterMentalDownEvents: number;
-  discard: readonly string[];
   tokenCatalog: readonly Card[];
-  nextTokenId: number;
   tokenGroups: readonly Readonly<{
     sourceId: string;
     requests: readonly TokenRequest[];
@@ -203,7 +199,7 @@ export type GameState = Readonly<{
     modeId: number;
     isOn: boolean;
   }>[];
-  cardSkillUseStates: Readonly<Record<string, LiveSkillUseAtBoardState>>;
+  deckBoard: LiveDeckBoardState<string>;
   activation: Readonly<{
     sourceId: string;
     usedCards: readonly string[];

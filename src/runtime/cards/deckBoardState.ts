@@ -14,10 +14,12 @@ export type LiveSkillUseAtBoardState = Readonly<{
   skillUseAtBoardState: LiveBoardState;
 }>;
 
-export type LiveDeckBoardCard = Readonly<
+export type LiveCardIdentifier = number | string;
+
+export type LiveDeckBoardCard<Id extends LiveCardIdentifier = number> = Readonly<
   LiveSkillUseAtBoardState & {
-    cardInstanceId: number;
-    cardDatasId: number;
+    cardInstanceId: Id;
+    cardDatasId: Id;
     boardState: LiveBoardState;
   }
 >;
@@ -27,8 +29,8 @@ export type LiveDeckCardSearchParam = Readonly<{
   searchId: number;
 }>;
 
-export type LiveDeckBoardState = Readonly<{
-  cards: readonly LiveDeckBoardCard[];
+export type LiveDeckBoardState<Id extends LiveCardIdentifier = number> = Readonly<{
+  cards: readonly LiveDeckBoardCard<Id>[];
   nextCardInstanceId: number;
   deckOutCount: number;
   skillCardSearchParams: readonly LiveDeckCardSearchParam[];
@@ -84,10 +86,10 @@ export function addLiveDeckBoardCard(
   };
 }
 
-export function registerLiveSkillCardSearchParam(
-  state: LiveDeckBoardState,
+export function registerLiveSkillCardSearchParam<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
   param: LiveDeckCardSearchParam,
-): LiveDeckBoardState {
+): LiveDeckBoardState<Id> {
   validateCardSearchParam(param);
   return {
     ...state,
@@ -95,10 +97,10 @@ export function registerLiveSkillCardSearchParam(
   };
 }
 
-export function removeLiveSkillCardSearchParam(
-  state: LiveDeckBoardState,
+export function removeLiveSkillCardSearchParam<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
   param: LiveDeckCardSearchParam,
-): LiveDeckBoardState {
+): LiveDeckBoardState<Id> {
   validateCardSearchParam(param);
   const index = state.skillCardSearchParams.findIndex(
     (current) => current.searchType === param.searchType && current.searchId === param.searchId,
@@ -115,39 +117,41 @@ export function removeLiveSkillCardSearchParam(
   };
 }
 
-export function resetLiveCardSearchParams(state: LiveDeckBoardState): LiveDeckBoardState {
+export function resetLiveCardSearchParams<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+): LiveDeckBoardState<Id> {
   return { ...state, skillCardSearchParams: [] };
 }
 
-export function moveLiveHandCardToGraveyard(
-  state: LiveDeckBoardState,
-  cardInstanceId: number,
-): LiveDeckBoardState {
+export function moveLiveHandCardToGraveyard<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
+): LiveDeckBoardState<Id> {
   return updateLiveCardSkillUseAtBoardState(
     moveLiveHandCardToExtra(state, cardInstanceId),
     cardInstanceId,
   );
 }
 
-export function moveLiveHandCardToExtra(
-  state: LiveDeckBoardState,
-  cardInstanceId: number,
-): LiveDeckBoardState {
+export function moveLiveHandCardToExtra<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
+): LiveDeckBoardState<Id> {
   return moveCard(state, cardInstanceId, liveBoardState.hand, liveBoardState.extra);
 }
 
-export function moveLiveHandCardToExtra2(
-  state: LiveDeckBoardState,
-  cardInstanceId: number,
-): LiveDeckBoardState {
+export function moveLiveHandCardToExtra2<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
+): LiveDeckBoardState<Id> {
   return moveCard(state, cardInstanceId, liveBoardState.hand, liveBoardState.extra2);
 }
 
-export function moveLiveHandCardsToBoardState(
-  state: LiveDeckBoardState,
-  handCardInstanceIds: readonly number[],
+export function moveLiveHandCardsToBoardState<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  handCardInstanceIds: readonly Id[],
   boardState: Extract<LiveBoardState, (typeof liveBoardState)['deck' | 'graveyard']>,
-): LiveDeckBoardState {
+): LiveDeckBoardState<Id> {
   const currentHandCardInstanceIds = liveDeckBoardCardInstanceIds(state, liveBoardState.hand);
   if (
     new Set(handCardInstanceIds).size !== handCardInstanceIds.length ||
@@ -165,11 +169,11 @@ export function moveLiveHandCardsToBoardState(
   return next;
 }
 
-export function setLiveCardSkillUseAtBoardState(
-  state: LiveDeckBoardState,
-  cardInstanceId: number,
+export function setLiveCardSkillUseAtBoardState<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
   skillUseAtBoardState: LiveBoardState,
-): LiveDeckBoardState {
+): LiveDeckBoardState<Id> {
   const card = requireCard(state, cardInstanceId);
   const updated = setLiveSkillUseAtBoardState(card, skillUseAtBoardState);
   if (updated === card) return state;
@@ -200,10 +204,10 @@ export function resetLiveSkillUseAtBoardState<T extends LiveSkillUseAtBoardState
   return { ...state, skillUseAtBoardState: liveBoardState.graveyard };
 }
 
-export function updateLiveCardSkillUseAtBoardState(
-  state: LiveDeckBoardState,
-  cardInstanceId: number,
-): LiveDeckBoardState {
+export function updateLiveCardSkillUseAtBoardState<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
+): LiveDeckBoardState<Id> {
   const card = requireCard(state, cardInstanceId);
   const canMove =
     card.skillUseAtBoardState !== liveBoardState.proxy ||
@@ -222,7 +226,9 @@ export function updateLiveCardSkillUseAtBoardState(
   };
 }
 
-export function prepareLiveDeckDraw(state: LiveDeckBoardState): LiveDeckBoardState {
+export function prepareLiveDeckDraw<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+): LiveDeckBoardState<Id> {
   if (liveDeckBoardCardInstanceIds(state, liveBoardState.deck).length > 0) {
     return state;
   }
@@ -231,42 +237,37 @@ export function prepareLiveDeckDraw(state: LiveDeckBoardState): LiveDeckBoardSta
   return reloadLiveDeckCards(state);
 }
 
-export function reloadLiveDeckCards(state: LiveDeckBoardState): LiveDeckBoardState {
-  const hasGraveyard = state.cards.some((card) => card.boardState === liveBoardState.graveyard);
-  if (!hasGraveyard) return state;
-  return {
-    ...state,
-    cards: state.cards.map((card) =>
-      card.boardState === liveBoardState.graveyard
-        ? { ...card, boardState: liveBoardState.deck }
-        : card,
-    ),
-    deckOutCount: state.deckOutCount + 1,
-  };
+export function reloadLiveDeckCards<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+): LiveDeckBoardState<Id> {
+  return reloadLiveDeckCardInstanceIds(
+    state,
+    liveDeckBoardCardInstanceIds(state, liveBoardState.graveyard),
+  );
 }
 
-export function moveLiveDeckCardToHand(
-  state: LiveDeckBoardState,
-  cardInstanceId: number,
-): LiveDeckBoardState {
+export function moveLiveDeckCardToHand<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
+): LiveDeckBoardState<Id> {
   return moveCard(state, cardInstanceId, liveBoardState.deck, liveBoardState.hand);
 }
 
-export function liveDeckBoardCardInstanceIds(
-  state: LiveDeckBoardState,
+export function liveDeckBoardCardInstanceIds<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
   boardState: LiveBoardState,
-): readonly number[] {
+): readonly Id[] {
   return state.cards.flatMap((card) =>
     card.boardState === boardState ? [card.cardInstanceId] : [],
   );
 }
 
-function moveCard(
-  state: LiveDeckBoardState,
-  cardInstanceId: number,
+function moveCard<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
   from: LiveBoardState,
   to: LiveBoardState,
-): LiveDeckBoardState {
+): LiveDeckBoardState<Id> {
   const card = requireCard(state, cardInstanceId);
   if (card.boardState !== from) {
     throw new Error('Live card board state transition is invalid');
@@ -279,7 +280,10 @@ function moveCard(
   };
 }
 
-function requireCard(state: LiveDeckBoardState, cardInstanceId: number): LiveDeckBoardCard {
+function requireCard<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
+): LiveDeckBoardCard<Id> {
   const card = state.cards.find((current) => current.cardInstanceId === cardInstanceId);
   if (card === undefined) {
     throw new Error('Live card board state transition is invalid');
@@ -329,4 +333,35 @@ function validateCardSearchParam(param: LiveDeckCardSearchParam): void {
   if (!Number.isSafeInteger(param.searchId) || param.searchId < 1) {
     throw new Error('Live skill card search param is invalid');
   }
+}
+
+export function setLiveCardBoardState<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceId: Id,
+  boardState: LiveBoardState,
+): LiveDeckBoardState<Id> {
+  const card = requireCard(state, cardInstanceId);
+  return {
+    ...state,
+    cards: state.cards.map((entry) => (entry === card ? { ...entry, boardState } : entry)),
+  };
+}
+
+export function reloadLiveDeckCardInstanceIds<Id extends LiveCardIdentifier>(
+  state: LiveDeckBoardState<Id>,
+  cardInstanceIds: readonly Id[],
+): LiveDeckBoardState<Id> {
+  for (const id of cardInstanceIds) {
+    if (requireCard(state, id).boardState !== liveBoardState.graveyard)
+      throw new Error('Live reloaded card is not in graveyard');
+  }
+  if (cardInstanceIds.length === 0) return state;
+  const ids = new Set(cardInstanceIds);
+  return {
+    ...state,
+    cards: state.cards.map((card) =>
+      ids.has(card.cardInstanceId) ? { ...card, boardState: liveBoardState.deck } : card,
+    ),
+    deckOutCount: state.deckOutCount + 1,
+  };
 }

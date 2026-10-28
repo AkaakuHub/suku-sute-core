@@ -182,3 +182,23 @@ test.each([
   expect(next.cards[0]?.boardState).toBe(liveBoardState.hand);
   expect(next.cards[0]?.skillUseAtBoardState).toBe(expected);
 });
+
+test('文字列IDの盤面も使用中からProxyへの移動と保存先リセットを同じ状態で行う', () => {
+  const state: import('../../src/runtime/cards/deckBoardState.ts').LiveDeckBoardState<string> = {
+    cards: [
+      {
+        cardInstanceId: 'source',
+        cardDatasId: 'blueprint',
+        boardState: 5,
+        skillUseAtBoardState: 7,
+      },
+    ],
+    nextCardInstanceId: 1,
+    deckOutCount: 0,
+    skillCardSearchParams: [],
+  };
+  const updated = updateLiveCardSkillUseAtBoardState(state, 'source');
+  expect(updated.cards).toEqual([
+    { cardInstanceId: 'source', cardDatasId: 'blueprint', boardState: 7, skillUseAtBoardState: 3 },
+  ]);
+});

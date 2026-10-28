@@ -115,7 +115,7 @@ function addTokenCards(
   const generated: Card[] = Array.from(
     { length: Math.min(Math.max(0, Math.trunc(count)), addable) },
     (_, index) => {
-      const generatedId = state.nextTokenId + index;
+      const generatedId = state.deckBoard.nextCardInstanceId + index;
       if (templateReference.kind === 'action-token-card')
         return createActionTokenCard(
           templateReference.effect,
@@ -132,25 +132,13 @@ function addTokenCards(
     split?.seriesIds !== null &&
     split?.seriesIds !== undefined &&
     (card.tokenSeriesIds ?? []).some((id) => split.seriesIds?.includes(id));
-  const activeMatches = generated.filter(splitMatches);
-  const activeOther = generated.filter((card) => !splitMatches(card));
-  const activeIds = [...activeMatches, ...activeOther]
-    .filter((card) => !split || split.active === (splitMatches(card) ? 'sub' : 'main'))
-    .map((card) => card.id);
-  const inactiveIds = generated
-    .filter((card) => split && split.active !== (splitMatches(card) ? 'sub' : 'main'))
-    .map((card) => card.id);
   const tokenDeckSplit = split
     ? {
         ...split,
-        [split.active]: {
-          ...split[split.active],
-          drawPile: [...split[split.active].drawPile, ...activeIds],
-        },
-        [split.active === 'main' ? 'sub' : 'main']: {
-          ...split[split.active === 'main' ? 'sub' : 'main'],
-          drawPile: [...split[split.active === 'main' ? 'sub' : 'main'].drawPile, ...inactiveIds],
-        },
+        subDeckCardInstanceIds: [
+          ...split.subDeckCardInstanceIds,
+          ...generated.filter(splitMatches).map((card) => card.id),
+        ],
       }
     : null;
   return initializeParameterValueFactors(
@@ -158,15 +146,23 @@ function addTokenCards(
       ...state,
       deck: [...state.deck, ...generated],
       cardPool: [...state.cardPool, ...generated],
-      cardSkillUseStates: {
-        ...state.cardSkillUseStates,
-        ...Object.fromEntries(
-          generated.map((card) => [card.id, { skillUseAtBoardState: 3 as const }]),
-        ),
+      deckBoard: {
+        ...state.deckBoard,
+        cards: [
+          ...state.deckBoard.cards,
+          ...generated.map((card) => ({
+            cardInstanceId: card.id,
+            cardDatasId:
+              templateReference.kind === 'token-id'
+                ? templateReference.token
+                : String(templateReference.effect.resourceId),
+            boardState: 1 as const,
+            skillUseAtBoardState: 3 as const,
+          })),
+        ],
+        nextCardInstanceId: state.deckBoard.nextCardInstanceId + generated.length,
       },
-      drawPile: [...state.drawPile, ...activeIds],
       tokenDeckSplit,
-      nextTokenId: state.nextTokenId + generated.length,
     },
     generated,
   );

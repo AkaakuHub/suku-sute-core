@@ -1,3 +1,5 @@
+import { boardCardIds, moveCardsToBoard, recoverCurrentDeckGraveyard } from './deckBoard.ts';
+import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import { createRangeRandom } from '../random.ts';
 import { drawCandidate, drawWeight } from './drawLottery.ts';
 import { consumeSearch } from './search.ts';
@@ -53,7 +55,7 @@ export function removeRandomHandCards(state: GameState, count: number): GameStat
   next = removeHandCardEffects(next, removed);
   return {
     ...next,
-    discard: [...next.discard, ...removed],
+    deckBoard: moveCardsToBoard(next, removed, liveBoardState.graveyard).deckBoard,
     handHeartCollectCounts: Object.fromEntries(
       Object.entries(next.handHeartCollectCounts).filter(([id]) => !removed.includes(id)),
     ),
@@ -70,18 +72,19 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
       if (!card) throw new Error('山札のカードがありません。');
       return drawWeight(card, next);
     };
-    if (next.drawPile.every((id) => probability(id) === 0)) {
-      const returned = [...next.drawPile, ...next.discard];
+    if (boardCardIds(next, liveBoardState.deck).every((id) => probability(id) === 0)) {
+      const returned = [
+        ...boardCardIds(next, liveBoardState.deck),
+        ...boardCardIds(next, liveBoardState.graveyard),
+      ];
       if (!returned.length) break;
       next = {
-        ...next,
-        drawPile: returned,
-        discard: [],
+        ...recoverCurrentDeckGraveyard(next),
         deckOutCount: next.deckOutCount + 1,
       };
     }
     const available = next.deck
-      .filter((card) => next.drawPile.includes(card.id))
+      .filter((card) => boardCardIds(next, liveBoardState.deck).includes(card.id))
       .map((card) => card.id);
     const random = createRangeRandom(next.randomSeed);
     const randomIndex = (maximumExclusive: number) => Math.floor(random.range(0, maximumExclusive));
@@ -102,8 +105,7 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
       ...next,
       randomSeed: random.seed,
       hand: [...next.hand, drawn],
-      drawPile: next.drawPile.filter((id) => id !== drawn),
-      discard: next.discard.filter((id) => id !== drawn),
+      deckBoard: moveCardsToBoard(next, [drawn], liveBoardState.hand).deckBoard,
       relayUsed: next.relayUsed.filter((id) => id !== drawn),
       handHeartCollectCounts: { ...next.handHeartCollectCounts, [drawn]: 0 },
     };
@@ -133,27 +135,19 @@ function drawUntil(state: GameState, count: number, trimOverflow: boolean): Game
     next = {
       ...removeHandCardEffects(next, ordered.slice(maximum)),
       hand: ordered.slice(0, maximum),
-      discard: [...next.discard, ...ordered.slice(maximum)],
+      deckBoard: moveCardsToBoard(next, ordered.slice(maximum), liveBoardState.graveyard).deckBoard,
     };
   }
   return { ...next, drawContext: 'idle' };
 }
 
 export function shuffleHand(state: GameState, options: HandShuffle): GameState {
-  const withoutHandEffects = removeHandCardEffects(state, state.hand);
-  const recovered = options.recoverDiscard ? state.discard : [];
-  const returned = options.destination === 'draw' ? state.hand : [];
-  const returnedIds = [...state.drawPile, ...recovered, ...returned];
-  return {
-    ...withoutHandEffects,
-    hand: [],
-    drawPile: state.deck.filter((card) => returnedIds.includes(card.id)).map((card) => card.id),
-    discard: [
-      ...(options.recoverDiscard ? [] : state.discard),
-      ...(options.destination === 'discard' ? state.hand : []),
-    ],
-    relayUsed: [],
-    handHeartCollectCounts: {},
-    drawContext: 'shuffle',
-  };
+  let next = removeHandCardEffects(state, state.hand);
+  if (options.recoverDiscard) next = recoverCurrentDeckGraveyard(next);
+  next = moveCardsToBoard(
+    next,
+    state.hand,
+    options.destination === 'draw' ? liveBoardState.deck : liveBoardState.graveyard,
+  );
+  return { ...next, hand: [], relayUsed: [], handHeartCollectCounts: {}, drawContext: 'shuffle' };
 }

@@ -1,3 +1,5 @@
+import { boardCardIds } from './deckBoard.ts';
+import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
 import { drawCandidate, drawWeight } from './drawLottery.ts';
 import type { Card, GameState, SearchRequest, SearchTarget } from '../model.ts';
 
@@ -41,13 +43,13 @@ export function consumeSearch(
         searches: next.deckActions.searches.filter((_, position) => position !== index),
       },
     };
-    const inDeck = candidates(next, next.drawPile, search.target);
+    const inDeck = candidates(next, boardCardIds(next, liveBoardState.deck), search.target);
     const matched =
       inDeck.length > 0
         ? inDeck
         : scope === 'skill'
           ? []
-          : candidates(next, next.discard, search.target);
+          : candidates(next, boardCardIds(next, liveBoardState.graveyard), search.target);
     if (matched.length === 0) continue;
     return {
       state: next,
