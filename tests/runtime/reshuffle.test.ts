@@ -1,3 +1,4 @@
+import { createLiveTokenCardDeckState } from '../../src/runtime/cards/tokenCardDeck.ts';
 import { expect, test } from 'vite-plus/test';
 import {
   createLiveDeckBoardState,
@@ -15,15 +16,16 @@ for (const stashType of ['deck', 'graveyard'] as const) {
     state = moveLiveHandCardToExtra2(state, 1002);
     state = setLiveCardSkillUseAtBoardState(state, 1003, liveBoardState.exclusion);
     state = setLiveCardSkillUseAtBoardState(state, 1004, liveBoardState.proxy);
-    const next = applyLiveAllHandSkillReshuffle(state, ids, {
+    const next = applyLiveAllHandSkillReshuffle(state, createLiveTokenCardDeckState(5), ids, {
       cardInstanceId: 1002,
       skillMainEffect: 13,
       effect: { effectId: 'reshuffle', recoveryType: 'recovery', stashType },
     });
-    expect(next.cards.map((card) => card.boardState)).toEqual([5, 6, 2, 2, 2]);
-    expect(next.cards.map((card) => card.skillUseAtBoardState)).toEqual(
+    expect(next.deckBoard.cards.map((card) => card.boardState)).toEqual([5, 6, 2, 2, 2]);
+    expect(next.deckBoard.cards.map((card) => card.skillUseAtBoardState)).toEqual(
       stashType === 'deck' ? [1, 3, 4, 7, 1] : [3, 3, 4, 7, 3],
     );
-    expect(next.deckOutCount).toBe(0);
+    expect(next.deckBoard.deckOutCount).toBe(0);
+    expect(next.state.allHandSkillDeckReload).toBe(true);
   });
 }

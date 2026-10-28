@@ -1,3 +1,4 @@
+import { beginLiveAllHandSkill } from '../runtime/cards/allHandDeckActions.ts';
 import { moveCardsToBoard } from './cards/deckBoard.ts';
 import { liveBoardState } from '../runtime/cards/deckBoardState.ts';
 import {
@@ -162,9 +163,8 @@ function useCard(state: GameState, index: number): GameState {
     activation: {
       sourceId: source.cardInstanceId,
       usedCards: [],
-      allHand: source.effects.some((effect) => effect.kind === 'use-hand'),
+      hasUseAllHandSkill: source.effects.some((effect) => effect.kind === 'use-hand'),
       skipSourceRefill: false,
-      recoverDiscard: false,
       handCountChanges: {},
       pendingHandStatsDeactivationKeys: [],
     },
@@ -243,7 +243,7 @@ function activateCard(
       })
     )
       continue;
-    next = { ...next, modes: { ...next.modes, held: true } };
+    next = beginLiveAllHandSkill({ ...next, modes: { ...next.modes, held: true } });
     const children = [...next.hand];
     for (const id of children) {
       const child = next.deck.find((item) => item.cardInstanceId === id);

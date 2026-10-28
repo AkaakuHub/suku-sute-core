@@ -1,3 +1,10 @@
+import {
+  enqueueLiveAllHandDraw,
+  executeLiveAllHandDraw,
+} from '../../runtime/cards/allHandDeckActions.ts';
+import { liveCurrentDeckCardCount } from '../../runtime/cards/tokenCardDeck.ts';
+import { completeDeckOutChecks } from '../effects/deckOutCheck.ts';
+import { applyEffect } from '../effects.ts';
 import { cardSkillUseState } from './skillUseAtBoardState.ts';
 import { recoverCurrentDeckGraveyard } from './deckBoard.ts';
 import {
@@ -7,7 +14,13 @@ import {
 import type { GameState } from '../model.ts';
 import { removeHandCardEffects } from './handEffects.ts';
 import { flushDeckActions } from './boardActions.ts';
-import { fillHand, handCapacity, removeRandomHandCards } from './drawing.ts';
+import {
+  fillHand,
+  fillHandToCountRetainingOverflow,
+  handCapacity,
+  removeRandomHandCards,
+  shuffleHand,
+} from './drawing.ts';
 import { deactivateInducedEffects } from '../effects/effectInduce.ts';
 
 export function finishCardActivation(state: GameState): GameState {
@@ -15,19 +28,8 @@ export function finishCardActivation(state: GameState): GameState {
   if (!activation) throw new Error('カードの使用処理がありません。');
   const source = state.deck.find((card) => card.cardInstanceId === activation.sourceId);
   if (!source) throw new Error('使用したカードがありません。');
-  const children = activation.usedCards.filter((id) => id !== source.cardInstanceId);
-  const handStatsCompleted = (activation.pendingHandStatsDeactivationKeys ?? []).reduce(
-    (current, key) => deactivateInducedEffects(current, key),
-    removeHandCardEffects(state, activation.usedCards),
-  );
-  let next = activation.recoverDiscard
-    ? recoverCurrentDeckGraveyard(handStatsCompleted)
-    : handStatsCompleted;
-  for (const id of children) {
-    next = { ...next, deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, id) };
-    if (cardSkillUseState(next, id).boardState === liveBoardState.exclusion)
-      next = excludeCards(next, [id]);
-  }
+  if (activation.hasUseAllHandSkill) return finishAllHandActivation(state, source);
+  let next = completeUsedCards(state, source.cardInstanceId);
   next = flushDeckActions(next);
   const handCountChange = activation.handCountChanges[source.cardInstanceId] ?? 0;
   const handReady: GameState = {
@@ -58,6 +60,52 @@ export function finishCardActivation(state: GameState): GameState {
   if (cardSkillUseState(next, source.cardInstanceId).boardState === liveBoardState.exclusion)
     next = excludeCards(next, [source.cardInstanceId]);
   return { ...next, activation: null };
+}
+
+function completeUsedCards(state: GameState, sourceId: string): GameState {
+  const activation = state.activation;
+  if (!activation) throw new Error('カードの使用処理がありません。');
+  const children = activation.usedCards.filter((id) => id !== sourceId);
+  const handStatsCompleted = (activation.pendingHandStatsDeactivationKeys ?? []).reduce(
+    (current, key) => deactivateInducedEffects(current, key),
+    removeHandCardEffects(state, activation.usedCards),
+  );
+  let next = handStatsCompleted;
+  for (const id of children) {
+    next = { ...next, deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, id) };
+    if (cardSkillUseState(next, id).boardState === liveBoardState.exclusion)
+      next = excludeCards(next, [id]);
+  }
+  return next;
+}
+
+function finishAllHandActivation(state: GameState, source: GameState['deck'][number]): GameState {
+  const queued = enqueueLiveAllHandDraw(flushDeckActions(state), source);
+  const ready = completeDeckOutChecks(queued, applyEffect);
+  const drawn = executeLiveAllHandDraw(ready, (current, card) => {
+    let next = current.tokenCardDeck.allHandSkillDeckReload
+      ? recoverCurrentDeckGraveyard(current)
+      : current;
+    next = { ...next, drawContext: 'skill', usedCard: card, lastUsedSkillIcon: null };
+    const target = Math.min(
+      handCapacity(next),
+      liveCurrentDeckCardCount(next.tokenCardDeck, next.deckBoard),
+    );
+    next = completeUsedCards(next, source.cardInstanceId);
+    next = shuffleHand(next, { recoverDiscard: false, destination: 'discard' });
+    next = fillHandToCountRetainingOverflow(
+      { ...next, drawContext: 'skill', usedCard: card, lastUsedSkillIcon: null },
+      target,
+    );
+    next = {
+      ...next,
+      deckBoard: updateLiveCardSkillUseAtBoardState(next.deckBoard, source.cardInstanceId),
+    };
+    return cardSkillUseState(next, source.cardInstanceId).boardState === liveBoardState.exclusion
+      ? excludeCards(next, [source.cardInstanceId])
+      : next;
+  });
+  return { ...completeDeckOutChecks(drawn, applyEffect), activation: null };
 }
 
 function excludeCards(state: GameState, ids: readonly string[]): GameState {

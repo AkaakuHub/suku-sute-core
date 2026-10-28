@@ -11,7 +11,9 @@ export function addLiveHandCardTargetCount<Id extends LiveCardIdentifier>(
     ...state,
     handTargetCounts: {
       ...state.handTargetCounts,
-      current: ((maximumActive ? 8 : state.handTargetCounts.current) + amount) | 0,
+      current:
+        ((maximumActive && !state.isAllHandSkill ? 8 : state.handTargetCounts.current) + amount) |
+        0,
     },
     handMaxCardSkillInfo: maximumActive
       ? addSavedTarget(state, amount)

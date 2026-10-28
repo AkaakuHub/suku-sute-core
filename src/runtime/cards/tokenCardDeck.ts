@@ -12,6 +12,7 @@ export type LiveTokenCardDeckState<Id extends LiveCardIdentifier = number> = Rea
   resetCount: number;
   isSwitchDeck: boolean;
   isAllHandSkill: boolean;
+  allHandSkillDeckReload: boolean;
   maxHandSkillActiveCount: number;
   handMaxCardSkillInfo: Readonly<{ targetHandCount: number }> | null;
   currentDeck: 'main' | 'sub';
@@ -38,6 +39,7 @@ export function createLiveTokenCardDeckState<Id extends LiveCardIdentifier = num
     resetCount: 0,
     isSwitchDeck: false,
     isAllHandSkill: false,
+    allHandSkillDeckReload: false,
     maxHandSkillActiveCount: 0,
     handMaxCardSkillInfo: null,
     currentDeck: 'main',

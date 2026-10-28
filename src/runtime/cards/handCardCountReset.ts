@@ -70,7 +70,7 @@ export function flushLiveHandCardCountActions<State extends HandCountRuntime>(
   while (next.deckActions.queue.length > 0) {
     if (next.tokenCardDeck.isSwitchDeck) return next;
     const action = next.deckActions.queue[0];
-    if (!action || action.type === 6) return next;
+    if (!action || action.type === 6 || action.type === 7) return next;
     next = {
       ...next,
       deckActions: {

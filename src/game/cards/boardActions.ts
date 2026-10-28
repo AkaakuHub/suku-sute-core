@@ -1,5 +1,4 @@
-import { liveBoardState } from '../../runtime/cards/deckBoardState.ts';
-import { setCardSkillUseAtBoardState } from './skillUseAtBoardState.ts';
+import { applyLiveAllHandSkillReshuffle } from '../../runtime/cards/reshuffle.ts';
 import type { GameState, HandShuffle } from '../model.ts';
 import { fillHandToCount, shuffleHand } from './drawing.ts';
 
@@ -12,6 +11,29 @@ export function flushDeckActions(state: GameState): GameState {
     const id = action.sourceId;
     const source = id === null ? null : next.cardPool.find((card) => card.cardInstanceId === id);
     if (source === undefined) throw new Error('引き直しを発動したカードがありません。');
+    if (next.tokenCardDeck.isAllHandSkill) {
+      const changed = applyLiveAllHandSkillReshuffle(
+        next.deckBoard,
+        next.tokenCardDeck,
+        [...(next.activation?.usedCards ?? []), ...next.hand],
+        {
+          cardInstanceId: id,
+          skillMainEffect: source?.skillMainEffect ?? null,
+          effect: {
+            effectId: 'shuffle',
+            recoveryType: action.options.recoverDiscard ? 'recovery' : 'no-recovery',
+            stashType: action.options.destination === 'draw' ? 'deck' : 'graveyard',
+          },
+        },
+      );
+      next = {
+        ...next,
+        deckBoard: changed.deckBoard,
+        tokenCardDeck: changed.state,
+        deckActions: { ...next.deckActions, shuffles: next.deckActions.shuffles.slice(1) },
+      };
+      continue;
+    }
     const shuffled = shuffleHand(
       {
         ...next,
@@ -39,34 +61,19 @@ export function enqueueHandShuffle(
   skipSourceRefill = false,
 ): GameState {
   const activation = state.activation;
-  if (!activation?.allHand)
-    return {
-      ...state,
-      ...(activation
-        ? {
-            activation: {
-              ...activation,
-              skipSourceRefill: activation.skipSourceRefill || skipSourceRefill,
-            },
-          }
-        : {}),
-      deckActions: {
-        ...state.deckActions,
-        shuffles: [...state.deckActions.shuffles, { sourceId, options, skipSourceRefill }],
-      },
-    };
-  let next = state;
-  if (options.destination === 'draw') {
-    for (const id of [...activation.usedCards, ...state.hand]) {
-      if (id !== sourceId) next = setCardSkillUseAtBoardState(next, id, liveBoardState.deck);
-    }
-  }
   return {
-    ...next,
-    activation: {
-      ...activation,
-      skipSourceRefill: activation.skipSourceRefill || skipSourceRefill,
-      recoverDiscard: activation.recoverDiscard || options.recoverDiscard,
+    ...state,
+    ...(activation
+      ? {
+          activation: {
+            ...activation,
+            skipSourceRefill: activation.skipSourceRefill || skipSourceRefill,
+          },
+        }
+      : {}),
+    deckActions: {
+      ...state.deckActions,
+      shuffles: [...state.deckActions.shuffles, { sourceId, options, skipSourceRefill }],
     },
   };
 }

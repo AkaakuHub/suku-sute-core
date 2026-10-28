@@ -208,9 +208,8 @@ export type GameState = Readonly<{
   activation: Readonly<{
     sourceId: string;
     usedCards: readonly string[];
-    allHand: boolean;
+    hasUseAllHandSkill: boolean;
     skipSourceRefill?: boolean;
-    recoverDiscard: boolean;
     handCountChanges: Readonly<Record<string, number>>;
     pendingHandStatsDeactivationKeys?: readonly string[];
   }> | null;

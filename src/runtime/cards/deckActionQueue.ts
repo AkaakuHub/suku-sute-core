@@ -1,3 +1,4 @@
+import type { LiveCardIdentity } from './cardIdentity.ts';
 import type { LiveCardIdentifier, LiveDeckBoardState } from './deckBoardState.ts';
 import type { LiveTokenCardDeckState } from './tokenCardDeck.ts';
 import {
@@ -5,7 +6,11 @@ import {
   type LiveHandCardCountResetHandler,
 } from './handCardCountReset.ts';
 
-export type LiveDeckAction = Readonly<{ type: 1; param1: number } | { type: 2 | 6 | 8 }>;
+export type LiveDeckAction = Readonly<
+  | { type: 1; param1: number }
+  | { type: 2 | 6 | 8 }
+  | { type: 7; card: LiveCardIdentity & Readonly<{ cardInstanceId: LiveCardIdentifier }> }
+>;
 
 export type LiveDeckActionQueueState = Readonly<{
   queue: readonly LiveDeckAction[];
