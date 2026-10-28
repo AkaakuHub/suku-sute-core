@@ -4,7 +4,7 @@ import type { Card, Effect, GameState } from '../model.ts';
 import { skillValue } from './skillValue.ts';
 import { isProxyTargetReached } from './proxySkill.ts';
 import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
-import { int64ToFloat32 } from '../../runtime/numeric.ts';
+import { ceilToInt32, int64ToFloat32 } from '../../runtime/numeric.ts';
 
 type HandLimitEffect = Extract<Effect, { kind: 'hand-limit' }>;
 
@@ -18,12 +18,12 @@ export function applyHandLimit(
   const baseAmount = effect.amount;
   if (effect.displayTimeType === 2 && effect.displayTime === 0n)
     throw new Error('Display section count is 0. (displayTimeType: SECTION, displayTime: 0)');
-  const scaledAmount = int32(
+  const scaledAmount = ceilToInt32(
     Math.fround(Math.fround(baseAmount + Math.fround(addValue)) * Math.fround(multiplier)),
   );
   const skillBoosted = skillValue(state, scaledAmount, effect, card);
   const action52 = applyAction52SkillBoostForCard(state, card, skillBoosted);
-  const amount = int32(action52.value);
+  const amount = ceilToInt32(action52.value);
   const currentState = action52.state;
   const absorption =
     effect.calculationType === 1 && amount >= 0 ? absorbHandLimit(currentState, amount) : null;
@@ -84,10 +84,6 @@ export function expireHandLimitSections(state: GameState): GameState {
     const remainingSections = effect.remainingSections - 1n;
     return remainingSections > 0n ? { ...effect, remainingSections } : null;
   });
-}
-
-function int32(value: number): number {
-  return Number(BigInt.asIntN(32, BigInt(Math.trunc(value))));
 }
 
 export function deactivateHandLimitEffects(state: GameState, deactivationKey: string): GameState {
