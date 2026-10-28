@@ -11,15 +11,8 @@ export function advanceHandCollectionAbilities(
     const card = state.deck.find((item) => item.id === id);
     if (!card) throw new Error('手札のカードがありません。');
     const collectionEffects = card.collectionEffects;
-    if (state.relayUsed.includes(id) && !collectionEffects) continue;
-    if (collectionEffects?.effects.length === 0) continue;
+    if (!canActivateHandCollectionAbility(state, card)) continue;
     const activationCount = activationCounts[id] ?? 0;
-    if (
-      collectionEffects?.limit !== undefined &&
-      collectionEffects.limit !== 0 &&
-      activationCount >= collectionEffects.limit
-    )
-      continue;
     const threshold =
       card.relay?.threshold ??
       collectionEffects?.threshold ??
@@ -46,4 +39,25 @@ export function advanceHandCollectionAbilities(
     },
     activated,
   };
+}
+
+export function canActivateHandCollectionAbility(
+  state: Pick<GameState, 'relayUsed' | 'handCollectionActivationCounts'>,
+  card: Card,
+): boolean {
+  const effects = card.collectionEffects;
+  if (!effects)
+    return (
+      (card.relay !== undefined ||
+        card.collectionAbility !== undefined ||
+        card.token === 'story' ||
+        card.token === 'bookmark') &&
+      !state.relayUsed.includes(card.id)
+    );
+  return (
+    effects.effects.length > 0 &&
+    (effects.limit === undefined ||
+      effects.limit === 0 ||
+      (state.handCollectionActivationCounts[card.id] ?? 0) < effects.limit)
+  );
 }
