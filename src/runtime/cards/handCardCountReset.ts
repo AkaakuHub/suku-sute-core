@@ -39,6 +39,7 @@ export function resetLivePendingHandCardCount<State extends HandCountRuntime>(
   resetHand: LiveHandCardCountResetHandler<State>,
 ): State {
   const amount = state.tokenCardDeck.resetCount;
+  if (amount === 0) return state;
   const oldTarget = state.tokenCardDeck.handTargetCounts.current;
   const correction = oldTarget < 3 ? (oldTarget - 3) | 0 : 0;
   const adjustment = (correction + amount) | 0;

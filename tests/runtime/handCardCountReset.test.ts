@@ -117,3 +117,8 @@ test('再読み込み確認を飛び越して解除量を適用しない', () =>
   expect(result.deckActions.queue).toEqual([]);
   expect(result.deckBoard.deckOutCount).toBe(0);
 });
+
+test('待機量0の明示的resetは抽選条件や手札を変更しない', () => {
+  const initial = setup();
+  expect(resetLivePendingHandCardCount(initial, resetHand)).toBe(initial);
+});
