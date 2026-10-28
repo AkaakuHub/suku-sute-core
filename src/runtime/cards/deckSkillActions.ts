@@ -1,5 +1,5 @@
 import type { LiveDeckBoardState } from './deckBoardState.ts';
-import { liveBoardState, updateLiveCardSkillUseAtBoardState } from './deckBoardState.ts';
+import { liveBoardState, setLiveCardSkillUseAtBoardState } from './deckBoardState.ts';
 import type { LiveSkillEffect } from '../skills/skillTypes.ts';
 import { createLiveSkillEffectDuration } from '../skills/skillEffectDuration.ts';
 
@@ -186,15 +186,15 @@ export function createLiveUseAllHandEffect(effect: LiveSkillEffect): LiveUseAllH
 
 export function applyLiveCardMoveEffect(
   state: LiveDeckBoardState,
-  cardDatasId: number,
+  cardInstanceId: number,
   effect: LiveCardMoveEffect,
 ): LiveDeckBoardState {
-  if (!Number.isSafeInteger(cardDatasId) || cardDatasId <= 0) {
-    throw new Error('Live CardMove card ID is invalid');
+  if (!Number.isSafeInteger(cardInstanceId) || cardInstanceId <= 0) {
+    throw new Error('Live CardMove card instance ID is invalid');
   }
-  return updateLiveCardSkillUseAtBoardState(
+  return setLiveCardSkillUseAtBoardState(
     state,
-    cardDatasId,
+    cardInstanceId,
     effect.destination === 'deck' ? liveBoardState.deck : liveBoardState.exclusion,
   );
 }

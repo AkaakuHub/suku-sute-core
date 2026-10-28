@@ -14,6 +14,7 @@ import {
   removeLiveSkillCardSearchParam,
   resetLiveCardSearchParams,
   updateLiveCardSkillUseAtBoardState,
+  setLiveCardSkillUseAtBoardState,
 } from '../../src/runtime/cards/deckBoardState.ts';
 
 describe('Live deck board state', () => {
@@ -33,30 +34,40 @@ describe('Live deck board state', () => {
         cardInstanceId: 1001,
         cardDatasId: 1001,
         boardState: liveBoardState.extra,
+        skillUseAtBoardState: liveBoardState.graveyard,
       },
       {
         cardInstanceId: 1002,
         cardDatasId: 1002,
         boardState: liveBoardState.deck,
+        skillUseAtBoardState: liveBoardState.graveyard,
       },
     ]);
-    const proxy = updateLiveCardSkillUseAtBoardState(extra, 1001, liveBoardState.proxy);
+    const proxy = updateLiveCardSkillUseAtBoardState(
+      setLiveCardSkillUseAtBoardState(extra, 1001, liveBoardState.proxy),
+      1001,
+    );
     expect(proxy.cards[0]).toEqual({
       cardInstanceId: 1001,
       cardDatasId: 1001,
       boardState: liveBoardState.proxy,
+      skillUseAtBoardState: liveBoardState.graveyard,
     });
-    const graveyard = updateLiveCardSkillUseAtBoardState(proxy, 1001, liveBoardState.graveyard);
+    const graveyard = updateLiveCardSkillUseAtBoardState(proxy, 1001);
     expect(graveyard.cards[0]).toEqual({
       cardInstanceId: 1001,
       cardDatasId: 1001,
       boardState: liveBoardState.graveyard,
+      skillUseAtBoardState: liveBoardState.graveyard,
     });
   });
 
   test('Proxy指定はExtraとExtra2以外のcardを移動しない', () => {
     const initial = createLiveDeckBoardState([1001], [1001]);
-    expect(updateLiveCardSkillUseAtBoardState(initial, 1001, liveBoardState.proxy)).toBe(initial);
+    const pending = setLiveCardSkillUseAtBoardState(initial, 1001, liveBoardState.proxy);
+    const updated = updateLiveCardSkillUseAtBoardState(pending, 1001);
+    expect(updated.cards[0]?.boardState).toBe(liveBoardState.hand);
+    expect(updated.cards[0]?.skillUseAtBoardState).toBe(liveBoardState.graveyard);
   });
 
   test('reloads every graveyard card when the deck is empty', () => {
@@ -96,11 +107,13 @@ describe('Live deck board state', () => {
       cardInstanceId: first.cardInstanceId,
       cardDatasId: 2001,
       boardState: liveBoardState.hand,
+      skillUseAtBoardState: liveBoardState.graveyard,
     });
     expect(drawn.cards).toContainEqual({
       cardInstanceId: second.cardInstanceId,
       cardDatasId: 2001,
       boardState: liveBoardState.deck,
+      skillUseAtBoardState: liveBoardState.graveyard,
     });
   });
 
@@ -124,4 +137,48 @@ describe('Live deck board state', () => {
     expect(removed.skillCardSearchParams).toEqual([param]);
     expect(resetLiveCardSearchParams(removed).skillCardSearchParams).toEqual([]);
   });
+});
+
+test('保存した行き先はUpdateまで盤面に反映せず、適用後にgraveyardへ戻す', () => {
+  const initial = moveLiveHandCardToExtra(createLiveDeckBoardState([1001, 1002], [1001]), 1001);
+  const pending = setLiveCardSkillUseAtBoardState(initial, 1001, liveBoardState.exclusion);
+  expect(pending.cards[0]?.boardState).toBe(liveBoardState.extra);
+  expect(liveDeckBoardCardInstanceIds(pending, liveBoardState.exclusion)).toEqual([]);
+  const completed = updateLiveCardSkillUseAtBoardState(pending, 1001);
+  expect(completed.cards[0]?.boardState).toBe(liveBoardState.exclusion);
+  expect(completed.cards[0]?.skillUseAtBoardState).toBe(liveBoardState.graveyard);
+});
+
+test.each([
+  {
+    previous: liveBoardState.deck,
+    requested: liveBoardState.graveyard,
+    expected: liveBoardState.deck,
+  },
+  {
+    previous: liveBoardState.exclusion,
+    requested: liveBoardState.deck,
+    expected: liveBoardState.exclusion,
+  },
+  {
+    previous: liveBoardState.proxy,
+    requested: liveBoardState.exclusion,
+    expected: liveBoardState.proxy,
+  },
+  {
+    previous: liveBoardState.exclusion,
+    requested: liveBoardState.proxy,
+    expected: liveBoardState.proxy,
+  },
+  {
+    previous: liveBoardState.deck,
+    requested: liveBoardState.exclusion,
+    expected: liveBoardState.exclusion,
+  },
+])('使用後の行き先の優先順位を維持する:%j', ({ previous, requested, expected }) => {
+  const initial = createLiveDeckBoardState([1001], [1001]);
+  const first = setLiveCardSkillUseAtBoardState(initial, 1001, previous);
+  const next = setLiveCardSkillUseAtBoardState(first, 1001, requested);
+  expect(next.cards[0]?.boardState).toBe(liveBoardState.hand);
+  expect(next.cards[0]?.skillUseAtBoardState).toBe(expected);
 });

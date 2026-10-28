@@ -79,21 +79,25 @@ test('ActionType42は発動元を除く現在の手札を順番どおりExtra2�
       cardInstanceId: 1001,
       cardDatasId: 1001,
       boardState: liveBoardState.extra2,
+      skillUseAtBoardState: liveBoardState.graveyard,
     },
     {
       cardInstanceId: 1002,
       cardDatasId: 1002,
       boardState: liveBoardState.extra,
+      skillUseAtBoardState: liveBoardState.graveyard,
     },
     {
       cardInstanceId: 1003,
       cardDatasId: 1003,
       boardState: liveBoardState.extra2,
+      skillUseAtBoardState: liveBoardState.graveyard,
     },
     {
       cardInstanceId: 1004,
       cardDatasId: 1004,
       boardState: liveBoardState.deck,
+      skillUseAtBoardState: liveBoardState.graveyard,
     },
   ]);
 });

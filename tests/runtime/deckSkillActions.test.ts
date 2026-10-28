@@ -100,7 +100,7 @@ test('ActionType17/20は保存detailの加算条件と表示期間を保持す�
   });
 });
 
-test('ActionType19は使用済みカードをruntimeのdeck/exclusionへ移す', () => {
+test('ActionType19は使用後の行き先だけを保存して現在の盤面を変えない', () => {
   const board = moveLiveHandCardToExtra(createLiveDeckBoardState([101, 102], [101]), 101);
   const moved = applyLiveCardMoveEffect(
     board,
@@ -110,7 +110,8 @@ test('ActionType19は使用済みカードをruntimeのdeck/exclusionへ移す',
   expect(moved.cards).toContainEqual({
     cardInstanceId: 101,
     cardDatasId: 101,
-    boardState: liveBoardState.exclusion,
+    boardState: liveBoardState.extra,
+    skillUseAtBoardState: liveBoardState.exclusion,
   });
 });
 
