@@ -1,3 +1,7 @@
+import {
+  resolveLiveApIncreaseIntervalSeconds,
+  resolveLiveApIncreaseIntervalMilliseconds,
+} from '../../runtime/skills/apIncreaseSpeed.ts';
 import { rescaleLiveGaugeTimer } from '../../runtime/live/gaugeTiming.ts';
 import { observeLiveApIncreaseSpeedEffect } from '../../runtime/skills/apIncreaseSpeedObservation.ts';
 import type { Card, Effect, GameState } from '../model.ts';
@@ -11,26 +15,26 @@ import { int64ToFloat32 } from '../../runtime/numeric.ts';
 type ApSpeedChange = Extract<Effect, { kind: 'ap-speed-change' }>;
 
 export function apIncreaseIntervalSeconds(state: GameState): number {
-  const originalBase = Math.fround(state.track.stage.apIncreaseIntervalSeconds);
-  const value = apIncreaseIntervalValue(state);
-  const bounded = Math.fround(Math.max(originalBase * 0.1, value));
-  return Math.fround(Math.ceil(Math.fround(bounded * 10)) / 10);
+  return resolveLiveApIncreaseIntervalSeconds(
+    state.track.stage.apIncreaseIntervalSeconds,
+    apSpeedCalculations(state),
+  );
 }
 
-export function apIncreaseIntervalValue(state: GameState): number {
-  let value = Math.fround(state.track.stage.apIncreaseIntervalSeconds);
-  const additions = state.apTimeEffects.filter((effect) => effect.calculation === 'add');
-  for (const effect of additions) value = Math.fround(value + Math.fround(effect.value));
-  const multipliers = state.apTimeEffects.filter((effect) => effect.calculation === 'multiply');
-  if (multipliers.length > 0) {
-    const sum = multipliers.reduce(
-      (total, effect) => Math.fround(total + Math.fround(effect.value - 1)),
-      0,
-    );
-    value = Math.fround(value * Math.fround(Math.max(-1, sum) + 1));
-  }
-  const minimum = Math.fround(Math.fround(state.track.stage.apIncreaseIntervalSeconds) * 0.1);
-  return Math.fround(Math.max(minimum, value));
+export function apIncreaseIntervalMilliseconds(state: GameState): number {
+  return resolveLiveApIncreaseIntervalMilliseconds(
+    state.track.stage.apIncreaseIntervalSeconds,
+    apSpeedCalculations(state),
+  );
+}
+
+function apSpeedCalculations(state: GameState) {
+  return state.apTimeEffects.map((effect) => ({
+    calculation:
+      effect.calculation === 'multiply'
+        ? { kind: 'multiply' as const, factor: effect.value }
+        : { kind: 'add' as const, milliseconds: effect.value },
+  }));
 }
 
 export function applyApSpeedChange(
@@ -87,7 +91,7 @@ export function applyApSpeedChange(
     calculation === 'multiply'
       ? { kind: 'multiply', factor: value }
       : { kind: 'add', milliseconds: value },
-    apIncreaseIntervalValue(state),
+    apIncreaseIntervalMilliseconds(state),
   );
   const absorption =
     observation.absorptionAmount === null

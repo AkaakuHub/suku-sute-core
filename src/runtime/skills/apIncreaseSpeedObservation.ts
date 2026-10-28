@@ -3,16 +3,18 @@ import type { LiveApIncreaseSpeedEffect } from './apIncreaseSpeed.ts';
 
 export function observeLiveApIncreaseSpeedEffect(
   calculation: LiveApIncreaseSpeedEffect['calculation'],
-  currentIncreaseIntervalSeconds: number,
+  currentIncreaseIntervalMilliseconds: number,
 ): Readonly<{ effectAmount: number; absorptionAmount: number | null }> {
-  if (!Number.isFinite(currentIncreaseIntervalSeconds) || currentIncreaseIntervalSeconds <= 0)
+  if (
+    !Number.isFinite(currentIncreaseIntervalMilliseconds) ||
+    currentIncreaseIntervalMilliseconds <= 0
+  )
     throw new Error('Live AP increase interval is invalid');
   const factor =
     calculation.kind === 'multiply'
       ? Math.fround(1 - Math.fround(calculation.factor))
       : Math.fround(
-          -Math.fround(calculation.milliseconds) /
-            Math.fround(currentIncreaseIntervalSeconds * 1000),
+          -Math.fround(calculation.milliseconds) / Math.fround(currentIncreaseIntervalMilliseconds),
         );
   const observed = Math.fround(factor * 100);
   const absorptionAmount = observed < 0 ? null : ceilToInt32(observed);

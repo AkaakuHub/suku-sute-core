@@ -15,7 +15,7 @@ test('倍率型は短縮率へSkillBoostを適用してAP intervalを変更す�
     {
       currentTimeSeconds: 0,
       currentMoodValue: 0,
-      currentIncreaseIntervalSeconds: 1,
+      currentIncreaseIntervalMilliseconds: 1000,
       power: { addValue: 0, multiplyFactor: 1, effectPower: 1 },
       applySkillBoost: (value) => {
         boostedValues.push(value);
@@ -43,7 +43,7 @@ test('加算型はruntimeどおりSkillBoostを消費するが登録値には適
     {
       currentTimeSeconds: 0,
       currentMoodValue: 0,
-      currentIncreaseIntervalSeconds: 1,
+      currentIncreaseIntervalMilliseconds: 1000,
       power: { addValue: 20, multiplyFactor: 2, effectPower: 1 },
       applySkillBoost: (value) => {
         boostUseCount += 1;
@@ -117,18 +117,29 @@ function detail(id: string, detailType: string, effectValue: number) {
 
 test('Float32で0.7倍を100換算して切り上げると吸収量は31になる', () => {
   expect(
-    observeLiveApIncreaseSpeedEffect({ kind: 'multiply', factor: Math.fround(0.7) }, 1),
+    observeLiveApIncreaseSpeedEffect({ kind: 'multiply', factor: Math.fround(0.7) }, 1000),
   ).toEqual({ effectAmount: 31, absorptionAmount: 31 });
   expect(
-    observeLiveApIncreaseSpeedEffect({ kind: 'add', milliseconds: -25 }, 1.2).absorptionAmount,
+    observeLiveApIncreaseSpeedEffect({ kind: 'add', milliseconds: -25 }, 1200).absorptionAmount,
   ).toBe(3);
 });
 
 test('AP速度低下は負のFloat32通知値を保ちProxyへ送らない', () => {
   const observation = observeLiveApIncreaseSpeedEffect(
     { kind: 'multiply', factor: Math.fround(1.001) },
-    1,
+    1000,
   );
   expect(observation.absorptionAmount).toBeNull();
   expect(observation.effectAmount).toBe(Math.fround(Math.fround(1 - Math.fround(1.001)) * 100));
+});
+
+test('AP間隔は基準の10%を下限とし、ミリ秒単位で丸める', () => {
+  expect(
+    resolveLiveApIncreaseIntervalSeconds(1.2, [{ calculation: { kind: 'multiply', factor: 0 } }]),
+  ).toBeCloseTo(0.12);
+  expect(
+    resolveLiveApIncreaseIntervalSeconds(1.2, [
+      { calculation: { kind: 'add', milliseconds: -25 } },
+    ]),
+  ).toBeCloseTo(1.175);
 });

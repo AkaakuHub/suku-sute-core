@@ -7,7 +7,7 @@ import type { IngameMission, IngameMissionRecord } from './ingameMissionTypes.ts
 import type { Effect } from './modelTypes.ts';
 import { liveHeartCount } from '../runtime/live/heartRuntime.ts';
 import { heartLimitValueWithoutLimit } from './effects/heartLimit.ts';
-import { apIncreaseIntervalValue } from './effects/apSpeed.ts';
+import { apIncreaseIntervalMilliseconds } from './effects/apSpeed.ts';
 
 export function startIngameMission(state: GameState, groupId: bigint): GameState {
   const group = state.track.ingameMissionGroups.find((item) => BigInt(item.id) === groupId);
@@ -108,7 +108,7 @@ export function missionActionEffect(
                             apSpeedEffect.calculation === 'multiply'
                               ? { kind: 'multiply', factor: apSpeedEffect.value }
                               : { kind: 'add', milliseconds: apSpeedEffect.value },
-                            apIncreaseIntervalValue(before),
+                            apIncreaseIntervalMilliseconds(before),
                           ).effectAmount
                         : 0
                       : effect.kind === 'heart-limit-change'

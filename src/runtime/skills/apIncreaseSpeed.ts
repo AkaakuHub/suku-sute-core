@@ -38,7 +38,7 @@ export function activateLiveApIncreaseSpeed(
   input: Readonly<{
     currentTimeSeconds: number;
     currentMoodValue: number;
-    currentIncreaseIntervalSeconds: number;
+    currentIncreaseIntervalMilliseconds: number;
     power: LiveSkillEffectPower;
     applySkillBoost: (value: number) => number;
   }>,
@@ -50,8 +50,8 @@ export function activateLiveApIncreaseSpeed(
   if (
     effect.actionType !== 21 ||
     !Number.isSafeInteger(input.currentMoodValue) ||
-    !Number.isFinite(input.currentIncreaseIntervalSeconds) ||
-    input.currentIncreaseIntervalSeconds <= 0
+    !Number.isFinite(input.currentIncreaseIntervalMilliseconds) ||
+    input.currentIncreaseIntervalMilliseconds <= 0
   ) {
     throw new Error('Live AP increase speed input is invalid');
   }
@@ -96,7 +96,7 @@ export function activateLiveApIncreaseSpeed(
   );
   const observation = observeLiveApIncreaseSpeedEffect(
     calculation,
-    input.currentIncreaseIntervalSeconds,
+    input.currentIncreaseIntervalMilliseconds,
   );
   return {
     ...observation,
@@ -127,7 +127,16 @@ export function advanceLiveApIncreaseSpeedState(
 
 export function resolveLiveApIncreaseIntervalSeconds(
   baseIntervalSeconds: number,
-  state: LiveApIncreaseSpeedState,
+  state: readonly Pick<LiveApIncreaseSpeedEffect, 'calculation'>[],
+): number {
+  return roundLiveGaugeIntervalSeconds(
+    resolveLiveApIncreaseIntervalMilliseconds(baseIntervalSeconds, state),
+  );
+}
+
+export function resolveLiveApIncreaseIntervalMilliseconds(
+  baseIntervalSeconds: number,
+  state: readonly Pick<LiveApIncreaseSpeedEffect, 'calculation'>[],
 ): number {
   if (!Number.isFinite(baseIntervalSeconds) || baseIntervalSeconds < 0) {
     throw new Error('Live AP increase interval is invalid');
@@ -147,9 +156,8 @@ export function resolveLiveApIncreaseIntervalSeconds(
     0,
   );
   const multiplyFactor = Math.max(Math.fround(1 + multiplyDelta), 0);
-  return roundLiveGaugeIntervalSeconds(
-    Math.max(Math.fround(addedMilliseconds * multiplyFactor), 0),
-  );
+  const minimum = Math.fround(Math.fround(baseIntervalSeconds * 1000) * Math.fround(0.1));
+  return Math.max(Math.fround(addedMilliseconds * multiplyFactor), minimum);
 }
 
 function resolveCalculation(
