@@ -283,7 +283,6 @@ function retireCard(state: GameState, card: Card, allHand: boolean): GameState {
       [card.cardInstanceId],
       allHand ? liveBoardState.extra2 : liveBoardState.extra,
     ),
-    relayUsed: state.relayUsed.filter((id) => id !== card.cardInstanceId),
     handHeartCollectCounts: Object.fromEntries(
       Object.entries(state.handHeartCollectCounts).filter(([id]) => id !== card.cardInstanceId),
     ),

@@ -107,7 +107,7 @@ export function activateTokenDeckSplit(
     deckBoard: subState.deckBoard,
     deckActions: subState.deckActions,
     handHeartCollectCounts: subState.handHeartCollectCounts,
-    relayUsed: subState.relayUsed,
+    handCollectionActivationCounts: subState.handCollectionActivationCounts,
     handCardStats,
     deckDrawContext: createLiveDeckDrawContextState(3),
 

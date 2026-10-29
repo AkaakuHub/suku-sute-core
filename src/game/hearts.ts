@@ -11,7 +11,6 @@ import { liveHeartCount } from '../runtime/live/heartRuntime.ts';
 import { createRangeRandom } from './random.ts';
 import { advanceHandCollectionAbilities } from './cards/collectionAbilities.ts';
 import { recordScoreHistory } from './scoreHistory.ts';
-import { voltageLevel } from './live/voltageLevel.ts';
 import { expireConvertedScoreBoostsOnHeartCollect } from './effects/voltageConversion.ts';
 import { applyProxySkillAbsorption } from './effects/proxySkill.ts';
 import { createLiveHearts } from '../runtime/live/heartCreation.ts';
@@ -75,53 +74,8 @@ export function collectHearts(state: GameState): GameState {
   const abilities = advanceHandCollectionAbilities(next, collected.collectCount);
   let triggered = abilities.state;
   for (const card of abilities.activated) {
-    const relay = card.relay;
-    if (relay) {
-      triggered = applyEffect(
-        triggered,
-        {
-          kind: relay.beats ? 'beat-hearts' : 'hearts',
-          amount: relay.hearts,
-          ...(relay.moodBonus ? { moodBonus: relay.moodBonus } : {}),
-        },
-        card,
-      );
-    } else if (card.collectionEffects) {
-      for (const effect of card.collectionEffects.effects)
-        triggered = applyEffect(triggered, effect, card);
-    } else if (card.collectionAbility) {
-      if (
-        triggered.genesis.effects.length > 0 ||
-        (voltageLevel(triggered.voltage.currentVoltage, triggered.maximumVoltageLevel) >= 950 &&
-          Math.trunc(triggered.mental.currentMental) === 0)
-      ) {
-        triggered = applyEffect(
-          triggered,
-          { kind: 'shuffle', recoverDiscard: false, destination: 'discard' },
-          card,
-        );
-        triggered = applyEffect(triggered, { kind: 'search-unit', unit: 2, count: 4 }, card);
-        triggered = applyEffect(triggered, { kind: 'voltage', amount: -1_400_000 }, card);
-        if (
-          triggered.genesis.effects.length > 0 ||
-          voltageLevel(triggered.voltage.currentVoltage, triggered.maximumVoltageLevel) >= 1000
-        )
-          triggered = applyEffect(triggered, { kind: 'voltage', amount: -14_000_000 }, card);
-      }
-    } else if (state.deck.length >= 95) {
-      triggered =
-        card.token === 'story'
-          ? applyEffect(
-              triggered,
-              { kind: 'beat-hearts', amount: 1001, moodBonus: { target: 1, perPoint: 5.005 } },
-              card,
-            )
-          : applyEffect(
-              triggered,
-              { kind: 'shuffle', recoverDiscard: false, destination: 'discard' },
-              card,
-            );
-    }
+    for (const effect of card.collectionEffects.effects)
+      triggered = applyEffect(triggered, effect, card);
   }
   return expireConvertedScoreBoostsOnHeartCollect(flushDeckActions(triggered));
 }

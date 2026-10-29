@@ -1,31 +1,26 @@
 import { liveCurrentHandCardInstanceIds } from '../../runtime/cards/liveHand.ts';
 import type { Card, GameState } from '../model.ts';
 
+type HandCollectionCard = Card &
+  Readonly<{ collectionEffects: NonNullable<Card['collectionEffects']> }>;
+
 export function advanceHandCollectionAbilities(
   state: GameState,
   count: number,
-): Readonly<{ state: GameState; activated: readonly Card[] }> {
+): Readonly<{ state: GameState; activated: readonly HandCollectionCard[] }> {
   const counts = { ...state.handHeartCollectCounts };
   const activationCounts = { ...state.handCollectionActivationCounts };
-  const activated: Card[] = [];
+  const activated: HandCollectionCard[] = [];
   for (const id of liveCurrentHandCardInstanceIds(state)) {
     const card = state.deck.find((item) => item.cardInstanceId === id);
     if (!card) throw new Error('手札のカードがありません。');
-    const collectionEffects = card.collectionEffects;
     if (!canActivateHandCollectionAbility(state, card)) continue;
-    const activationCount = activationCounts[id] ?? 0;
-    const threshold =
-      card.relay?.threshold ??
-      collectionEffects?.threshold ??
-      (card.token === 'story' || card.token === 'bookmark' || card.collectionAbility
-        ? 500_000
-        : null);
-    if (threshold === null) continue;
+    const threshold = card.collectionEffects.threshold;
     const total = (counts[id] ?? 0) + count;
     counts[id] = total < threshold ? total : 0;
     if (total >= threshold) {
       activated.push(card);
-      if (collectionEffects) activationCounts[id] = activationCount + 1;
+      activationCounts[id] = (activationCounts[id] ?? 0) + 1;
     }
   }
   return {
@@ -33,29 +28,18 @@ export function advanceHandCollectionAbilities(
       ...state,
       handHeartCollectCounts: counts,
       handCollectionActivationCounts: activationCounts,
-      relayUsed: [
-        ...state.relayUsed,
-        ...activated.filter((card) => !card.collectionEffects).map((card) => card.cardInstanceId),
-      ],
     },
     activated,
   };
 }
 
 export function canActivateHandCollectionAbility(
-  state: Pick<GameState, 'relayUsed' | 'handCollectionActivationCounts'>,
+  state: Pick<GameState, 'handCollectionActivationCounts'>,
   card: Card,
-): boolean {
+): card is HandCollectionCard {
   const effects = card.collectionEffects;
-  if (!effects)
-    return (
-      (card.relay !== undefined ||
-        card.collectionAbility !== undefined ||
-        card.token === 'story' ||
-        card.token === 'bookmark') &&
-      !state.relayUsed.includes(card.cardInstanceId)
-    );
   return (
+    effects !== undefined &&
     effects.effects.length > 0 &&
     (effects.limit === undefined ||
       effects.limit === 0 ||

@@ -275,7 +275,6 @@ export type GameState = Readonly<{
   targetBoosts: readonly TargetBoost[];
   resourceBoosts: readonly ResourceBoost[];
   genesis: LiveGenesisState;
-  relayUsed: readonly string[];
   handHeartCollectCounts: Readonly<Record<string, number>>;
   handCollectionActivationCounts: Readonly<Record<string, number>>;
   handUseActivationCounts: Readonly<Record<string, number>>;

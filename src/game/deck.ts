@@ -31,12 +31,7 @@ export function validateCard(card: Card): void {
       card.effects.length === 0 &&
       !card.handPermanentEffects?.length &&
       !card.modeSkillChanges &&
-      !card.modeAbilityChanges) ||
-    (card.relay !== undefined &&
-      (!Number.isSafeInteger(card.relay.threshold) ||
-        card.relay.threshold < 1 ||
-        !Number.isSafeInteger(card.relay.hearts) ||
-        card.relay.hearts < 1))
+      !card.modeAbilityChanges)
   ) {
     throw new Error('カードの設定が正しくありません。');
   }

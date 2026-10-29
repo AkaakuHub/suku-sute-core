@@ -1,5 +1,4 @@
 import { createLiveHandCardCountState } from '../runtime/skills/handCardCount.ts';
-import { liveCurrentHandCardInstanceIds } from '../runtime/cards/liveHand.ts';
 import { createLiveDeckHandsState } from '../runtime/cards/liveHand.ts';
 import { createLiveDeckDrawContextState } from '../runtime/cards/cardDraw.ts';
 import { createLiveTokenCardDeckState } from '../runtime/cards/tokenCardDeck.ts';
@@ -178,7 +177,6 @@ export function createGame(
     targetBoosts: [],
     resourceBoosts: [],
     genesis: createLiveGenesisState(),
-    relayUsed: [],
     handHeartCollectCounts: {},
     combo: 0,
     lastCollectTick: -rules.comboWindowTicks - 1,
@@ -223,10 +221,7 @@ export function advanceTo(state: GameState, seconds: number): GameState {
   let next = state;
   while (next.tick < target) next = advanceTick(next);
   if (next.tick === endTick) {
-    const collected = collectHearts({
-      ...next,
-      relayUsed: [...liveCurrentHandCardInstanceIds(next)],
-    });
+    const collected = collectHearts(next);
     return {
       ...finishGenesis(collected),
       scoreHistory: recordScoreHistory(collected.scoreHistory, {

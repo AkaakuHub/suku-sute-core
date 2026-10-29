@@ -183,7 +183,6 @@ function drawUntil(
         ),
       },
       deckBoard: moveCardsToBoard(next, [drawn], liveBoardState.hand).deckBoard,
-      relayUsed: next.relayUsed.filter((id) => id !== drawn),
       handHeartCollectCounts: { ...next.handHeartCollectCounts, [drawn]: 0 },
     };
     next = initializeHandCardStats(next, [drawn]);
@@ -237,5 +236,5 @@ export function shuffleHand(state: GameState, options: HandShuffle): GameState {
     liveCurrentHandCardInstanceIds(state),
     options.destination === 'draw' ? liveBoardState.deck : liveBoardState.graveyard,
   );
-  return { ...setLiveCurrentHandCards(next, []), relayUsed: [], handHeartCollectCounts: {} };
+  return { ...setLiveCurrentHandCards(next, []), handHeartCollectCounts: {} };
 }

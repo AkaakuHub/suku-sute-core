@@ -320,7 +320,6 @@ export type Card = Readonly<{
   drawEffects?: readonly Effect[];
   beforeUseEffects?: readonly Effect[];
   handInducers?: readonly HandInducer[];
-  relay?: Readonly<{ threshold: number; hearts: number; beats?: boolean; moodBonus?: MoodBonus }>;
   token?: TokenId;
   exhausts?: true;
   special?: Readonly<
@@ -358,7 +357,6 @@ export type Card = Readonly<{
     limit?: number;
     limitMemory?: 'reset' | 'retain';
   }>;
-  collectionAbility?: 'rain-echo' | 'rain-pulse';
 }> &
   LiveSkillCardIdentity &
   Pick<LiveCardSkillLevel, 'consumeAp'> &
