@@ -1,3 +1,4 @@
+import { createLiveRegenGaugeTiming } from '../../src/runtime/skills/regenGaugeTiming.ts';
 import { expect, test } from 'vite-plus/test';
 import type { LiveSkillEffect } from '../../src/runtime/skills/skillTypes.ts';
 import {
@@ -40,7 +41,7 @@ test('Regen Mentalは発動時に適用し、MSEC間隔では1frameに1回だけ
   ).toEqual([activated.application]);
 });
 
-test('Regen VoltageはskillによるHeart生成回数で再適用し、section寿命で終了する', () => {
+test('Regen Voltageは自然発生のBeat Heart通知で再適用し、section寿命で終了する', () => {
   const activated = activateLiveRegenGaugeEffect(
     createLiveRegenGaugeState(),
     regenEffect(11, 'REGEN_VOLTAGE', 2, 2, 2, 2),
@@ -101,3 +102,60 @@ function regenEffect(
 function detail(id: string, detailType: string, effectValue: number) {
   return { id, detailType, targetMood: 0, effectValue, params: [] };
 }
+
+test('時間間隔と期限はFloat32の加算で更新し期限のフレームでも先に回復する', () => {
+  let state = [
+    {
+      actionType: 11 as const,
+      gauge: 'voltage' as const,
+      amount: 3,
+      effectId: 'float32',
+      ...createLiveRegenGaugeTiming(1, 100, 1, 100),
+    },
+  ];
+  for (let index = 0; index < 5; index++) {
+    const next = advanceLiveRegenGaugeClock(state, {
+      currentTimeSeconds: (index + 1) / 60,
+      deltaTimeSeconds: 1 / 60,
+      sectionChangeCount: 0,
+      musicEnded: false,
+    });
+    expect(next.applications).toEqual([]);
+    state = [...next.state];
+  }
+  const last = advanceLiveRegenGaugeClock(state, {
+    currentTimeSeconds: 0.1,
+    deltaTimeSeconds: 1 / 60,
+    sectionChangeCount: 0,
+    musicEnded: false,
+  });
+  expect(last.applications).toEqual([{ actionType: 11, gauge: 'voltage', amount: 3 }]);
+  expect(last.state).toEqual([]);
+});
+
+test('Beat Heartの周期回復は実際の発動元情報を維持し、パート期限を消費しない', () => {
+  const state = [
+    {
+      actionType: 6 as const,
+      gauge: 'mental' as const,
+      amount: 0.05,
+      effectId: 'source',
+      sourceCardId: 'card',
+      amountBasis: 'maximum-gauge' as const,
+      ...createLiveRegenGaugeTiming(2, 2, 2, 1),
+    },
+  ];
+  const first = notifyLiveRegenGaugeBeatHeartCreated(state);
+  expect(first.applications).toEqual([]);
+  const second = notifyLiveRegenGaugeBeatHeartCreated(first.state);
+  expect(second.applications).toEqual([
+    {
+      actionType: 6,
+      gauge: 'mental',
+      amount: 0.05,
+      sourceCardId: 'card',
+      amountBasis: 'maximum-gauge',
+    },
+  ]);
+  expect(second.state[0]?.duration).toEqual({ kind: 'sections', remainingChanges: 1n });
+});

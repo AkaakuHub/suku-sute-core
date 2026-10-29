@@ -52,7 +52,7 @@ export function createVoltageRegenerationEffect(input: Input): Effect {
         }
       : {}),
     intervalType,
-    intervalMilliseconds: int32(detail(input.details, 'REGEN_VOLTAGE_INTERVAL_NUM')?.value ?? 0n),
+    intervalValue: int32(detail(input.details, 'REGEN_VOLTAGE_INTERVAL_NUM')?.value ?? 0n),
     duration,
     ...(input.invocationType !== undefined ? { invocationType: input.invocationType } : {}),
     ...(input.deactivationKey !== undefined ? { deactivationKey: input.deactivationKey } : {}),

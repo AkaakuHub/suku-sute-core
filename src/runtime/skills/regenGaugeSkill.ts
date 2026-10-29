@@ -1,10 +1,11 @@
 import { resolveLiveGaugeSkillEffectAmount } from './gaugeSkillEffectValue.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
-  advanceLiveSkillEffectDuration,
-  createLiveSkillEffectDuration,
-  type LiveSkillEffectDuration,
-} from './skillEffectDuration.ts';
+  advanceLiveRegenGaugeDuration,
+  createLiveRegenGaugeTiming,
+  type LiveRegenGaugeInterval,
+  type LiveRegenGaugeDuration,
+} from './regenGaugeTiming.ts';
 import type { LiveSkillEffectPower } from './skillEffectPower.ts';
 import { requireLiveSkillEffectDetails } from './skillEffectValue.ts';
 
@@ -14,26 +15,18 @@ export type LiveRegenGaugeApplication = Readonly<{
   amount: number;
 }>;
 
-type LiveRegenGaugeInterval =
-  | Readonly<{
-      kind: 'milliseconds';
-      seconds: number;
-      elapsedSeconds: number;
-    }>
-  | Readonly<{
-      kind: 'beat-heart';
-      count: number;
-      progress: number;
-    }>;
-
-export type LiveRegenGaugeEffect = LiveRegenGaugeApplication &
+export type LiveRegenGaugeEffect<
+  Application extends LiveRegenGaugeApplication = LiveRegenGaugeApplication,
+> = Application &
   Readonly<{
     effectId: string;
     interval: LiveRegenGaugeInterval;
-    duration: LiveSkillEffectDuration;
+    duration: LiveRegenGaugeDuration;
   }>;
 
-export type LiveRegenGaugeState = readonly LiveRegenGaugeEffect[];
+export type LiveRegenGaugeState<
+  Application extends LiveRegenGaugeApplication = LiveRegenGaugeApplication,
+> = readonly LiveRegenGaugeEffect<Application>[];
 
 export function createLiveRegenGaugeState(): LiveRegenGaugeState {
   return [];
@@ -85,42 +78,27 @@ export function activateLiveRegenGaugeEffect(
     gauge: contract.gauge,
     amount: Math.trunc(amount),
   };
-  const intervalType = requireDetailValue(details, contract.intervalType, contract.label);
-  const intervalValue = requirePositiveDetailValue(details, contract.intervalValue, contract.label);
-  const interval: LiveRegenGaugeInterval =
-    intervalType === 1
-      ? {
-          kind: 'milliseconds',
-          seconds: intervalValue / 1_000,
-          elapsedSeconds: 0,
-        }
-      : intervalType === 2
-        ? {
-            kind: 'beat-heart',
-            count: intervalValue,
-            progress: 0,
-          }
-        : invalidIntervalType(contract.label);
+  const timing = createLiveRegenGaugeTiming(
+    requireDetailValue(details, contract.intervalType, contract.label),
+    requireDetailValue(details, contract.intervalValue, contract.label),
+    requireDetailValue(details, contract.displayTimeType, contract.label),
+    requireDetailValue(details, contract.displayTime, contract.label),
+  );
   return {
     state: [
       ...state,
       {
         ...application,
         effectId: effect.id,
-        interval,
-        duration: createLiveSkillEffectDuration(
-          requireDetailValue(details, contract.displayTimeType, contract.label),
-          requireDetailValue(details, contract.displayTime, contract.label),
-          contract.label,
-        ),
+        ...timing,
       },
     ],
     application,
   };
 }
 
-export function advanceLiveRegenGaugeClock(
-  state: LiveRegenGaugeState,
+export function advanceLiveRegenGaugeClock<Effect extends LiveRegenGaugeEffect>(
+  state: readonly Effect[],
   input: Readonly<{
     currentTimeSeconds: number;
     deltaTimeSeconds: number;
@@ -128,37 +106,43 @@ export function advanceLiveRegenGaugeClock(
     musicEnded: boolean;
   }>,
 ): Readonly<{
-  state: LiveRegenGaugeState;
-  applications: readonly LiveRegenGaugeApplication[];
+  state: readonly Effect[];
+  applications: readonly Omit<Effect, 'effectId' | 'interval' | 'duration'>[];
 }> {
   if (!Number.isFinite(input.deltaTimeSeconds) || input.deltaTimeSeconds < 0) {
     throw new Error('Live regen gauge delta time is invalid');
   }
-  const applications: LiveRegenGaugeApplication[] = [];
+  const applications: Omit<Effect, 'effectId' | 'interval' | 'duration'>[] = [];
   const effects = state.flatMap((effect) => {
     let interval = effect.interval;
     if (interval.kind === 'milliseconds') {
-      const elapsedSeconds = interval.elapsedSeconds + input.deltaTimeSeconds;
+      const elapsedSeconds = Math.fround(
+        interval.elapsedSeconds + Math.fround(input.deltaTimeSeconds),
+      );
       if (elapsedSeconds >= interval.seconds) {
         applications.push(toApplication(effect));
       }
       interval = {
         ...interval,
         elapsedSeconds:
-          elapsedSeconds >= interval.seconds ? elapsedSeconds - interval.seconds : elapsedSeconds,
+          elapsedSeconds >= interval.seconds
+            ? Math.fround(elapsedSeconds - interval.seconds)
+            : elapsedSeconds,
       };
     }
-    const duration = advanceLiveSkillEffectDuration(effect.duration, input);
+    const duration = advanceLiveRegenGaugeDuration(effect.duration, input);
     return duration === null ? [] : [{ ...effect, interval, duration }];
   });
   return { state: effects, applications };
 }
 
-export function notifyLiveRegenGaugeBeatHeartCreated(state: LiveRegenGaugeState): Readonly<{
-  state: LiveRegenGaugeState;
-  applications: readonly LiveRegenGaugeApplication[];
+export function notifyLiveRegenGaugeBeatHeartCreated<Effect extends LiveRegenGaugeEffect>(
+  state: readonly Effect[],
+): Readonly<{
+  state: readonly Effect[];
+  applications: readonly Omit<Effect, 'effectId' | 'interval' | 'duration'>[];
 }> {
-  const applications: LiveRegenGaugeApplication[] = [];
+  const applications: Omit<Effect, 'effectId' | 'interval' | 'duration'>[] = [];
   const effects = state.map((effect) => {
     if (effect.interval.kind !== 'beat-heart') return effect;
     const progress = effect.interval.progress + 1;
@@ -177,12 +161,26 @@ export function notifyLiveRegenGaugeBeatHeartCreated(state: LiveRegenGaugeState)
   return { state: effects, applications };
 }
 
-function toApplication(effect: LiveRegenGaugeEffect): LiveRegenGaugeApplication {
-  return {
-    actionType: effect.actionType,
-    gauge: effect.gauge,
-    amount: effect.amount,
-  };
+export function advanceLiveRegenGaugeSections<Effect extends LiveRegenGaugeEffect>(
+  state: readonly Effect[],
+  sectionChangeCount: number,
+): readonly Effect[] {
+  return state.flatMap((effect) => {
+    if (effect.duration.kind !== 'sections') return [effect];
+    const duration = advanceLiveRegenGaugeDuration(effect.duration, {
+      deltaTimeSeconds: 0,
+      sectionChangeCount,
+      musicEnded: false,
+    });
+    return duration === null ? [] : [{ ...effect, duration }];
+  });
+}
+
+function toApplication<Effect extends LiveRegenGaugeEffect>(
+  effect: Effect,
+): Omit<Effect, 'effectId' | 'interval' | 'duration'> {
+  const { effectId: _effectId, interval: _interval, duration: _duration, ...application } = effect;
+  return application;
 }
 
 function requireDetailValue(
@@ -195,22 +193,6 @@ function requireDetailValue(
     throw new Error(`Live ${label} detail is absent:${name}`);
   }
   return detail.effectValue;
-}
-
-function requirePositiveDetailValue(
-  details: ReadonlyMap<string, LiveSkillEffect['details'][number]>,
-  name: string,
-  label: string,
-): number {
-  const value = requireDetailValue(details, name, label);
-  if (value < 1) {
-    throw new Error(`Live ${label} interval is invalid`);
-  }
-  return value;
-}
-
-function invalidIntervalType(label: string): never {
-  throw new Error(`Live ${label} interval type is invalid`);
 }
 
 function resolveContract(actionType: number): Readonly<{

@@ -53,7 +53,7 @@ export function createMentalRegenerationEffect(input: Input): Effect {
         }
       : {}),
     intervalType,
-    intervalMilliseconds: int64ToFloat32(interval),
+    intervalValue: int64ToFloat32(interval),
     duration,
     ...(input.invocationType !== undefined ? { invocationType: input.invocationType } : {}),
     ...(input.deactivationKey !== undefined ? { deactivationKey: input.deactivationKey } : {}),

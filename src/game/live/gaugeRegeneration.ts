@@ -1,16 +1,23 @@
 import { addLiveGenesisGauge } from '../../runtime/skills/genesisSkill.ts';
+import {
+  advanceLiveRegenGaugeClock,
+  advanceLiveRegenGaugeSections,
+  notifyLiveRegenGaugeBeatHeartCreated,
+} from '../../runtime/skills/regenGaugeSkill.ts';
+import { createLiveRegenGaugeTiming } from '../../runtime/skills/regenGaugeTiming.ts';
 import { changeResource } from '../resources.ts';
-import type { GaugeRegeneration } from '../modelTypes.ts';
+import { durationSeconds } from '../projection.ts';
+import type { GameRegenGaugeApplication } from '../gaugeRegenerationTypes.ts';
 import type { GameState } from '../model.ts';
 import type { EffectApplier } from '../effects/induceSkillEffect.ts';
 
 export function startGaugeRegeneration(
   state: GameState,
-  gauge: GaugeRegeneration['gauge'],
+  gauge: GameRegenGaugeApplication['gauge'],
   amount: number,
-  amountBasis: GaugeRegeneration['amountBasis'],
+  amountBasis: GameRegenGaugeApplication['amountBasis'],
   intervalType: 1 | 2,
-  intervalMilliseconds: number,
+  intervalValue: number,
   duration: Readonly<{ kind: 'milliseconds' | 'sections'; value: number }>,
   sourceCardId: string | null,
   applyEffect?: EffectApplier,
@@ -20,29 +27,34 @@ export function startGaugeRegeneration(
 ): GameState {
   if (duration.kind === 'sections' && duration.value === 0)
     throw new Error('Display section count is 0. (displayTimeType: SECTION, displayTime: 0)');
-  const intervalSeconds = Math.fround(intervalMilliseconds / 1000);
-  const suppressExpiry = invocationType === 0x388 || invocationType === 0x38b;
-  const regeneration: GaugeRegeneration = {
+  const timing = createLiveRegenGaugeTiming(
+    intervalType,
+    intervalValue,
+    invocationType === 0x388 || invocationType === 0x38b
+      ? 3
+      : duration.kind === 'milliseconds'
+        ? 1
+        : 2,
+    duration.value,
+  );
+  const application: GameRegenGaugeApplication = {
+    actionType: gauge === 'mental' ? 6 : 11,
     gauge,
-    calculationType,
-    sourceCardId,
     amount,
     amountBasis,
-    intervalType,
-    intervalSeconds,
-    elapsedSeconds: 0,
-    durationSeconds:
-      duration.kind === 'milliseconds' && !suppressExpiry
-        ? Math.fround(duration.value / 1000)
-        : null,
-    durationElapsedSeconds: 0,
-    remainingSections: duration.kind === 'sections' && !suppressExpiry ? duration.value : null,
-    remainingHeartEvents: duration.kind === 'sections' ? duration.value : null,
+    sourceCardId,
+    calculationType,
     deactivationKey: deactivationKey ?? null,
   };
+  const effectId = String(state.nextRegenGaugeEffectId);
+  const next = pulseGauge(
+    { ...state, nextRegenGaugeEffectId: state.nextRegenGaugeEffectId + 1 },
+    application,
+    applyEffect,
+  );
   return {
-    ...pulseGauge(state, gauge, amount, amountBasis, sourceCardId, applyEffect, calculationType),
-    gaugeRegenerations: [...state.gaugeRegenerations, regeneration],
+    ...next,
+    regenGaugeEffects: [...next.regenGaugeEffects, { ...application, effectId, ...timing }],
   };
 }
 
@@ -51,72 +63,61 @@ export function advanceGaugeRegenerations(
   elapsedSeconds: number,
   applyEffect?: EffectApplier,
 ): GameState {
-  const elapsed = Math.fround(elapsedSeconds);
-  const active: GaugeRegeneration[] = [];
-  let next = state;
-  for (const regeneration of state.gaugeRegenerations) {
-    let accumulated = Math.fround(regeneration.elapsedSeconds + elapsed);
-    if (regeneration.intervalType === 1 && regeneration.intervalSeconds <= accumulated) {
-      next = pulseGauge(
-        next,
-        regeneration.gauge,
-        regeneration.amount,
-        regeneration.amountBasis,
-        regeneration.sourceCardId,
-        applyEffect,
-        regeneration.calculationType,
-      );
-      accumulated = Math.fround(accumulated - regeneration.intervalSeconds);
-    }
-    const durationElapsedSeconds = Math.fround(regeneration.durationElapsedSeconds + elapsed);
-    if (
-      regeneration.durationSeconds !== null &&
-      durationElapsedSeconds >= regeneration.durationSeconds
-    )
-      continue;
-    active.push({ ...regeneration, elapsedSeconds: accumulated, durationElapsedSeconds });
-  }
-  return { ...next, gaugeRegenerations: active };
+  const advanced = advanceLiveRegenGaugeClock(state.regenGaugeEffects, {
+    currentTimeSeconds: durationSeconds(state) + elapsedSeconds,
+    deltaTimeSeconds: elapsedSeconds,
+    sectionChangeCount: 0,
+    musicEnded: false,
+  });
+  return applyGaugeRegenerationPulses(
+    { ...state, regenGaugeEffects: advanced.state },
+    advanced.applications,
+    applyEffect,
+  );
 }
 
-export function expireGaugeRegenerations(
+export function notifyGaugeRegenerationsBeatHeart(
   state: GameState,
-  duration: 'sections' | 'heart-event',
+  applyEffect?: EffectApplier,
 ): GameState {
-  return {
-    ...state,
-    gaugeRegenerations: state.gaugeRegenerations.flatMap((regeneration) => {
-      if (duration === 'sections' && regeneration.remainingSections !== null) {
-        const remainingSections = regeneration.remainingSections - 1;
-        return remainingSections > 0 ? [{ ...regeneration, remainingSections }] : [];
-      }
-      if (duration === 'heart-event' && regeneration.remainingHeartEvents !== null) {
-        const remainingHeartEvents = regeneration.remainingHeartEvents - 1;
-        return remainingHeartEvents > 0 ? [{ ...regeneration, remainingHeartEvents }] : [];
-      }
-      return [regeneration];
-    }),
-  };
+  const notified = notifyLiveRegenGaugeBeatHeartCreated(state.regenGaugeEffects);
+  return applyGaugeRegenerationPulses(
+    { ...state, regenGaugeEffects: notified.state },
+    notified.applications,
+    applyEffect,
+  );
+}
+
+export function expireGaugeRegenerationSections(state: GameState): GameState {
+  return { ...state, regenGaugeEffects: advanceLiveRegenGaugeSections(state.regenGaugeEffects, 1) };
 }
 
 export function deactivateGaugeRegenerations(state: GameState, deactivationKey: string): GameState {
   return {
     ...state,
-    gaugeRegenerations: state.gaugeRegenerations.filter(
-      (regeneration) => regeneration.deactivationKey !== deactivationKey,
+    regenGaugeEffects: state.regenGaugeEffects.filter(
+      (effect) => effect.deactivationKey !== deactivationKey,
     ),
   };
 }
 
+function applyGaugeRegenerationPulses(
+  state: GameState,
+  applications: readonly GameRegenGaugeApplication[],
+  applyEffect?: EffectApplier,
+): GameState {
+  return applications.reduce(
+    (next, application) => pulseGauge(next, application, applyEffect),
+    state,
+  );
+}
+
 function pulseGauge(
   state: GameState,
-  gauge: GaugeRegeneration['gauge'],
-  amount: number,
-  amountBasis: GaugeRegeneration['amountBasis'],
-  sourceCardId: string | null,
+  application: GameRegenGaugeApplication,
   applyEffect?: EffectApplier,
-  calculationType = 1,
 ): GameState {
+  const { gauge, amount, amountBasis, sourceCardId, calculationType } = application;
   if (calculationType !== 1) return state;
   const value = Math.trunc(
     amountBasis === 'maximum-gauge'

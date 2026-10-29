@@ -43,7 +43,7 @@ export function applyGaugeRegeneration(
     boosted.value,
     effect.amountBasis,
     effect.intervalType,
-    effect.intervalMilliseconds,
+    effect.intervalValue,
     effect.duration,
     card?.cardInstanceId ?? null,
     applyEffect,

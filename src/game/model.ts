@@ -1,3 +1,5 @@
+import type { LiveRegenGaugeState } from '../runtime/skills/regenGaugeSkill.ts';
+import type { GameRegenGaugeApplication } from './gaugeRegenerationTypes.ts';
 import type { LiveApIncreaseSpeedState } from '../runtime/skills/apIncreaseSpeed.ts';
 import type { LiveDeckHandsState } from '../runtime/cards/liveHand.ts';
 import type { LiveDeckDrawContextState } from '../runtime/cards/cardDraw.ts';
@@ -42,7 +44,6 @@ import type { AdditionalHeartInducer } from './additionalHeartTypes.ts';
 import type { TokenRequest } from './tokenRequestTypes.ts';
 import type {
   GaugeInfinity,
-  GaugeRegeneration,
   HeartBoostState,
   MentalBarrier,
   SkillCostChange,
@@ -225,7 +226,8 @@ export type GameState = Readonly<{
   nextSkillAdditionalBuffId: number;
   temporaryScoreBoosts: readonly TemporaryScoreBoost[];
   gaugeInfinities: readonly GaugeInfinity[];
-  gaugeRegenerations: readonly GaugeRegeneration[];
+  regenGaugeEffects: LiveRegenGaugeState<GameRegenGaugeApplication>;
+  nextRegenGaugeEffectId: number;
   moodOffset: number;
   moodSkillBuffs: readonly Readonly<{
     calculation: 'add' | 'fixed';

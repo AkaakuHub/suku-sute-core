@@ -15,7 +15,7 @@ import { advanceProxySkillSections } from './effects/proxySkill.ts';
 import { expireHandCardCountSections } from './effects/handCardCount.ts';
 import { flushHandCardCountActions } from './cards/drawing.ts';
 import { expireGaugeInfinities } from './resources.ts';
-import { expireGaugeRegenerations } from './live/gaugeRegeneration.ts';
+import { expireGaugeRegenerationSections } from './live/gaugeRegeneration.ts';
 import { expireMentalBarriers } from './live/mentalBarriers.ts';
 import { expireVoltageIncreaseStopSections } from './effects/stopVoltageIncrease.ts';
 import { expireSectionHeartBoosts } from './live/heartBoosts.ts';
@@ -35,7 +35,7 @@ export function advanceSectionChange(state: GameState, applyEffect: EffectApplie
   next = advanceProxySkillSections(next, applyEffect);
   next = flushHandCardCountActions(expireHandCardCountSections(next));
   next = expireGaugeInfinities(next, 'sections', 1, applyEffect);
-  next = expireGaugeRegenerations(next, 'sections');
+  next = expireGaugeRegenerationSections(next);
   next = expireMentalBarriers(next, 'sections', 1);
   next = expireVoltageIncreaseStopSections(next);
   next = expireBeatPointBuffSections(next);

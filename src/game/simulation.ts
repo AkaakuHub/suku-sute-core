@@ -28,7 +28,10 @@ import { starGatherHeartShowLimitSettings } from './live/heartPresentation.ts';
 import { resolveLiveHeartDrawCount } from '../runtime/live/heartPresentation.ts';
 import { expireGaugeInfinities } from './resources.ts';
 import { advanceMentalHeartInducers } from './effects/mentalHeartInduce.ts';
-import { advanceGaugeRegenerations, expireGaugeRegenerations } from './live/gaugeRegeneration.ts';
+import {
+  advanceGaugeRegenerations,
+  notifyGaugeRegenerationsBeatHeart,
+} from './live/gaugeRegeneration.ts';
 import { expireMentalBarriers, removeExhaustedMentalBarriers } from './live/mentalBarriers.ts';
 import { advanceHeartBoosts } from './live/heartBoosts.ts';
 import { initializeHandCardStats } from './cards/handCardStats.ts';
@@ -137,7 +140,8 @@ export function createGame(
     voltageStops: [],
     nextVoltageStopId: 1,
     gaugeInfinities: [],
-    gaugeRegenerations: [],
+    regenGaugeEffects: [],
+    nextRegenGaugeEffectId: 1,
     moodOffset: 0,
     moodSkillBuffs: [],
     costReductions: {},
@@ -300,8 +304,10 @@ function advanceTick(state: GameState): GameState {
   const previousBeat = Math.floor((state.tick * state.track.bpm) / (60 * rules.ticksPerSecond));
   const beat = Math.floor((tick * state.track.bpm) / (60 * rules.ticksPerSecond));
   if (beat !== previousBeat && beat % 2 === 0) {
-    if (!next.mental.mentalDown) next = addHearts(next, beatHeartCount(next));
-    next = expireGaugeRegenerations(next, 'heart-event');
+    if (!next.mental.mentalDown) {
+      next = addHearts(next, beatHeartCount(next));
+      next = notifyGaugeRegenerationsBeatHeart(next, applyEffect);
+    }
   }
   if (sectionAt(next) !== sectionAt(state)) next = advanceSectionChange(next, applyEffect);
   const automatic = advanceAutomaticHeart(next.automaticHeart, heartCount(next), dt);
