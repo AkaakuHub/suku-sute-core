@@ -22,7 +22,8 @@ test('Regen Mentalは発動時に適用し、MSEC間隔では1frameに1回だけ
   expect(activated.application).toEqual({
     actionType: 6,
     gauge: 'mental',
-    amount: 11,
+    calculationType: 1,
+    value: 11.5,
   });
   const delayed = advanceLiveRegenGaugeClock(activated.state, {
     currentTimeSeconds: 12.5,
@@ -108,7 +109,8 @@ test('時間間隔と期限はFloat32の加算で更新し期限のフレーム�
     {
       actionType: 11 as const,
       gauge: 'voltage' as const,
-      amount: 3,
+      calculationType: 1,
+      value: 3,
       effectId: 'float32',
       ...createLiveRegenGaugeTiming(1, 100, 1, 100),
     },
@@ -129,7 +131,9 @@ test('時間間隔と期限はFloat32の加算で更新し期限のフレーム�
     sectionChangeCount: 0,
     musicEnded: false,
   });
-  expect(last.applications).toEqual([{ actionType: 11, gauge: 'voltage', amount: 3 }]);
+  expect(last.applications).toEqual([
+    { actionType: 11, gauge: 'voltage', calculationType: 1, value: 3 },
+  ]);
   expect(last.state).toEqual([]);
 });
 
@@ -138,10 +142,10 @@ test('Beat Heartの周期回復は実際の発動元情報を維持し、パー�
     {
       actionType: 6 as const,
       gauge: 'mental' as const,
-      amount: 0.05,
+      calculationType: 1,
+      value: 0.05,
       effectId: 'source',
       sourceCardId: 'card',
-      amountBasis: 'maximum-gauge' as const,
       ...createLiveRegenGaugeTiming(2, 2, 2, 1),
     },
   ];
@@ -152,9 +156,9 @@ test('Beat Heartの周期回復は実際の発動元情報を維持し、パー�
     {
       actionType: 6,
       gauge: 'mental',
-      amount: 0.05,
+      calculationType: 1,
+      value: 0.05,
       sourceCardId: 'card',
-      amountBasis: 'maximum-gauge',
     },
   ]);
   expect(second.state[0]?.duration).toEqual({ kind: 'sections', remainingChanges: 1n });
@@ -165,7 +169,8 @@ test('Beat Heartの回数はnativeのsigned32加算後にlongの間隔と比較�
     {
       actionType: 6 as const,
       gauge: 'mental' as const,
-      amount: 1,
+      calculationType: 1,
+      value: 1,
       effectId: 'wrap',
       interval: { kind: 'beat-heart' as const, count: 2147483648, progress: 2147483647 },
       duration: { kind: 'full-end' as const },

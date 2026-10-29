@@ -1,5 +1,6 @@
 import { int64ToInt32 } from '../numeric.ts';
-import { resolveLiveGaugeSkillEffectAmount } from './gaugeSkillEffectValue.ts';
+import { calculateLiveRegenGaugeSkillValue } from './regenGaugeValue.ts';
+import { calculateLiveSkillMoodCorrection } from '../live/skillMood.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
   advanceLiveRegenGaugeDuration,
@@ -13,7 +14,8 @@ import { requireLiveSkillEffectDetails } from './skillEffectValue.ts';
 export type LiveRegenGaugeApplication = Readonly<{
   actionType: 6 | 11;
   gauge: 'mental' | 'voltage';
-  amount: number;
+  calculationType: number;
+  value: number;
 }>;
 
 export type LiveRegenGaugeEffect<
@@ -60,24 +62,27 @@ export function activateLiveRegenGaugeEffect(
     ],
     contract.label,
   );
-  const amount = input.applySkillBoost(
-    resolveLiveGaugeSkillEffectAmount(effect, input, {
-      ...contract,
-      additionalDetailTypes: [
-        contract.intervalType,
-        contract.intervalValue,
-        contract.displayTimeType,
-        contract.displayTime,
-      ],
-    }),
+  const baseDetail = details.get(contract.baseValue);
+  const bonus = details.get(contract.bonusMood);
+  if (!baseDetail || !bonus) throw new Error(`Live ${contract.label} values are absent`);
+  const baseValue = Math.fround(Math.fround(baseDetail.effectValue) / 10_000);
+  const bonusValue = Math.fround(Math.fround(bonus.effectValue) / 10_000);
+  const moodCorrection = calculateLiveSkillMoodCorrection(
+    bonus.targetMood,
+    input.currentMoodValue,
+    bonusValue,
   );
-  if (!Number.isFinite(amount)) {
-    throw new Error(`Live ${contract.label} boosted amount is invalid`);
-  }
+  const value = Math.fround(
+    input.applySkillBoost(
+      calculateLiveRegenGaugeSkillValue(Math.fround(baseValue + moodCorrection), input.power),
+    ),
+  );
+  if (!Number.isFinite(value)) throw new Error(`Live ${contract.label} boosted value is invalid`);
   const application: LiveRegenGaugeApplication = {
     actionType: contract.actionType,
     gauge: contract.gauge,
-    amount: Math.trunc(amount),
+    calculationType: requireDetailValue(details, contract.calculationType, contract.label),
+    value,
   };
   const timing = createLiveRegenGaugeTiming(
     requireDetailValue(details, contract.intervalType, contract.label),

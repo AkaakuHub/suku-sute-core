@@ -39,10 +39,9 @@ export function createVoltageRegenerationEffect(input: Input): Effect {
     kind: 'gauge-regeneration',
     gauge: 'voltage',
     calculationType: int32(detail(input.details, 'REGEN_VOLTAGE_TYPE')?.value ?? 1n),
-    amount: Math.fround(
+    value: Math.fround(
       int64ToFloat32(detail(input.details, 'REGEN_VOLTAGE_NUM_BASE')?.value ?? 0n) / 10_000,
     ),
-    amountBasis: 'skill-fixed',
     ...(targetMood > 0
       ? {
           moodBonus: {

@@ -1,4 +1,4 @@
-import { addLiveGenesisGauge } from '../../runtime/skills/genesisSkill.ts';
+import { resolveLiveRegenGaugeObservation } from '../../runtime/skills/regenGaugeValue.ts';
 import {
   advanceLiveRegenGaugeClock,
   advanceLiveRegenGaugeSections,
@@ -14,8 +14,7 @@ import type { EffectApplier } from '../effects/induceSkillEffect.ts';
 export function startGaugeRegeneration(
   state: GameState,
   gauge: GameRegenGaugeApplication['gauge'],
-  amount: number,
-  amountBasis: GameRegenGaugeApplication['amountBasis'],
+  value: number,
   intervalType: 1 | 2,
   intervalValue: number,
   duration: Readonly<{ kind: 'milliseconds' | 'sections'; value: number }>,
@@ -40,8 +39,7 @@ export function startGaugeRegeneration(
   const application: GameRegenGaugeApplication = {
     actionType: gauge === 'mental' ? 6 : 11,
     gauge,
-    amount,
-    amountBasis,
+    value: Math.fround(value),
     sourceCardId,
     calculationType,
     deactivationKey: deactivationKey ?? null,
@@ -117,34 +115,15 @@ function pulseGauge(
   application: GameRegenGaugeApplication,
   applyEffect?: EffectApplier,
 ): GameState {
-  const { gauge, amount, amountBasis, sourceCardId, calculationType } = application;
-  if (calculationType !== 1) return state;
-  const value = Math.trunc(
-    amountBasis === 'maximum-gauge'
-      ? Math.fround(Math.fround(amount) * Math.fround(state.maximumMental))
-      : amount,
+  const observed = resolveLiveRegenGaugeObservation(application, state.maximumMental);
+  if (observed === null) return state;
+  return changeResource(
+    state,
+    observed.gauge,
+    BigInt(observed.amount),
+    'skill',
+    state.cardPool.find((card) => card.cardInstanceId === application.sourceCardId),
+    applyEffect,
+    observed.gauge === 'voltage',
   );
-  if (gauge === 'mental') {
-    return state.genesis.effects.length > 0
-      ? state
-      : changeResource(state, 'mental', BigInt(value), 'skill', undefined, applyEffect);
-  }
-  if (state.genesis.effects.length === 0)
-    return changeResource(
-      state,
-      'voltage',
-      BigInt(value),
-      'skill',
-      state.cardPool.find((card) => card.cardInstanceId === sourceCardId),
-      applyEffect,
-      true,
-    );
-  return {
-    ...state,
-    genesis: addLiveGenesisGauge(state.genesis, {
-      actionType: 0,
-      gaugeType: 1,
-      effectValue: value,
-    }),
-  };
 }

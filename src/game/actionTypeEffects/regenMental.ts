@@ -40,10 +40,9 @@ export function createMentalRegenerationEffect(input: Input): Effect {
     kind: 'gauge-regeneration',
     gauge: 'mental',
     calculationType: int32(detail(input.details, 'REGEN_MENTAL_TYPE')?.value ?? 1n),
-    amount: Math.fround(
+    value: Math.fround(
       int64ToFloat32(detail(input.details, 'REGEN_MENTAL_NUM_BASE')?.value ?? 0n) / 10_000,
     ),
-    amountBasis: 'maximum-gauge',
     ...(targetMood > 0
       ? {
           moodBonus: {
