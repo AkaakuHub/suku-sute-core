@@ -55,7 +55,11 @@ export function advanceLiveApIncreaseSpeedState(
   return updateEffects(state, baseIntervalSeconds, (effect) => {
     if (effect.duration === null) return effect;
     const duration = advanceLiveSkillEffectDuration(effect.duration, input);
-    return duration === null ? null : { ...effect, duration };
+    return duration === null
+      ? null
+      : duration === effect.duration
+        ? effect
+        : { ...effect, duration };
   });
 }
 
@@ -64,28 +68,25 @@ function updateEffects(
   baseIntervalSeconds: number,
   update: (effect: LiveApIncreaseSpeedEffect) => LiveApIncreaseSpeedEffect | null,
 ): LiveApIncreaseSpeedRuntimeState {
-  let next = state;
-  let index = 0;
-  while (index < next.apIncreaseSpeedEffects.length) {
-    const effect = next.apIncreaseSpeedEffects[index];
+  const effects: LiveApIncreaseSpeedEffect[] = [];
+  let current = state;
+  let removed = 0;
+  let changed = false;
+  for (let index = 0; index < state.apIncreaseSpeedEffects.length; index++) {
+    const effect = state.apIncreaseSpeedEffects[index];
     if (effect === undefined) throw new Error('Live AP increase speed index is invalid');
-    const changed = update(effect);
-    if (changed === null) {
-      next = changeLiveApIncreaseSpeedEffects(
-        next,
-        next.apIncreaseSpeedEffects.filter((_, current) => current !== index),
+    const updated = update(effect);
+    if (updated === null) {
+      current = changeLiveApIncreaseSpeedEffects(
+        current,
+        current.apIncreaseSpeedEffects.filter((_, at) => at !== index - removed),
         baseIntervalSeconds,
       );
+      removed++;
     } else {
-      if (changed !== effect)
-        next = {
-          ...next,
-          apIncreaseSpeedEffects: next.apIncreaseSpeedEffects.map((current, at) =>
-            at === index ? changed : current,
-          ),
-        };
-      index++;
+      effects.push(updated);
     }
+    changed ||= updated !== effect;
   }
-  return next;
+  return changed ? { ap: current.ap, apIncreaseSpeedEffects: effects } : state;
 }
