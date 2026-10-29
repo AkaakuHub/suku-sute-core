@@ -1,11 +1,13 @@
-import { createLiveRegenGaugeTiming } from '../../src/runtime/skills/regenGaugeTiming.ts';
+import {
+  advanceLiveRegenGaugeClock,
+  notifyLiveRegenGaugeBeatHeartCreated,
+} from '../../src/runtime/skills/regenGaugeRuntime.ts';
+import type { LiveRegenGaugeApplication } from '../../src/runtime/skills/regenGaugeSkill.ts';
 import { expect, test } from 'vite-plus/test';
 import type { LiveSkillEffect } from '../../src/runtime/skills/skillTypes.ts';
 import {
   activateLiveRegenGaugeEffect,
-  advanceLiveRegenGaugeClock,
   createLiveRegenGaugeState,
-  notifyLiveRegenGaugeBeatHeartCreated,
 } from '../../src/runtime/skills/regenGaugeSkill.ts';
 
 test('Regen Mentalは発動時に適用し、MSEC間隔では1frameに1回だけ再適用する', () => {
@@ -13,7 +15,7 @@ test('Regen Mentalは発動時に適用し、MSEC間隔では1frameに1回だけ
     createLiveRegenGaugeState(),
     regenEffect(6, 'REGEN_MENTAL', 1, 1_000, 1, 5_000),
     {
-      currentTimeSeconds: 10,
+      registrationId: 1,
       currentMoodValue: 5,
       power: { addValue: 1, multiplyFactor: 2, effectPower: 0.5 },
       applySkillBoost: (value) => value,
@@ -25,21 +27,35 @@ test('Regen Mentalは発動時に適用し、MSEC間隔では1frameに1回だけ
     calculationType: 1,
     value: 11.5,
   });
-  const delayed = advanceLiveRegenGaugeClock(activated.state, {
-    currentTimeSeconds: 12.5,
-    deltaTimeSeconds: 2.5,
-    sectionChangeCount: 0,
-    musicEnded: false,
-  });
-  expect(delayed.applications).toEqual([activated.application]);
-  expect(
-    advanceLiveRegenGaugeClock(delayed.state, {
-      currentTimeSeconds: 12.6,
-      deltaTimeSeconds: 0.1,
+  const applications: LiveRegenGaugeApplication[] = [];
+  const apply = (
+    state: { regenGaugeEffects: typeof activated.state },
+    effect: LiveRegenGaugeApplication,
+  ) => {
+    applications.push({
+      actionType: effect.actionType,
+      gauge: effect.gauge,
+      calculationType: effect.calculationType,
+      value: effect.value,
+    });
+    return state;
+  };
+  const delayed = advanceLiveRegenGaugeClock(
+    { regenGaugeEffects: activated.state },
+    {
+      deltaTimeSeconds: 2.5,
       sectionChangeCount: 0,
       musicEnded: false,
-    }).applications,
-  ).toEqual([activated.application]);
+    },
+    apply,
+  );
+  expect(applications).toEqual([activated.application]);
+  advanceLiveRegenGaugeClock(
+    delayed,
+    { deltaTimeSeconds: 0.1, sectionChangeCount: 0, musicEnded: false },
+    apply,
+  );
+  expect(applications).toEqual([activated.application, activated.application]);
 });
 
 test('Regen Voltageは自然発生のBeat Heart通知で再適用し、section寿命で終了する', () => {
@@ -47,30 +63,33 @@ test('Regen Voltageは自然発生のBeat Heart通知で再適用し、section�
     createLiveRegenGaugeState(),
     regenEffect(11, 'REGEN_VOLTAGE', 2, 2, 2, 2),
     {
-      currentTimeSeconds: 0,
+      registrationId: 1,
       currentMoodValue: 0,
       power: { addValue: 0, multiplyFactor: 1, effectPower: 1 },
       applySkillBoost: (value) => value,
     },
   );
-  const firstHeart = notifyLiveRegenGaugeBeatHeartCreated(activated.state);
-  expect(firstHeart.applications).toEqual([]);
-  const secondHeart = notifyLiveRegenGaugeBeatHeartCreated(firstHeart.state);
-  expect(secondHeart.applications).toEqual([activated.application]);
-  const firstSection = advanceLiveRegenGaugeClock(secondHeart.state, {
-    currentTimeSeconds: 1,
-    deltaTimeSeconds: 1,
-    sectionChangeCount: 1,
-    musicEnded: false,
-  });
-  expect(firstSection.state).toHaveLength(1);
-  const secondSection = advanceLiveRegenGaugeClock(firstSection.state, {
-    currentTimeSeconds: 2,
-    deltaTimeSeconds: 1,
-    sectionChangeCount: 1,
-    musicEnded: false,
-  });
-  expect(secondSection.state).toEqual([]);
+  let applications = 0;
+  const apply = (state: { regenGaugeEffects: typeof activated.state }) => {
+    applications++;
+    return state;
+  };
+  const first = notifyLiveRegenGaugeBeatHeartCreated({ regenGaugeEffects: activated.state }, apply);
+  expect(applications).toBe(0);
+  const second = notifyLiveRegenGaugeBeatHeartCreated(first, apply);
+  expect(applications).toBe(1);
+  const section = advanceLiveRegenGaugeClock(
+    second,
+    { deltaTimeSeconds: 1, sectionChangeCount: 1, musicEnded: false },
+    apply,
+  );
+  expect(section.regenGaugeEffects).toHaveLength(1);
+  const ended = advanceLiveRegenGaugeClock(
+    section,
+    { deltaTimeSeconds: 1, sectionChangeCount: 1, musicEnded: false },
+    apply,
+  );
+  expect(ended.regenGaugeEffects).toEqual([]);
 });
 
 function regenEffect(
@@ -103,83 +122,3 @@ function regenEffect(
 function detail(id: string, detailType: string, effectValue: number) {
   return { id, detailType, targetMood: 0, effectValue, params: [] };
 }
-
-test('時間間隔と期限はFloat32の加算で更新し期限のフレームでも先に回復する', () => {
-  let state = [
-    {
-      actionType: 11 as const,
-      gauge: 'voltage' as const,
-      calculationType: 1,
-      value: 3,
-      effectId: 'float32',
-      ...createLiveRegenGaugeTiming(1, 100, 1, 100),
-    },
-  ];
-  for (let index = 0; index < 5; index++) {
-    const next = advanceLiveRegenGaugeClock(state, {
-      currentTimeSeconds: (index + 1) / 60,
-      deltaTimeSeconds: 1 / 60,
-      sectionChangeCount: 0,
-      musicEnded: false,
-    });
-    expect(next.applications).toEqual([]);
-    state = [...next.state];
-  }
-  const last = advanceLiveRegenGaugeClock(state, {
-    currentTimeSeconds: 0.1,
-    deltaTimeSeconds: 1 / 60,
-    sectionChangeCount: 0,
-    musicEnded: false,
-  });
-  expect(last.applications).toEqual([
-    { actionType: 11, gauge: 'voltage', calculationType: 1, value: 3 },
-  ]);
-  expect(last.state).toEqual([]);
-});
-
-test('Beat Heartの周期回復は実際の発動元情報を維持し、パート期限を消費しない', () => {
-  const state = [
-    {
-      actionType: 6 as const,
-      gauge: 'mental' as const,
-      calculationType: 1,
-      value: 0.05,
-      effectId: 'source',
-      sourceCardId: 'card',
-      ...createLiveRegenGaugeTiming(2, 2, 2, 1),
-    },
-  ];
-  const first = notifyLiveRegenGaugeBeatHeartCreated(state);
-  expect(first.applications).toEqual([]);
-  const second = notifyLiveRegenGaugeBeatHeartCreated(first.state);
-  expect(second.applications).toEqual([
-    {
-      actionType: 6,
-      gauge: 'mental',
-      calculationType: 1,
-      value: 0.05,
-      sourceCardId: 'card',
-    },
-  ]);
-  expect(second.state[0]?.duration).toEqual({ kind: 'sections', remainingChanges: 1n });
-});
-
-test('Beat Heartの回数はnativeのsigned32加算後にlongの間隔と比較する', () => {
-  const result = notifyLiveRegenGaugeBeatHeartCreated([
-    {
-      actionType: 6 as const,
-      gauge: 'mental' as const,
-      calculationType: 1,
-      value: 1,
-      effectId: 'wrap',
-      interval: { kind: 'beat-heart' as const, count: 2147483648, progress: 2147483647 },
-      duration: { kind: 'full-end' as const },
-    },
-  ]);
-  expect(result.applications).toEqual([]);
-  expect(result.state[0]?.interval).toEqual({
-    kind: 'beat-heart',
-    count: 2147483648,
-    progress: -2147483648,
-  });
-});

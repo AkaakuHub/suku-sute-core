@@ -251,13 +251,9 @@ function advanceTick(state: GameState): GameState {
         advanceApSpeedEffects(
           removeExhaustedMentalBarriers(
             expireMentalBarriers(
-              advanceGaugeRegenerations(
-                expireGaugeInfinities(
-                  advanceAutomaticGauges(state, dt, applyEffect),
-                  'milliseconds',
-                  dt,
-                  applyEffect,
-                ),
+              expireGaugeInfinities(
+                advanceAutomaticGauges(state, dt, applyEffect),
+                'milliseconds',
                 dt,
                 applyEffect,
               ),
@@ -313,7 +309,8 @@ function advanceTick(state: GameState): GameState {
   const automatic = advanceAutomaticHeart(next.automaticHeart, heartCount(next), dt);
   next = { ...next, automaticHeart: automatic.state };
   const collected = automatic.shouldCollect ? collectHearts(next) : next;
-  const reactive = refreshEffectInducers(collected, applyEffect);
+  const regenerated = advanceGaugeRegenerations(collected, dt, applyEffect);
+  const reactive = refreshEffectInducers(regenerated, applyEffect);
   const mood = moodValue(reactive);
   return mood === reactive.moodHistory.at(-1)?.moodValue
     ? reactive

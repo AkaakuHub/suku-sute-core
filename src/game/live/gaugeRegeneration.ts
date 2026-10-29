@@ -1,12 +1,11 @@
 import { resolveLiveRegenGaugeObservation } from '../../runtime/skills/regenGaugeValue.ts';
+import { advanceLiveRegenGaugeSections } from '../../runtime/skills/regenGaugeSkill.ts';
 import {
   advanceLiveRegenGaugeClock,
-  advanceLiveRegenGaugeSections,
   notifyLiveRegenGaugeBeatHeartCreated,
-} from '../../runtime/skills/regenGaugeSkill.ts';
+} from '../../runtime/skills/regenGaugeRuntime.ts';
 import { createLiveRegenGaugeTiming } from '../../runtime/skills/regenGaugeTiming.ts';
 import { changeResource } from '../resources.ts';
-import { durationSeconds } from '../projection.ts';
 import type { GameRegenGaugeApplication } from '../gaugeRegenerationTypes.ts';
 import type { GameState } from '../model.ts';
 import type { EffectApplier } from '../effects/induceSkillEffect.ts';
@@ -52,7 +51,10 @@ export function startGaugeRegeneration(
   );
   return {
     ...next,
-    regenGaugeEffects: [...next.regenGaugeEffects, { ...application, effectId, ...timing }],
+    regenGaugeEffects: [
+      ...next.regenGaugeEffects,
+      { ...application, registrationId: state.nextRegenGaugeEffectId, effectId, ...timing },
+    ],
   };
 }
 
@@ -61,16 +63,14 @@ export function advanceGaugeRegenerations(
   elapsedSeconds: number,
   applyEffect?: EffectApplier,
 ): GameState {
-  const advanced = advanceLiveRegenGaugeClock(state.regenGaugeEffects, {
-    currentTimeSeconds: durationSeconds(state) + elapsedSeconds,
-    deltaTimeSeconds: elapsedSeconds,
-    sectionChangeCount: 0,
-    musicEnded: false,
-  });
-  return applyGaugeRegenerationPulses(
-    { ...state, regenGaugeEffects: advanced.state },
-    advanced.applications,
-    applyEffect,
+  return advanceLiveRegenGaugeClock(
+    state,
+    {
+      deltaTimeSeconds: elapsedSeconds,
+      sectionChangeCount: 0,
+      musicEnded: false,
+    },
+    (next, effect) => pulseGauge(next, effect, applyEffect),
   );
 }
 
@@ -78,11 +78,8 @@ export function notifyGaugeRegenerationsBeatHeart(
   state: GameState,
   applyEffect?: EffectApplier,
 ): GameState {
-  const notified = notifyLiveRegenGaugeBeatHeartCreated(state.regenGaugeEffects);
-  return applyGaugeRegenerationPulses(
-    { ...state, regenGaugeEffects: notified.state },
-    notified.applications,
-    applyEffect,
+  return notifyLiveRegenGaugeBeatHeartCreated(state, (next, effect) =>
+    pulseGauge(next, effect, applyEffect),
   );
 }
 
@@ -97,17 +94,6 @@ export function deactivateGaugeRegenerations(state: GameState, deactivationKey: 
       (effect) => effect.deactivationKey !== deactivationKey,
     ),
   };
-}
-
-function applyGaugeRegenerationPulses(
-  state: GameState,
-  applications: readonly GameRegenGaugeApplication[],
-  applyEffect?: EffectApplier,
-): GameState {
-  return applications.reduce(
-    (next, application) => pulseGauge(next, application, applyEffect),
-    state,
-  );
 }
 
 function pulseGauge(

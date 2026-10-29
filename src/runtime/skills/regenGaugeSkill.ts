@@ -1,4 +1,3 @@
-import { int64ToInt32 } from '../numeric.ts';
 import { calculateLiveRegenGaugeSkillValue } from './regenGaugeValue.ts';
 import { calculateLiveSkillMoodCorrection } from '../live/skillMood.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
@@ -22,6 +21,7 @@ export type LiveRegenGaugeEffect<
   Application extends LiveRegenGaugeApplication = LiveRegenGaugeApplication,
 > = Application &
   Readonly<{
+    registrationId: number;
     effectId: string;
     interval: LiveRegenGaugeInterval;
     duration: LiveRegenGaugeDuration;
@@ -39,7 +39,7 @@ export function activateLiveRegenGaugeEffect(
   state: LiveRegenGaugeState,
   effect: LiveSkillEffect,
   input: Readonly<{
-    currentTimeSeconds: number;
+    registrationId: number;
     currentMoodValue: number;
     power: LiveSkillEffectPower;
     applySkillBoost: (value: number) => number;
@@ -48,6 +48,8 @@ export function activateLiveRegenGaugeEffect(
   state: LiveRegenGaugeState;
   application: LiveRegenGaugeApplication;
 }> {
+  if (!Number.isSafeInteger(input.registrationId) || input.registrationId < 1)
+    throw new Error('Live regen gauge registration is invalid');
   const contract = resolveContract(effect.actionType);
   const details = requireLiveSkillEffectDetails(
     effect.details,
@@ -95,76 +97,13 @@ export function activateLiveRegenGaugeEffect(
       ...state,
       {
         ...application,
+        registrationId: input.registrationId,
         effectId: effect.id,
         ...timing,
       },
     ],
     application,
   };
-}
-
-export function advanceLiveRegenGaugeClock<Effect extends LiveRegenGaugeEffect>(
-  state: readonly Effect[],
-  input: Readonly<{
-    currentTimeSeconds: number;
-    deltaTimeSeconds: number;
-    sectionChangeCount: number;
-    musicEnded: boolean;
-  }>,
-): Readonly<{
-  state: readonly Effect[];
-  applications: readonly Omit<Effect, 'effectId' | 'interval' | 'duration'>[];
-}> {
-  if (!Number.isFinite(input.deltaTimeSeconds) || input.deltaTimeSeconds < 0) {
-    throw new Error('Live regen gauge delta time is invalid');
-  }
-  const applications: Omit<Effect, 'effectId' | 'interval' | 'duration'>[] = [];
-  const effects = state.flatMap((effect) => {
-    let interval = effect.interval;
-    if (interval.kind === 'milliseconds') {
-      const elapsedSeconds = Math.fround(
-        interval.elapsedSeconds + Math.fround(input.deltaTimeSeconds),
-      );
-      if (elapsedSeconds >= interval.seconds) {
-        applications.push(toApplication(effect));
-      }
-      interval = {
-        ...interval,
-        elapsedSeconds:
-          elapsedSeconds >= interval.seconds
-            ? Math.fround(elapsedSeconds - interval.seconds)
-            : elapsedSeconds,
-      };
-    }
-    const duration = advanceLiveRegenGaugeDuration(effect.duration, input);
-    return duration === null ? [] : [{ ...effect, interval, duration }];
-  });
-  return { state: effects, applications };
-}
-
-export function notifyLiveRegenGaugeBeatHeartCreated<Effect extends LiveRegenGaugeEffect>(
-  state: readonly Effect[],
-): Readonly<{
-  state: readonly Effect[];
-  applications: readonly Omit<Effect, 'effectId' | 'interval' | 'duration'>[];
-}> {
-  const applications: Omit<Effect, 'effectId' | 'interval' | 'duration'>[] = [];
-  const effects = state.map((effect) => {
-    if (effect.interval.kind !== 'beat-heart') return effect;
-    const progress = int64ToInt32(BigInt(effect.interval.progress) + 1n);
-    if (progress < effect.interval.count) {
-      return {
-        ...effect,
-        interval: { ...effect.interval, progress },
-      };
-    }
-    applications.push(toApplication(effect));
-    return {
-      ...effect,
-      interval: { ...effect.interval, progress: 0 },
-    };
-  });
-  return { state: effects, applications };
 }
 
 export function advanceLiveRegenGaugeSections<Effect extends LiveRegenGaugeEffect>(
@@ -180,13 +119,6 @@ export function advanceLiveRegenGaugeSections<Effect extends LiveRegenGaugeEffec
     });
     return duration === null ? [] : [{ ...effect, duration }];
   });
-}
-
-function toApplication<Effect extends LiveRegenGaugeEffect>(
-  effect: Effect,
-): Omit<Effect, 'effectId' | 'interval' | 'duration'> {
-  const { effectId: _effectId, interval: _interval, duration: _duration, ...application } = effect;
-  return application;
 }
 
 function requireDetailValue(
