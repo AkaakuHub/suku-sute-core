@@ -1,3 +1,4 @@
+import type { LiveMentalBarrierState } from '../runtime/skills/mentalBarrier.ts';
 import type { LiveConvertVoltageUpState } from '../runtime/skills/convertVoltageUp.ts';
 import type { LiveRegenGaugeState } from '../runtime/skills/regenGaugeSkill.ts';
 import type { GameRegenGaugeApplication } from './gaugeRegenerationTypes.ts';
@@ -46,7 +47,6 @@ import type { TokenRequest } from './tokenRequestTypes.ts';
 import type {
   GaugeInfinity,
   HeartBoostState,
-  MentalBarrier,
   SkillCostChange,
   ParameterValueFactor,
   TokenBoost,
@@ -256,7 +256,8 @@ export type GameState = Readonly<{
   }>[];
   heartBoosts: readonly HeartBoostState[];
   mentalShields: readonly MentalShield[];
-  mentalBarriers: readonly MentalBarrier[];
+  mentalBarriers: LiveMentalBarrierState;
+  nextMentalBarrierEffectId: number;
   voltage: LiveVoltageGaugeState;
   masteryVoltageProgress: number;
   maximumVoltageLevel: number;

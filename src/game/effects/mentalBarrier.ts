@@ -53,7 +53,10 @@ export function applyMentalBarrier(
   if (effect.enduranceType !== 'infinite' && endurance === 0)
     return registerMissionAction(boosted.state, 7, endurance);
   const next = addMentalBarrier(boosted.state, effect, endurance, attenuation);
-  if (!applyEffect || next.mentalBarriers.length === boosted.state.mentalBarriers.length)
+  if (
+    !applyEffect ||
+    next.mentalBarriers.effects.length === boosted.state.mentalBarriers.effects.length
+  )
     return registerMissionAction(next, 7, endurance);
   const induced = induceSkillEffects(
     next,

@@ -9,7 +9,7 @@ export function applyLiveMentalBarrierDamage(
     throw new Error('Live Mental Barrier damage is invalid');
   }
   const attenuationFactor = liveMentalBarrierDecreaseIntervalFactor(state);
-  const attenuatedDamage = Math.trunc(damage / attenuationFactor);
+  const attenuatedDamage = attenuationFactor <= 0 ? 0 : Math.trunc(damage / attenuationFactor);
   if (attenuatedDamage < 1) {
     return { state, remainingDamage: 0 };
   }
@@ -77,22 +77,13 @@ function selectEnduranceBarrier(
       ? [{ index, effect }]
       : [],
   );
-  const infinite = candidates.find((candidate) => candidate.effect.endurance.kind === 'infinite');
-  if (infinite !== undefined) return infinite;
   return (
-    candidates.reduce<Readonly<{ index: number; effect: LiveMentalBarrierEffect }> | undefined>(
-      (selected, candidate) => {
-        if (candidate.effect.endurance.kind !== 'finite') return selected;
-        if (selected === undefined || selected.effect.endurance.kind !== 'finite') {
-          return candidate;
-        }
-        const candidateRemaining =
-          candidate.effect.endurance.maximum - candidate.effect.endurance.consumed;
-        const selectedRemaining =
-          selected.effect.endurance.maximum - selected.effect.endurance.consumed;
-        return candidateRemaining > selectedRemaining ? candidate : selected;
-      },
-      undefined,
-    ) ?? null
+    candidates.sort((left, right) => {
+      const fullEndDifference =
+        Number(left.effect.duration.kind === 'full-end') -
+        Number(right.effect.duration.kind === 'full-end');
+      if (fullEndDifference !== 0) return fullEndDifference;
+      return left.effect.limitTimeSeconds - right.effect.limitTimeSeconds;
+    })[0] ?? null
   );
 }

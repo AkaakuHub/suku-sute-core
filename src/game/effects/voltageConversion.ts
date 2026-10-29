@@ -152,7 +152,7 @@ export function convertVoltageIncrease(
             : { kind: 'stage' },
     };
     const additional = applyMentalBarrierAdditionalBuff(next, card, output.endurance);
-    const beforeCount = additional.state.mentalBarriers.length;
+    const beforeCount = additional.state.mentalBarriers.effects.length;
     next = addMentalBarrier(
       additional.state,
       {
@@ -162,7 +162,7 @@ export function convertVoltageIncrease(
       Math.trunc(additional.value),
       0,
     );
-    if (applyEffect && next.mentalBarriers.length > beforeCount)
+    if (applyEffect && next.mentalBarriers.effects.length > beforeCount)
       next = induceSkillEffects(
         next,
         'mental-barrier',

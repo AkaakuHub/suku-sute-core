@@ -11,6 +11,9 @@ const attenuation: LiveMentalBarrierEffect = {
   attenuationFactor: 10,
   endurance: { kind: 'infinite' },
   duration: { kind: 'full-end' },
+  limitTimeSeconds: Infinity,
+  parentControlsLifetime: false,
+  deactivationKey: null,
 };
 
 test('減衰バリアは自然減少の間隔に作用し、発生済みの1回を吸収しない', () => {
@@ -46,4 +49,35 @@ test('無限耐久のバリアは消費値を持たず自然減少を吸収す�
     additionalBuffs: [],
   };
   expect(consumeLiveMentalBarrierNaturally(state)).toEqual({ state, absorbed: true });
+});
+
+test('耐久値の大小や無限耐久より終了時刻の早いバリアを優先する', () => {
+  const state: LiveMentalBarrierState = {
+    effects: [
+      { ...attenuation, effectId: 'stage', barrierType: 'endurance' },
+      {
+        ...attenuation,
+        effectId: 'later',
+        barrierType: 'endurance',
+        duration: { kind: 'milliseconds', remainingSeconds: 2 },
+        limitTimeSeconds: 2,
+        endurance: { kind: 'finite', maximum: 100, consumed: 0 },
+      },
+      {
+        ...attenuation,
+        effectId: 'earlier',
+        barrierType: 'endurance',
+        duration: { kind: 'sections', remainingChanges: 1n },
+        limitTimeSeconds: 1,
+        endurance: { kind: 'finite', maximum: 2, consumed: 0 },
+      },
+    ],
+    additionalBuffs: [],
+  };
+  const consumed = consumeLiveMentalBarrierNaturally(state);
+  expect(consumed.state.effects.map((effect) => effect.endurance)).toEqual([
+    { kind: 'infinite' },
+    { kind: 'finite', maximum: 100, consumed: 0 },
+    { kind: 'finite', maximum: 2, consumed: 1 },
+  ]);
 });

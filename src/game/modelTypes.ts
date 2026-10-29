@@ -37,7 +37,7 @@ import type { ReshuffleSkillEffect } from './reshuffleSkillTypes.ts';
 import type { DrawSuccessInduceEffect } from './drawSuccessInduceTypes.ts';
 import type { SkillActionEffect } from './skillActionTypes.ts';
 export type { GaugeRegenerationEffect } from './gaugeRegenerationTypes.ts';
-export type { MentalBarrier, MentalBarrierEffect } from './mentalBarrierTypes.ts';
+export type { MentalBarrierEffect } from './mentalBarrierTypes.ts';
 export type { ProxySkillEffect } from './proxySkillTypes.ts';
 export type MoodBonus = Readonly<{ target: 1 | 2 | 3; perPoint: number }>;
 export type GaugeInfinity = Readonly<{

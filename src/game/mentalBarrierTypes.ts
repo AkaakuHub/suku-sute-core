@@ -1,13 +1,3 @@
-export type MentalBarrier = Readonly<{
-  kind: 'endurance' | 'attenuation';
-  endurance: number;
-  currentEndurance: number;
-  attenuation: number;
-  remainingSeconds: number | null;
-  remainingSections: number | null;
-  deactivationKey?: string | null;
-}>;
-
 export type MentalBarrierEffect = Readonly<{
   kind: 'mental-barrier';
   barrier: 'endurance' | 'attenuation';

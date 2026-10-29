@@ -20,7 +20,7 @@ import {
   requireLiveSkillEffectDetailValue,
 } from './skillEffectValue.ts';
 
-type LiveMentalBarrierEndurance =
+export type LiveMentalBarrierEndurance =
   | Readonly<{ kind: 'finite'; maximum: number; consumed: number }>
   | Readonly<{ kind: 'infinite' }>;
 
@@ -30,6 +30,9 @@ export type LiveMentalBarrierEffect = Readonly<{
   endurance: LiveMentalBarrierEndurance;
   attenuationFactor: number;
   duration: LiveSkillEffectDuration;
+  limitTimeSeconds: number;
+  parentControlsLifetime: boolean;
+  deactivationKey: string | null;
 }>;
 
 export type LiveMentalBarrierState = Readonly<{
@@ -41,6 +44,24 @@ export function createLiveMentalBarrierState(): LiveMentalBarrierState {
   return { effects: [], additionalBuffs: [] };
 }
 
+export function createLiveMentalBarrierEffect(
+  effect: Omit<LiveMentalBarrierEffect, 'limitTimeSeconds'>,
+  currentTimeSeconds: number,
+  sectionChangeTimesSeconds: readonly number[],
+): LiveMentalBarrierEffect {
+  const duration = effect.duration;
+  const limitTimeSeconds = effect.parentControlsLifetime
+    ? Infinity
+    : duration.kind === 'milliseconds'
+      ? Math.fround(currentTimeSeconds + duration.remainingSeconds)
+      : duration.kind === 'sections'
+        ? (sectionChangeTimesSeconds.filter((time) => time > currentTimeSeconds)[
+            Number(duration.remainingChanges) - 1
+          ] ?? Infinity)
+        : Infinity;
+  return { ...effect, limitTimeSeconds };
+}
+
 export function activateLiveConvertedMentalBarrier(
   state: LiveMentalBarrierState,
   effect: Readonly<{
@@ -49,6 +70,8 @@ export function activateLiveConvertedMentalBarrier(
     duration: LiveSkillEffectDuration;
   }>,
   input: Readonly<{
+    currentTimeSeconds: number;
+    sectionChangeTimesSeconds: readonly number[];
     card: LiveAdditionalBuffCard;
     applySkillBoost: (value: number) => number;
   }>,
@@ -70,17 +93,23 @@ export function activateLiveConvertedMentalBarrier(
           ? state.effects
           : [
               ...state.effects,
-              {
-                effectId: effect.effectId,
-                barrierType: 'endurance',
-                endurance: {
-                  kind: 'finite',
-                  maximum: effectAmount,
-                  consumed: 0,
+              createLiveMentalBarrierEffect(
+                {
+                  effectId: effect.effectId,
+                  barrierType: 'endurance',
+                  endurance: {
+                    kind: 'finite',
+                    maximum: effectAmount,
+                    consumed: 0,
+                  },
+                  attenuationFactor: 1,
+                  duration: effect.duration,
+                  parentControlsLifetime: false,
+                  deactivationKey: null,
                 },
-                attenuationFactor: 1,
-                duration: effect.duration,
-              },
+                input.currentTimeSeconds,
+                input.sectionChangeTimesSeconds,
+              ),
             ],
     },
   };
@@ -117,6 +146,8 @@ export function activateLiveMentalBarrier(
   effect: LiveSkillEffect,
   input: Readonly<{
     currentTimeSeconds: number;
+    sectionChangeTimesSeconds: readonly number[];
+    parentControlsLifetime: boolean;
     currentMoodValue: number;
     maximumMental: number;
     card: LiveAdditionalBuffCard;
@@ -180,17 +211,23 @@ export function activateLiveMentalBarrier(
   if (barrierType === 2 && attenuationFactor <= 0) {
     throw new Error('Live Mental Barrier attenuation is invalid');
   }
-  const active: LiveMentalBarrierEffect = {
-    effectId: effect.id,
-    barrierType: barrierType === 1 ? 'endurance' : 'attenuation',
-    endurance,
-    attenuationFactor,
-    duration: createLiveSkillEffectDuration(
-      requireValue(details, 'MENTAL_BARRIER_DISPLAY_TIME_TYPE'),
-      requireValue(details, 'MENTAL_BARRIER_DISPLAY_TIME'),
-      'Mental Barrier',
-    ),
-  };
+  const active = createLiveMentalBarrierEffect(
+    {
+      effectId: effect.id,
+      barrierType: barrierType === 1 ? 'endurance' : 'attenuation',
+      endurance,
+      attenuationFactor,
+      duration: createLiveSkillEffectDuration(
+        requireValue(details, 'MENTAL_BARRIER_DISPLAY_TIME_TYPE'),
+        requireValue(details, 'MENTAL_BARRIER_DISPLAY_TIME'),
+        'Mental Barrier',
+      ),
+      parentControlsLifetime: input.parentControlsLifetime,
+      deactivationKey: null,
+    },
+    input.currentTimeSeconds,
+    input.sectionChangeTimesSeconds,
+  );
   return {
     effectAmount: endurance.kind === 'finite' ? endurance.maximum : 0,
     state: {
@@ -212,6 +249,7 @@ export function advanceLiveMentalBarrierState(
       ) {
         return [];
       }
+      if (effect.parentControlsLifetime) return [effect];
       const duration = advanceLiveSkillEffectDuration(effect.duration, input);
       return duration === null ? [] : [{ ...effect, duration }];
     }),
@@ -220,11 +258,10 @@ export function advanceLiveMentalBarrierState(
 }
 
 export function liveMentalBarrierDecreaseIntervalFactor(state: LiveMentalBarrierState): number {
-  return state.effects.reduce(
-    (maximum, effect) =>
-      effect.barrierType === 'attenuation' ? Math.max(maximum, effect.attenuationFactor) : maximum,
-    1,
-  );
+  const attenuation = state.effects.filter((effect) => effect.barrierType === 'attenuation');
+  return attenuation.length === 0
+    ? 1
+    : Math.max(...attenuation.map((effect) => effect.attenuationFactor));
 }
 
 function calculateBarrierValue(

@@ -109,16 +109,25 @@ function isEffectInducerActive(
 ): boolean {
   let value: number;
   if (inducer.target === 'mental-barrier') {
-    const barriers = state.mentalBarriers.filter((item) => item.kind === 'endurance');
+    const barriers = state.mentalBarriers.effects.filter(
+      (item) => item.barrierType === 'endurance',
+    );
     if (!barriers.length) return false;
     const unlimited = barriers.some(
-      (barrier) => barrier.endurance <= 0 || barrier.currentEndurance >= barrier.endurance,
+      (barrier) =>
+        barrier.endurance.kind === 'infinite' ||
+        barrier.endurance.consumed >= barrier.endurance.maximum,
     );
     value = unlimited
       ? -1
       : barriers.reduce(
           (sum, barrier) =>
-            Math.fround(sum + Math.fround(barrier.endurance - barrier.currentEndurance)),
+            Math.fround(
+              sum +
+                (barrier.endurance.kind === 'finite'
+                  ? Math.fround(barrier.endurance.maximum - barrier.endurance.consumed)
+                  : 0),
+            ),
           0,
         );
     if (value < 0) return inducer.threshold.kind !== 'at-most';
