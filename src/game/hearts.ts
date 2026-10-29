@@ -13,7 +13,8 @@ import { advanceHandCollectionAbilities } from './cards/collectionAbilities.ts';
 import { recordScoreHistory } from './scoreHistory.ts';
 import { voltageLevel } from './live/voltageLevel.ts';
 import { expireConvertedScoreBoostsOnHeartCollect } from './effects/voltageConversion.ts';
-import { absorbSkillEffect } from './effects/proxySkill.ts';
+import { applyProxySkillAbsorption } from './effects/proxySkill.ts';
+import { createLiveHearts } from '../runtime/live/heartCreation.ts';
 import { registerMissionHeartCollect } from './ingameMissions.ts';
 import { notifyHandHeartCollect } from './cards/handInduce.ts';
 
@@ -134,16 +135,21 @@ export function addHeartsWithLifeTime(
   count: number,
   lifeTimeSeconds: number,
 ): GameState {
-  if (count === 0) return state;
-  const absorption = absorbSkillEffect(state, 1, BigInt(count));
-  if (absorption.absorbed) return absorption.state;
   const random = createRangeRandom(state.heartRandomSeed);
-  const spawned = spawnStarGatherHearts(state.hearts, count, lifeTimeSeconds, random.range);
+  const created = createLiveHearts(
+    state,
+    count,
+    lifeTimeSeconds,
+    random.range,
+    spawnStarGatherHearts,
+  );
+  const next = applyProxySkillAbsorption(state, created.proxyAbsorption);
+  if (created.proxyAbsorption.absorbed || count === 0) return next;
   return awardHearts(
-    { ...state, hearts: spawned.state, heartRandomSeed: random.seed },
-    spawned.overflowCount,
+    { ...next, hearts: created.hearts, heartRandomSeed: random.seed },
+    created.overflowCount,
     true,
-    liveHeartCount(spawned.state),
+    liveHeartCount(created.hearts),
   );
 }
 

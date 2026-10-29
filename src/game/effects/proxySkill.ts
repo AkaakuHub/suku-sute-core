@@ -113,13 +113,20 @@ export function absorbSkillEffect(
   amount: bigint,
 ): Readonly<{ state: GameState; absorbed: boolean }> {
   const result = absorbLiveProxySkill(state.proxySkills, actionType, amount);
+  return { state: applyProxySkillAbsorption(state, result), absorbed: result.absorbed };
+}
+
+export function applyProxySkillAbsorption(
+  state: GameState,
+  result: ReturnType<typeof absorbLiveProxySkill<GameState['proxySkills'][number]>>,
+): GameState {
   let next = result.states === state.proxySkills ? state : { ...state, proxySkills: result.states };
   if (result.changedIndex !== null) {
     const changed = result.states[result.changedIndex];
     if (!changed) throw new Error('Live Proxy absorption index is invalid');
     next = applyProxySkillEnd(next, changed, result.result, applyEffect);
   }
-  return { state: next, absorbed: result.absorbed };
+  return next;
 }
 
 export function forceProxySkillActivation(

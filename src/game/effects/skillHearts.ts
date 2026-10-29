@@ -1,3 +1,4 @@
+import { calculateLiveHeartCreateCount } from '../../runtime/live/heartCreation.ts';
 import { beatHeartCount } from '../beat.ts';
 import { addHeartsWithLifeTime } from '../hearts.ts';
 import { moodValue } from '../projection.ts';
@@ -44,7 +45,7 @@ export function createSkillHeartsFromEffect(
     effect.calculation === 'fixed'
       ? Math.fround(value)
       : Math.fround(Math.fround(value) * Math.fround(beatHeartCount(next)));
-  const count = Math.max(1, int32(baseCount * Math.fround(effectPower)));
+  const count = calculateLiveHeartCreateCount(baseCount, effectPower);
   const lifetimeSeconds =
     effect.displayTime.kind === 'milliseconds'
       ? Math.fround(int32(effect.displayTime.value) / 1000)

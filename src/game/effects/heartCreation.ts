@@ -4,15 +4,14 @@ import { applyAction52SkillBoostForCard } from './action52SkillBoost.ts';
 import { skillValue } from './skillValue.ts';
 import { applyAdditionalBuff } from './additionalBuff.ts';
 import type { Card, GameState } from '../model.ts';
-import { ceilToInt32 } from '../../runtime/numeric.ts';
+import { calculateLiveHeartCreateCount } from '../../runtime/live/heartCreation.ts';
 
 export function createSkillHearts(
   state: GameState,
   count: number,
   lifetimeSeconds: number,
 ): GameState {
-  const base = Math.max(0, count);
-  return addHeartsWithLifeTime(state, Math.max(1, Math.trunc(base)), lifetimeSeconds);
+  return addHeartsWithLifeTime(state, calculateLiveHeartCreateCount(count, 1), lifetimeSeconds);
 }
 
 export function createHeartsFromEffect(
@@ -39,8 +38,7 @@ export function createHeartsFromEffect(
   const base = Math.ceil((amount * percent * beats) / 100);
   const additional = applyAdditionalBuff(state, 'attract', base, card);
   const action52 = applyAction52SkillBoostForCard(additional.state, card, additional.value);
-  const scaled = Math.ceil(action52.value) * Math.fround(effectPower);
-  const count = Math.max(1, ceilToInt32(scaled));
+  const count = calculateLiveHeartCreateCount(action52.value, effectPower);
   return lifetimeSeconds === undefined
     ? addHearts(action52.state, count)
     : addHeartsWithLifeTime(action52.state, count, lifetimeSeconds);
