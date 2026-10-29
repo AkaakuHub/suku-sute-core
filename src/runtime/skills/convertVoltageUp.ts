@@ -19,20 +19,22 @@ export type LiveConvertVoltageDestination =
   | 'mental-recovery'
   | 'mental-barrier';
 
-export type LiveConvertVoltageUpEffect = Readonly<{
+export type LiveConvertVoltageUpEffect<Card = LiveAdditionalBuffCard> = Readonly<{
   effectId: string;
   destination: LiveConvertVoltageDestination;
-  unitValue: number;
-  resultDisplayTimeType: 1 | 2 | 3;
-  resultDisplayTime: number;
+  num: number;
+  resultDuration: LiveSkillEffectDuration;
   resultDisabledType: 0 | 1 | 2;
   duration: LiveSkillEffectDuration;
-  remainingConversions: number | null;
-  card: LiveAdditionalBuffCard;
+  disabledOnConvertCount: bigint | null;
+  conversions: number;
+  card: Card;
+  deactivationKey: string | null;
   parentControlsLifetime: boolean;
 }>;
 
-export type LiveConvertVoltageUpState = readonly LiveConvertVoltageUpEffect[];
+export type LiveConvertVoltageUpState<Card = LiveAdditionalBuffCard> =
+  readonly LiveConvertVoltageUpEffect<Card>[];
 
 export type LiveVoltageConversion = Readonly<{
   effectId: string;
@@ -78,13 +80,11 @@ export function activateLiveConvertVoltageUp(
     'Convert Voltage Up',
   );
   const destination = resolveDestination(requireValue(details, 'CONVERT_VOLTAGE_UP_CONVERT_TYPE'));
-  const poweredValue = Math.fround(
-    Math.fround(
-      Math.fround(requireValue(details, 'CONVERT_VOLTAGE_UP_NUM') / 10_000) + input.power.addValue,
-    ) * input.power.multiplyFactor,
-  );
-  const unitValue = Math.ceil(
-    poweredValue > 0 ? input.applySkillBoost(poweredValue) : poweredValue,
+  const num = calculateLiveConvertVoltageUpNum(
+    requireValue(details, 'CONVERT_VOLTAGE_UP_NUM'),
+    input.power.addValue,
+    input.power.multiplyFactor,
+    input.applySkillBoost,
   );
   const resultDisabledType = requireValue(details, 'CONVERT_VOLTAGE_UP_CONVERT_DISABLED_TYPE');
   if (resultDisabledType !== 0 && resultDisabledType !== 1 && resultDisabledType !== 2) {
@@ -107,64 +107,89 @@ export function activateLiveConvertVoltageUp(
     {
       effectId: effect.id,
       destination,
-      unitValue,
-      ...resolveResultDisplay(details),
+      num,
+      resultDuration: createLiveSkillEffectDuration(
+        requireValue(details, 'CONVERT_VOLTAGE_UP_CONVERT_DISPLAY_TIME_TYPE'),
+        requireValue(details, 'CONVERT_VOLTAGE_UP_CONVERT_DISPLAY_TIME'),
+        'Convert Voltage Up result',
+      ),
       resultDisabledType,
       duration: createLiveSkillEffectDuration(
         requireValue(details, 'CONVERT_VOLTAGE_UP_DISPLAY_TIME_TYPE'),
         requireValue(details, 'CONVERT_VOLTAGE_UP_DISPLAY_TIME'),
         'Convert Voltage Up',
       ),
-      remainingConversions: disabledType === 1 ? disabledCount : null,
+      disabledOnConvertCount: disabledType === 1 ? BigInt(disabledCount) : null,
+      conversions: 0,
+      deactivationKey: null,
       card: input.card,
       parentControlsLifetime: input.parentControlsLifetime,
     },
   ];
 }
 
-export function convertLiveVoltageUp(
-  state: LiveConvertVoltageUpState,
-  voltageUp: number,
+export function calculateLiveConvertVoltageUpNum(
+  num: number,
+  addValue: number,
+  multiplier: number,
+  applySkillBoost: (value: number) => number,
+): number {
+  const base = Math.fround(
+    Math.fround(Math.fround(int32(num)) + Math.fround(addValue)) * Math.fround(multiplier),
+  );
+  return int32(base > 0 ? applySkillBoost(base) : base);
+}
+
+function int32(value: number): number {
+  return !Number.isFinite(value) || value < -2_147_483_648 || value > 2_147_483_647
+    ? -2_147_483_648
+    : Math.trunc(value);
+}
+
+export function convertLiveVoltageUp<Card>(
+  state: LiveConvertVoltageUpState<Card>,
+  voltageUp: number | bigint,
   currentTimeSeconds: number,
 ): Readonly<{
-  state: LiveConvertVoltageUpState;
-  conversion: LiveVoltageConversion | null;
+  state: LiveConvertVoltageUpState<Card>;
+  conversion: (Omit<LiveVoltageConversion, 'card'> & { card: Card }) | null;
 }> {
-  if (!Number.isSafeInteger(voltageUp) || !Number.isFinite(currentTimeSeconds)) {
+  if (
+    (typeof voltageUp === 'number' && !Number.isSafeInteger(voltageUp)) ||
+    !Number.isFinite(currentTimeSeconds)
+  ) {
     throw new Error('Live Convert Voltage Up amount is invalid');
   }
-  if (voltageUp < 1 || state.length === 0) {
-    return { state, conversion: null };
-  }
-  const selected = state[0];
-  if (selected === undefined) return { state, conversion: null };
-  const amount = Math.ceil(Math.fround(selected.unitValue * voltageUp));
-  const remainingConversions =
-    selected.remainingConversions === null ? null : selected.remainingConversions - 1;
+  const selected = state.at(-1);
+  if (voltageUp < 1 || selected === undefined) return { state, conversion: null };
+  const product = BigInt.asIntN(32, BigInt(selected.num) * BigInt.asIntN(32, BigInt(voltageUp)));
+  const raw = Math.fround(Math.fround(Number(product)) / Math.fround(10_000));
+  const rounded = Math.fround(Math.ceil(Math.fround(raw * 10)) / 10);
+  const amount =
+    selected.destination === 'mental-barrier'
+      ? rounded
+      : Math.trunc(selected.destination === 'heart' ? rounded : raw);
+  const conversions = Number(BigInt.asIntN(32, BigInt(selected.conversions + 1)));
   return {
     state:
-      remainingConversions === 0
-        ? state.slice(1)
-        : [{ ...selected, remainingConversions }, ...state.slice(1)],
+      selected.disabledOnConvertCount === BigInt(conversions)
+        ? state.slice(0, -1)
+        : [...state.slice(0, -1), { ...selected, conversions }],
     conversion: {
       effectId: selected.effectId,
       destination: selected.destination,
       amount,
-      resultDuration: createLiveSkillEffectDuration(
-        selected.resultDisplayTimeType,
-        selected.resultDisplayTime,
-        'Convert Voltage Up result',
-      ),
+      resultDuration: selected.resultDuration,
       resultDisabledType: selected.resultDisabledType,
       card: selected.card,
     },
   };
 }
 
-export function advanceLiveConvertVoltageUpState(
-  state: LiveConvertVoltageUpState,
+export function advanceLiveConvertVoltageUpState<Card>(
+  state: LiveConvertVoltageUpState<Card>,
   input: LiveSkillEffectClock,
-): LiveConvertVoltageUpState {
+): LiveConvertVoltageUpState<Card> {
   return state.flatMap((effect) => {
     if (effect.parentControlsLifetime) return [effect];
     const duration = advanceLiveSkillEffectDuration(effect.duration, input);
@@ -192,24 +217,6 @@ function resolveDestination(value: number): LiveConvertVoltageDestination {
     default:
       throw new Error('Live Convert Voltage Up destination differs');
   }
-}
-
-function resolveResultDisplay(
-  details: ReadonlyMap<string, LiveSkillEffect['details'][number]>,
-): Readonly<{
-  resultDisplayTimeType: 1 | 2 | 3;
-  resultDisplayTime: number;
-}> {
-  const displayTimeType = requireValue(details, 'CONVERT_VOLTAGE_UP_CONVERT_DISPLAY_TIME_TYPE');
-  const displayTime = requireValue(details, 'CONVERT_VOLTAGE_UP_CONVERT_DISPLAY_TIME');
-  createLiveSkillEffectDuration(displayTimeType, displayTime, 'Convert Voltage Up result');
-  if (displayTimeType !== 1 && displayTimeType !== 2 && displayTimeType !== 3) {
-    throw new Error('Live Convert Voltage Up result display type differs');
-  }
-  return {
-    resultDisplayTimeType: displayTimeType,
-    resultDisplayTime: displayTime,
-  };
 }
 
 function requireValue(

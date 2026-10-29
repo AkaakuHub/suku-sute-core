@@ -12,19 +12,6 @@ export type StopVoltageIncreaseEffect = Readonly<{
   deactivationKey?: string;
 }>;
 
-export type VoltageConversion = Readonly<{
-  id: number;
-  destination: 'hearts' | 'love' | 'mental' | 'mental-barrier';
-  num: number;
-  outputDuration: VoltageConversionDuration;
-  disabledOnConvertCount: bigint | null;
-  conversions: number;
-  expireOnHeartCollect: boolean;
-  remainingSeconds: number | null;
-  remainingSections: number | null;
-  deactivationKey: string | null;
-}>;
-
 export type TemporaryScoreBoost = Readonly<{
   percent: number;
   remainingSeconds: number | null;
@@ -34,7 +21,7 @@ export type TemporaryScoreBoost = Readonly<{
 
 export type VoltageConvertEffect = Readonly<{
   kind: 'voltage-convert';
-  destination: VoltageConversion['destination'];
+  destination: 'hearts' | 'love' | 'mental' | 'mental-barrier';
   num: number;
   outputDuration: VoltageConversionDuration;
   convertDisabledType: 0 | 1 | 2;

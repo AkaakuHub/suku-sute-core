@@ -1,3 +1,4 @@
+import type { LiveConvertVoltageUpState } from '../runtime/skills/convertVoltageUp.ts';
 import type { LiveRegenGaugeState } from '../runtime/skills/regenGaugeSkill.ts';
 import type { GameRegenGaugeApplication } from './gaugeRegenerationTypes.ts';
 import type { LiveApIncreaseSpeedState } from '../runtime/skills/apIncreaseSpeed.ts';
@@ -36,7 +37,7 @@ import type { LiveApGaugeState } from '../runtime/live/apGauge.ts';
 import type { Card } from './cards/cardTypes.ts';
 export type { Action } from './actionTypes.ts';
 export type { Card } from './cards/cardTypes.ts';
-import type { TemporaryScoreBoost, VoltageConversion } from './voltageConversionTypes.ts';
+import type { TemporaryScoreBoost } from './voltageConversionTypes.ts';
 import type { Action52Buff } from './skillBoostTypes.ts';
 import type { MentalHeartInducer } from './mentalHeartInduceTypes.ts';
 import type { ComboInducer } from './comboInduceTypes.ts';
@@ -203,7 +204,7 @@ export type GameState = Readonly<{
   fixedParameterExtends: readonly FixedParameterExtend[];
   nextFixedParameterExtendId: number;
   apIncreaseSpeedEffects: LiveApIncreaseSpeedState;
-  voltageConversions: readonly VoltageConversion[];
+  convertVoltageUpEffects: LiveConvertVoltageUpState<Card>;
   action52Buffs: readonly Action52Buff[];
   mentalHeartInducers: readonly MentalHeartInducer[];
   nextMentalHeartInducerId: number;
@@ -217,7 +218,7 @@ export type GameState = Readonly<{
     deactivationKey: string | null;
   }>[];
   nextVoltageStopId: number;
-  nextVoltageConversionId: number;
+  nextConvertVoltageUpEffectId: number;
   nextAction52BuffId: number;
   loveUpAdditionalBuffs: readonly LoveUpAdditionalBuff[];
   voltageUpAdditionalBuffs: readonly VoltageUpAdditionalBuff[];

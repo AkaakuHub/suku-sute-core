@@ -8,7 +8,7 @@ import {
 import type { LiveSkillEffect } from '../../src/runtime/skills/skillTypes.ts';
 
 describe('Live Convert Voltage Up', () => {
-  test('最初に登録した変換だけで正のVoltage増加を置換する', () => {
+  test('最後に登録した変換だけで正のVoltage増加を置換する', () => {
     const first = activateLiveConvertVoltageUp(
       createLiveConvertVoltageUpState(),
       effect('22001', 1, 4_800, 1, 2),
@@ -17,9 +17,9 @@ describe('Live Convert Voltage Up', () => {
     const state = activateLiveConvertVoltageUp(first, effect('22002', 3, 10_000, 0, 0), input);
 
     expect(convertLiveVoltageUp(state, 20, 0).conversion).toEqual({
-      effectId: '22001',
-      destination: 'heart',
-      amount: 20,
+      effectId: '22002',
+      destination: 'mental-recovery',
+      amount: 40,
       resultDuration: { kind: 'sections', remainingChanges: 1n },
       resultDisabledType: 0,
       card: input.card,
@@ -39,7 +39,7 @@ describe('Live Convert Voltage Up', () => {
     const once = convertLiveVoltageUp(state, 3, 0);
     const twice = convertLiveVoltageUp(once.state, 3, 0);
 
-    expect(once.state[0]?.remainingConversions).toBe(1);
+    expect(once.state[0]?.conversions).toBe(1);
     expect(twice.state).toEqual([]);
   });
 

@@ -1,5 +1,11 @@
+import {
+  calculateLiveConvertVoltageUpNum,
+  convertLiveVoltageUp,
+  advanceLiveConvertVoltageUpState,
+} from '../../runtime/skills/convertVoltageUp.ts';
+import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
 import type { Card, Effect, GameState } from '../model.ts';
-import type { VoltageConversion, VoltageConvertEffect } from '../voltageConversionTypes.ts';
+import type { VoltageConvertEffect } from '../voltageConversionTypes.ts';
 import { addMentalBarrier } from '../live/mentalBarriers.ts';
 import { applyAdditionalBuff } from './additionalBuff.ts';
 import { applyAction52SkillBoost } from './action52SkillBoost.ts';
@@ -20,41 +26,54 @@ export function activateVoltageConversion(
   if (!card) return state;
   if (effect.displayDuration.kind === 'sections' && effect.displayDuration.value === 0)
     throw new Error('Display section count is 0. (displayTimeType: SECTION, displayTime: 0)');
-  const base = Math.fround(
-    Math.fround(Math.fround(int32(effect.num)) + Math.fround(addValue)) * Math.fround(multiplier),
-  );
-  const boosted = applyAction52SkillBoost(state, card, base);
-  const num = int32(boosted.value);
+  let boostedState = state;
+  const num = calculateLiveConvertVoltageUpNum(effect.num, addValue, multiplier, (value) => {
+    const boosted = applyAction52SkillBoost(boostedState, card, value);
+    boostedState = boosted.state;
+    return boosted.value;
+  });
   const suppressDuration = effect.invocationType === 0x388 || effect.invocationType === 0x38b;
-  const conversion: VoltageConversion = {
-    id: state.nextVoltageConversionId,
-    destination: effect.destination,
+  const conversion = {
+    effectId: String(state.nextConvertVoltageUpEffectId),
+    destination:
+      effect.destination === 'hearts'
+        ? ('heart' as const)
+        : effect.destination === 'love'
+          ? ('love-up' as const)
+          : effect.destination === 'mental'
+            ? ('mental-recovery' as const)
+            : ('mental-barrier' as const),
     num,
-    outputDuration: effect.outputDuration,
+    resultDuration: createLiveSkillEffectDuration(
+      effect.outputDuration.kind === 'milliseconds'
+        ? 1
+        : effect.outputDuration.kind === 'sections'
+          ? 2
+          : 3,
+      effect.outputDuration.value,
+      'Convert Voltage Up result',
+    ),
+    resultDisabledType: effect.convertDisabledType,
     disabledOnConvertCount: effect.disabledType === 1 ? effect.disabledValue : null,
     conversions: 0,
-    expireOnHeartCollect: effect.destination === 'love' && effect.convertDisabledType <= 2,
-    remainingSeconds:
-      suppressDuration || effect.displayDuration.kind !== 'milliseconds'
-        ? null
-        : Math.fround(effect.displayDuration.value / 1000),
-    remainingSections:
-      suppressDuration || effect.displayDuration.kind !== 'sections'
-        ? null
-        : effect.displayDuration.value,
+    card,
+    duration: createLiveSkillEffectDuration(
+      effect.displayDuration.kind === 'milliseconds'
+        ? 1
+        : effect.displayDuration.kind === 'sections'
+          ? 2
+          : 3,
+      effect.displayDuration.value,
+      'Convert Voltage Up',
+    ),
+    parentControlsLifetime: suppressDuration,
     deactivationKey: effect.deactivationKey ?? null,
   };
   return {
-    ...boosted.state,
-    voltageConversions: [...boosted.state.voltageConversions, conversion],
-    nextVoltageConversionId: boosted.state.nextVoltageConversionId + 1,
+    ...boostedState,
+    convertVoltageUpEffects: [...boostedState.convertVoltageUpEffects, conversion],
+    nextConvertVoltageUpEffectId: boostedState.nextConvertVoltageUpEffectId + 1,
   };
-}
-
-function int32(value: number): number {
-  return !Number.isFinite(value) || value < -2_147_483_648 || value > 2_147_483_647
-    ? -2_147_483_648
-    : Math.trunc(value);
 }
 
 export function convertVoltageIncrease(
@@ -63,28 +82,25 @@ export function convertVoltageIncrease(
   sourceCard: Card | undefined,
   applyEffect?: EffectApplier,
 ): Readonly<{ state: GameState; converted: boolean }> {
-  if (amount < 1n) return { state, converted: false };
-  const conversion = state.voltageConversions.at(-1);
+  const converted = convertLiveVoltageUp(state.convertVoltageUpEffects, amount, state.tick / 60);
+  const conversion = converted.conversion;
   if (!conversion) return { state, converted: false };
-  const voltage = BigInt.asIntN(32, amount);
   const card = sourceCard;
-  let next = state;
-  const product = BigInt.asIntN(32, BigInt(conversion.num) * voltage);
-  const raw = Math.fround(Math.fround(Number(product)) / Math.fround(10_000));
-  if (conversion.destination === 'hearts') {
-    const base = Math.trunc(Math.ceil(Math.fround(raw * 10)) / 10);
+  let next = { ...state, convertVoltageUpEffects: converted.state };
+  if (conversion.destination === 'heart') {
+    const base = conversion.amount;
     const buffed = card
       ? applyAdditionalBuff(next, 'attract', base, card)
       : { state: next, value: base };
     next = createSkillHearts(
       buffed.state,
       Math.trunc(buffed.value),
-      conversion.outputDuration.kind === 'milliseconds'
-        ? Math.fround(conversion.outputDuration.value / 1000)
+      conversion.resultDuration.kind === 'milliseconds'
+        ? conversion.resultDuration.remainingSeconds
         : 9_999,
     );
-  } else if (conversion.destination === 'love') {
-    const base = Math.trunc(raw);
+  } else if (conversion.destination === 'love-up') {
+    const base = conversion.amount;
     const buffed = applyLoveUpAdditionalBuffs(next, card, base);
     const percent = Math.trunc(buffed.value);
     if (percent !== 0) {
@@ -95,20 +111,20 @@ export function convertVoltageIncrease(
           {
             percent,
             remainingSeconds:
-              conversion.outputDuration.kind === 'milliseconds'
-                ? Math.fround(conversion.outputDuration.value / 1000)
+              conversion.resultDuration.kind === 'milliseconds'
+                ? conversion.resultDuration.remainingSeconds
                 : null,
             remainingSections:
-              conversion.outputDuration.kind === 'sections'
-                ? conversion.outputDuration.value
+              conversion.resultDuration.kind === 'sections'
+                ? Number(conversion.resultDuration.remainingChanges)
                 : null,
-            expireOnHeartCollect: conversion.expireOnHeartCollect,
+            expireOnHeartCollect: conversion.resultDisabledType <= 2,
           },
         ],
       };
     }
-  } else if (conversion.destination === 'mental') {
-    const base = Math.trunc(raw);
+  } else if (conversion.destination === 'mental-recovery') {
+    const base = conversion.amount;
     const buffed = card
       ? applyAdditionalBuff(next, 'mental', base, card)
       : { state: next, value: base };
@@ -121,14 +137,19 @@ export function convertVoltageIncrease(
       applyEffect,
     );
   } else {
-    const endurance = Math.fround(Math.ceil(Math.fround(raw * 10)) / 10);
+    const endurance = conversion.amount;
     const output: Extract<Effect, { kind: 'mental-barrier' }> = {
       kind: 'mental-barrier',
       barrier: 'endurance',
       enduranceType: 'fixed',
       endurance,
       attenuation: 0,
-      duration: conversion.outputDuration,
+      duration:
+        conversion.resultDuration.kind === 'milliseconds'
+          ? { kind: 'milliseconds', value: conversion.resultDuration.remainingSeconds * 1000 }
+          : conversion.resultDuration.kind === 'sections'
+            ? { kind: 'sections', value: Number(conversion.resultDuration.remainingChanges) }
+            : { kind: 'stage' },
     };
     const additional = applyMentalBarrierAdditionalBuff(next, card, output.endurance);
     const beforeCount = additional.state.mentalBarriers.length;
@@ -149,45 +170,35 @@ export function convertVoltageIncrease(
         applyEffect,
       );
   }
-  const conversions = Number(BigInt.asIntN(32, BigInt(conversion.conversions + 1)));
-  next = {
-    ...next,
-    voltageConversions:
-      conversion.disabledOnConvertCount === BigInt(conversions)
-        ? next.voltageConversions.filter((item) => item.id !== conversion.id)
-        : next.voltageConversions.map((item) =>
-            item.id === conversion.id ? { ...item, conversions } : item,
-          ),
-  };
   return { state: next, converted: true };
 }
 
 export function advanceVoltageConversions(state: GameState, elapsedSeconds: number): GameState {
-  const voltageConversions = state.voltageConversions.flatMap((conversion) => {
-    if (conversion.remainingSeconds === null) return [conversion];
-    const remainingSeconds = Math.fround(conversion.remainingSeconds - Math.fround(elapsedSeconds));
-    return remainingSeconds > 0 ? [{ ...conversion, remainingSeconds }] : [];
+  const convertVoltageUpEffects = advanceLiveConvertVoltageUpState(state.convertVoltageUpEffects, {
+    deltaTimeSeconds: elapsedSeconds,
+    sectionChangeCount: 0,
+    musicEnded: false,
   });
   const temporaryScoreBoosts = state.temporaryScoreBoosts.flatMap((boost) => {
     if (boost.remainingSeconds === null) return [boost];
     const remainingSeconds = Math.fround(boost.remainingSeconds - Math.fround(elapsedSeconds));
     return remainingSeconds > 0 ? [{ ...boost, remainingSeconds }] : [];
   });
-  return { ...state, voltageConversions, temporaryScoreBoosts };
+  return { ...state, convertVoltageUpEffects, temporaryScoreBoosts };
 }
 
 export function expireVoltageConversionSections(state: GameState): GameState {
-  const voltageConversions = state.voltageConversions.flatMap((conversion) => {
-    if (conversion.remainingSections === null) return [conversion];
-    const remainingSections = conversion.remainingSections - 1;
-    return remainingSections > 0 ? [{ ...conversion, remainingSections }] : [];
+  const convertVoltageUpEffects = advanceLiveConvertVoltageUpState(state.convertVoltageUpEffects, {
+    deltaTimeSeconds: 0,
+    sectionChangeCount: 1,
+    musicEnded: false,
   });
   const temporaryScoreBoosts = state.temporaryScoreBoosts.flatMap((boost) => {
     if (boost.remainingSections === null) return [boost];
     const remainingSections = boost.remainingSections - 1;
     return remainingSections > 0 ? [{ ...boost, remainingSections }] : [];
   });
-  return { ...state, voltageConversions, temporaryScoreBoosts };
+  return { ...state, convertVoltageUpEffects, temporaryScoreBoosts };
 }
 
 export function expireConvertedScoreBoostsOnHeartCollect(state: GameState): GameState {
@@ -200,7 +211,7 @@ export function expireConvertedScoreBoostsOnHeartCollect(state: GameState): Game
 export function deactivateVoltageConversions(state: GameState, deactivationKey: string): GameState {
   return {
     ...state,
-    voltageConversions: state.voltageConversions.filter(
+    convertVoltageUpEffects: state.convertVoltageUpEffects.filter(
       (conversion) => conversion.deactivationKey !== deactivationKey,
     ),
   };
