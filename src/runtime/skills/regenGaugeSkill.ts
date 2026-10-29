@@ -21,7 +21,7 @@ type LiveRegenGaugeInterval =
       elapsedSeconds: number;
     }>
   | Readonly<{
-      kind: 'skill-created-heart';
+      kind: 'beat-heart';
       count: number;
       progress: number;
     }>;
@@ -96,7 +96,7 @@ export function activateLiveRegenGaugeEffect(
         }
       : intervalType === 2
         ? {
-            kind: 'skill-created-heart',
+            kind: 'beat-heart',
             count: intervalValue,
             progress: 0,
           }
@@ -154,13 +154,13 @@ export function advanceLiveRegenGaugeClock(
   return { state: effects, applications };
 }
 
-export function notifyLiveRegenGaugeSkillHeartCreated(state: LiveRegenGaugeState): Readonly<{
+export function notifyLiveRegenGaugeBeatHeartCreated(state: LiveRegenGaugeState): Readonly<{
   state: LiveRegenGaugeState;
   applications: readonly LiveRegenGaugeApplication[];
 }> {
   const applications: LiveRegenGaugeApplication[] = [];
   const effects = state.map((effect) => {
-    if (effect.interval.kind !== 'skill-created-heart') return effect;
+    if (effect.interval.kind !== 'beat-heart') return effect;
     const progress = effect.interval.progress + 1;
     if (progress < effect.interval.count) {
       return {

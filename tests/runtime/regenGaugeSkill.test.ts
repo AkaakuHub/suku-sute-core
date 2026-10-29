@@ -4,7 +4,7 @@ import {
   activateLiveRegenGaugeEffect,
   advanceLiveRegenGaugeClock,
   createLiveRegenGaugeState,
-  notifyLiveRegenGaugeSkillHeartCreated,
+  notifyLiveRegenGaugeBeatHeartCreated,
 } from '../../src/runtime/skills/regenGaugeSkill.ts';
 
 test('Regen Mentalは発動時に適用し、MSEC間隔では1frameに1回だけ再適用する', () => {
@@ -51,9 +51,9 @@ test('Regen VoltageはskillによるHeart生成回数で再適用し、section�
       applySkillBoost: (value) => value,
     },
   );
-  const firstHeart = notifyLiveRegenGaugeSkillHeartCreated(activated.state);
+  const firstHeart = notifyLiveRegenGaugeBeatHeartCreated(activated.state);
   expect(firstHeart.applications).toEqual([]);
-  const secondHeart = notifyLiveRegenGaugeSkillHeartCreated(firstHeart.state);
+  const secondHeart = notifyLiveRegenGaugeBeatHeartCreated(firstHeart.state);
   expect(secondHeart.applications).toEqual([activated.application]);
   const firstSection = advanceLiveRegenGaugeClock(secondHeart.state, {
     currentTimeSeconds: 1,
