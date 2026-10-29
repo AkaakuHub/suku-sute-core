@@ -159,3 +159,22 @@ test('Beat Heartの周期回復は実際の発動元情報を維持し、パー�
   ]);
   expect(second.state[0]?.duration).toEqual({ kind: 'sections', remainingChanges: 1n });
 });
+
+test('Beat Heartの回数はnativeのsigned32加算後にlongの間隔と比較する', () => {
+  const result = notifyLiveRegenGaugeBeatHeartCreated([
+    {
+      actionType: 6 as const,
+      gauge: 'mental' as const,
+      amount: 1,
+      effectId: 'wrap',
+      interval: { kind: 'beat-heart' as const, count: 2147483648, progress: 2147483647 },
+      duration: { kind: 'full-end' as const },
+    },
+  ]);
+  expect(result.applications).toEqual([]);
+  expect(result.state[0]?.interval).toEqual({
+    kind: 'beat-heart',
+    count: 2147483648,
+    progress: -2147483648,
+  });
+});

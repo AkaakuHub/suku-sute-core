@@ -1,3 +1,4 @@
+import { int64ToInt32 } from '../numeric.ts';
 import { resolveLiveGaugeSkillEffectAmount } from './gaugeSkillEffectValue.ts';
 import type { LiveSkillEffect } from './skillTypes.ts';
 import {
@@ -145,7 +146,7 @@ export function notifyLiveRegenGaugeBeatHeartCreated<Effect extends LiveRegenGau
   const applications: Omit<Effect, 'effectId' | 'interval' | 'duration'>[] = [];
   const effects = state.map((effect) => {
     if (effect.interval.kind !== 'beat-heart') return effect;
-    const progress = effect.interval.progress + 1;
+    const progress = int64ToInt32(BigInt(effect.interval.progress) + 1n);
     if (progress < effect.interval.count) {
       return {
         ...effect,
