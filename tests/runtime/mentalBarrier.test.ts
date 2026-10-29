@@ -2,6 +2,7 @@ import { applyLiveMentalBarrierDamage } from '../../src/runtime/skills/mentalBar
 import { expect, test } from 'vite-plus/test';
 import {
   activateLiveMentalBarrier,
+  activateLiveConvertedMentalBarrier,
   activateLiveMentalBarrierAdditionalBuff,
   advanceLiveMentalBarrierState,
   createLiveMentalBarrierState,
@@ -108,3 +109,21 @@ function effect(
     })),
   };
 }
+
+test('Voltage変換のバリアは小数耐久値を切り捨てて登録する', () => {
+  const activated = activateLiveConvertedMentalBarrier(
+    createLiveMentalBarrierState(),
+    {
+      effectId: 'converted',
+      value: Math.fround(1.9),
+      duration: { kind: 'milliseconds', remainingSeconds: Math.fround(0.1) },
+    },
+    { currentTimeSeconds: 0, sectionChangeTimesSeconds: [], card },
+  );
+  expect(activated.effectAmount).toBe(1);
+  expect(activated.state.effects[0]?.endurance).toEqual({
+    kind: 'finite',
+    maximum: 1,
+    consumed: 0,
+  });
+});

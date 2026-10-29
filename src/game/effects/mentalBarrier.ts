@@ -1,3 +1,4 @@
+import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
 import { applyAction52SkillBoost } from './action52SkillBoost.ts';
 import { addMentalBarrier } from '../live/mentalBarriers.ts';
 import { applyMentalBarrierAdditionalBuff } from './mentalBarrierAdditionalBuff.ts';
@@ -52,7 +53,19 @@ export function applyMentalBarrier(
   );
   if (effect.enduranceType !== 'infinite' && endurance === 0)
     return registerMissionAction(boosted.state, 7, endurance);
-  const next = addMentalBarrier(boosted.state, effect, endurance, attenuation);
+  const next = addMentalBarrier(
+    boosted.state,
+    {
+      ...effect,
+      duration: createLiveSkillEffectDuration(
+        effect.duration.kind === 'milliseconds' ? 1 : effect.duration.kind === 'sections' ? 2 : 3,
+        effect.duration.kind === 'stage' ? 0 : effect.duration.value,
+        'Mental Barrier',
+      ),
+    },
+    endurance,
+    attenuation,
+  );
   if (
     !applyEffect ||
     next.mentalBarriers.effects.length === boosted.state.mentalBarriers.effects.length

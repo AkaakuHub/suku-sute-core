@@ -4,7 +4,7 @@ import {
   advanceLiveConvertVoltageUpState,
 } from '../../runtime/skills/convertVoltageUp.ts';
 import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
-import type { Card, Effect, GameState } from '../model.ts';
+import type { Card, GameState } from '../model.ts';
 import type { VoltageConvertEffect } from '../voltageConversionTypes.ts';
 import { addMentalBarrier } from '../live/mentalBarriers.ts';
 import { applyAdditionalBuff } from './additionalBuff.ts';
@@ -138,26 +138,17 @@ export function convertVoltageIncrease(
     );
   } else {
     const endurance = conversion.amount;
-    const output: Extract<Effect, { kind: 'mental-barrier' }> = {
-      kind: 'mental-barrier',
-      barrier: 'endurance',
-      enduranceType: 'fixed',
-      endurance,
-      attenuation: 0,
-      duration:
-        conversion.resultDuration.kind === 'milliseconds'
-          ? { kind: 'milliseconds', value: conversion.resultDuration.remainingSeconds * 1000 }
-          : conversion.resultDuration.kind === 'sections'
-            ? { kind: 'sections', value: Number(conversion.resultDuration.remainingChanges) }
-            : { kind: 'stage' },
-    };
-    const additional = applyMentalBarrierAdditionalBuff(next, card, output.endurance);
+    const additional = applyMentalBarrierAdditionalBuff(next, card, endurance);
     const beforeCount = additional.state.mentalBarriers.effects.length;
     next = addMentalBarrier(
       additional.state,
       {
-        ...output,
-        duration: output.duration.kind === 'stage' ? { kind: 'stage' } : output.duration,
+        kind: 'mental-barrier',
+        barrier: 'endurance',
+        enduranceType: 'fixed',
+        endurance,
+        attenuation: 0,
+        duration: conversion.resultDuration,
       },
       Math.trunc(additional.value),
       0,

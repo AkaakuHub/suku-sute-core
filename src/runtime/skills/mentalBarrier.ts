@@ -73,44 +73,41 @@ export function activateLiveConvertedMentalBarrier(
     currentTimeSeconds: number;
     sectionChangeTimesSeconds: readonly number[];
     card: LiveAdditionalBuffCard;
-    applySkillBoost: (value: number) => number;
   }>,
 ): Readonly<{ state: LiveMentalBarrierState; effectAmount: number }> {
-  if (!Number.isSafeInteger(effect.value) || effect.value < 0) {
+  if (!Number.isFinite(effect.value)) {
     throw new Error('Live converted Mental Barrier endurance is invalid');
   }
   const additional = applyLiveAdditionalSkillBuffs(state.additionalBuffs, input.card, effect.value);
-  const effectAmount = Math.ceil(
-    additional.value > 0 ? input.applySkillBoost(additional.value) : additional.value,
-  );
+  const effectAmount = Math.trunc(additional.value);
   return {
     effectAmount,
     state: {
       ...state,
       additionalBuffs: additional.buffs,
-      effects:
-        effectAmount === 0
-          ? state.effects
-          : [
-              ...state.effects,
-              createLiveMentalBarrierEffect(
-                {
-                  effectId: effect.effectId,
-                  barrierType: 'endurance',
-                  endurance: {
+      effects: [
+        ...state.effects,
+        createLiveMentalBarrierEffect(
+          {
+            effectId: effect.effectId,
+            barrierType: 'endurance',
+            endurance:
+              effectAmount <= 0
+                ? { kind: 'infinite' }
+                : {
                     kind: 'finite',
                     maximum: effectAmount,
                     consumed: 0,
                   },
-                  attenuationFactor: 1,
-                  duration: effect.duration,
-                  parentControlsLifetime: false,
-                  deactivationKey: null,
-                },
-                input.currentTimeSeconds,
-                input.sectionChangeTimesSeconds,
-              ),
-            ],
+            attenuationFactor: 1,
+            duration: effect.duration,
+            parentControlsLifetime: false,
+            deactivationKey: null,
+          },
+          input.currentTimeSeconds,
+          input.sectionChangeTimesSeconds,
+        ),
+      ],
     },
   };
 }

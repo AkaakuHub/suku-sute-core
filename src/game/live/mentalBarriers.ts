@@ -6,7 +6,7 @@ import {
   createLiveMentalBarrierEffect,
   liveMentalBarrierDecreaseIntervalFactor,
 } from '../../runtime/skills/mentalBarrier.ts';
-import { createLiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
+import type { LiveSkillEffectDuration } from '../../runtime/skills/skillEffectDuration.ts';
 import {
   applyLiveMentalBarrierDamage,
   consumeLiveMentalBarrierNaturally,
@@ -14,15 +14,10 @@ import {
 
 export function addMentalBarrier(
   state: GameState,
-  effect: MentalBarrierEffect,
+  effect: Omit<MentalBarrierEffect, 'duration'> & Readonly<{ duration: LiveSkillEffectDuration }>,
   endurance: number,
   attenuation: number,
 ): GameState {
-  const duration = createLiveSkillEffectDuration(
-    effect.duration.kind === 'milliseconds' ? 1 : effect.duration.kind === 'sections' ? 2 : 3,
-    effect.duration.kind === 'stage' ? 0 : effect.duration.value,
-    'Mental Barrier',
-  );
   const absorption = absorbSkillEffect(state, 7, BigInt.asIntN(32, BigInt(Math.trunc(endurance))));
   if (absorption.absorbed) return absorption.state;
   const barrier = createLiveMentalBarrierEffect(
@@ -34,7 +29,7 @@ export function addMentalBarrier(
           ? { kind: 'infinite' }
           : { kind: 'finite', maximum: endurance, consumed: 0 },
       attenuationFactor: attenuation,
-      duration,
+      duration: effect.duration,
       parentControlsLifetime: effect.invocationType === 0x388 || effect.invocationType === 0x38b,
       deactivationKey: effect.deactivationKey ?? null,
     },

@@ -48,20 +48,16 @@ export function activateLiveConvertedLoveUpBuff(
   }>,
   input: Readonly<{
     card: LiveAdditionalBuffCard;
-    applySkillBoost: (value: number) => number;
   }>,
 ): Readonly<{ state: LiveLoveUpBuffState; effectAmount: number }> {
   if (
     !Number.isSafeInteger(effect.value) ||
-    effect.value < 0 ||
     (effect.disabledType !== 0 && effect.disabledType !== 1 && effect.disabledType !== 2)
   ) {
     throw new Error('Live converted LOVE UP effect is invalid');
   }
   const additional = applyLoveAdditionalBuffs(state, input.card, effect.value);
-  const effectAmount = Math.ceil(
-    additional.value > 0 ? input.applySkillBoost(additional.value) : additional.value,
-  );
+  const effectAmount = Math.trunc(additional.value);
   return {
     effectAmount,
     state:
