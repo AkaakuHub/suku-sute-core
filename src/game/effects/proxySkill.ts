@@ -20,8 +20,7 @@ import { induceCardMoves } from './cardMoveInduce.ts';
 import { completeDeckOutChecks } from './deckOutCheck.ts';
 import {
   absorbLiveProxySkill,
-  advanceLiveProxySkillPeriod,
-  checkLiveProxySkillEnd,
+  advanceLiveProxySkill,
   createLiveProxySkillPeriod,
   type LiveProxySkillPeriodEvent,
   type LiveProxySkillEndResult,
@@ -101,9 +100,9 @@ function advanceProxySkillPeriodEvent(
   for (const initial of state.proxySkills) {
     const current = next.proxySkills.find((item) => item.id === initial.id);
     if (!current) continue;
-    const advanced = advanceLiveProxySkillPeriod(current, event);
+    const advanced = advanceLiveProxySkill(current, event);
     if (advanced.state !== current) next = updateProxySkillState(next, current, advanced.state);
-    if (advanced.periodEnded) next = finishProxySkillState(next, advanced.state, apply);
+    next = applyProxySkillEnd(next, advanced.state, advanced.result, apply);
   }
   return next;
 }
@@ -138,17 +137,6 @@ export function forceProxySkillActivation(
     next = induceProxySkillState(next, ended, apply);
   }
   return next;
-}
-
-function finishProxySkillState(
-  state: GameState,
-  absorption: GameState['proxySkills'][number],
-  apply: ApplyProxyEffect,
-): GameState {
-  const checked = checkLiveProxySkillEnd(absorption, true);
-  const next =
-    checked.state === absorption ? state : updateProxySkillState(state, absorption, checked.state);
-  return applyProxySkillEnd(next, checked.state, checked.result, apply);
 }
 
 function applyProxySkillEnd(

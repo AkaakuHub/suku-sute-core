@@ -79,6 +79,16 @@ export function advanceLiveProxySkillPeriod<
   return { state, periodEnded: false };
 }
 
+export function advanceLiveProxySkill<State extends LiveProxySkillLifecycle>(
+  state: State,
+  event: LiveProxySkillPeriodEvent,
+): Readonly<{ state: State; result: LiveProxySkillEndResult }> {
+  const advanced = advanceLiveProxySkillPeriod(state, event);
+  return advanced.periodEnded
+    ? checkLiveProxySkillEnd(advanced.state, true)
+    : { state: advanced.state, result: 'none' };
+}
+
 export function checkLiveProxySkillEnd<State extends LiveProxySkillLifecycle>(
   state: State,
   periodEnd: boolean,
